@@ -708,10 +708,22 @@ function renderPluginList() {
   Object.entries(plugins).forEach(([key, enabled]) => {
     const div = document.createElement('div');
     div.className = 'plugin-item';
-    div.innerHTML = `
-      <input type="checkbox" ${enabled ? 'checked' : ''} onchange="togglePlugin('${escHtml(key)}', this.checked)">
-      <span class="plugin-name"><code>${escHtml(key)}</code></span>
-      <button class="del-btn" onclick="removePlugin('${escHtml(key)}')">×</button>`;
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = !!enabled;
+    cb.addEventListener('change', () => togglePlugin(key, cb.checked));
+
+    const name = document.createElement('span');
+    name.className = 'plugin-name';
+    name.innerHTML = `<code>${escHtml(key)}</code>`;
+
+    const del = document.createElement('button');
+    del.className = 'del-btn';
+    del.textContent = '×';
+    del.addEventListener('click', () => removePlugin(key));
+
+    div.append(cb, name, del);
     container.appendChild(div);
   });
 }
@@ -755,26 +767,64 @@ function renderHooks() {
   const hooks = state.hooks || {};
   const container = document.getElementById('hooks-container');
   container.innerHTML = '';
-  Object.entries(hooks).forEach(([event, arr]) => {
+  Object.entries(hooks).forEach(([eventName, arr]) => {
     const cmds = (arr[0]?.hooks || []);
-    const div = document.createElement('div');
-    div.className = 'hook-event';
-    div.innerHTML = `
-      <div class="hook-event-name">${escHtml(event)} <button class="del-btn" style="float:right" onclick="removeHookEvent('${escHtml(event)}')">×</button></div>
-      <div id="hook-cmds-${escHtml(event)}">
-        ${cmds.map((cmd, i) => hookCmdHtml(event, i, cmd)).join('')}
-      </div>
-      <button class="hook-add-cmd" onclick="addHookCmd('${escHtml(event)}')">+ Add command</button>`;
-    container.appendChild(div);
+    const section = document.createElement('div');
+    section.className = 'hook-event';
+
+    const header = document.createElement('div');
+    header.className = 'hook-event-name';
+    header.textContent = eventName;
+    const delEvt = document.createElement('button');
+    delEvt.className = 'del-btn';
+    delEvt.style.float = 'right';
+    delEvt.textContent = '×';
+    delEvt.addEventListener('click', () => removeHookEvent(eventName));
+    header.appendChild(delEvt);
+    section.appendChild(header);
+
+    const cmdsContainer = document.createElement('div');
+    cmds.forEach((cmd, i) => cmdsContainer.appendChild(buildHookCmdRow(eventName, i, cmd)));
+    section.appendChild(cmdsContainer);
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'hook-add-cmd';
+    addBtn.textContent = '+ Add command';
+    addBtn.addEventListener('click', () => addHookCmd(eventName));
+    section.appendChild(addBtn);
+
+    container.appendChild(section);
   });
 }
 
-function hookCmdHtml(event, i, cmd) {
-  return `<div class="hook-cmd-row">
-    <input type="text" value="${escHtml(cmd.command || '')}" placeholder="Shell command" oninput="updateHookCmd('${escHtml(event)}', ${i}, 'command', this.value)">
-    <input type="number" class="timeout-input" value="${cmd.timeout || ''}" placeholder="timeout" title="Timeout (seconds)" oninput="updateHookCmd('${escHtml(event)}', ${i}, 'timeout', +this.value)">
-    <button class="del-btn" onclick="removeHookCmd('${escHtml(event)}', ${i})">×</button>
-  </div>`;
+function buildHookCmdRow(eventName, i, cmd) {
+  const row = document.createElement('div');
+  row.className = 'hook-cmd-row';
+
+  const cmdInput = document.createElement('input');
+  cmdInput.type = 'text';
+  cmdInput.value = String(cmd.command || '');
+  cmdInput.placeholder = 'Shell command';
+  cmdInput.addEventListener('input', () => updateHookCmd(eventName, i, 'command', cmdInput.value));
+
+  const timeoutInput = document.createElement('input');
+  timeoutInput.type = 'number';
+  timeoutInput.className = 'timeout-input';
+  timeoutInput.value = (typeof cmd.timeout === 'number') ? String(cmd.timeout) : '';
+  timeoutInput.placeholder = 'timeout';
+  timeoutInput.title = 'Timeout (seconds)';
+  timeoutInput.addEventListener('input', () => {
+    const n = Number(timeoutInput.value);
+    updateHookCmd(eventName, i, 'timeout', isNaN(n) ? 30 : n);
+  });
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'del-btn';
+  delBtn.textContent = '×';
+  delBtn.addEventListener('click', () => removeHookCmd(eventName, i));
+
+  row.append(cmdInput, timeoutInput, delBtn);
+  return row;
 }
 
 function addHookEvent() {
