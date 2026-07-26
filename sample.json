@@ -1,0 +1,70 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://api.anthropic.com",
+    "ANTHROPIC_API_KEY": "sk-ant-your-key-here",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION": "",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION_NAME": "",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION": "",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5-20251001"
+  },
+  "permissions": {
+    "defaultMode": "default",
+    "skipDangerousModePermissionPrompt": false
+  },
+  "model": "fable",
+  "fallbackModel": [
+    "claude-sonnet-5",
+    "claude-haiku-4-5-20251001",
+    "claude-opus-5"
+  ],
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Hook running'",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
+  "worktree": {
+    "baseRef": "fresh"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "input=$(cat); model=$(printf '%s' \"$input\" | jq -r '.model.display_name // .model.id'); printf 'Model: %s\\n' \"$model\"",
+    "padding": 2
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true
+  },
+  "language": "english",
+  "effortLevel": "high",
+  "autoCompactWindow": 850000,
+  "askUserQuestionTimeout": "10m",
+  "tui": "fullscreen",
+  "theme": "dark",
+  "editorMode": "normal",
+  "verbose": false,
+  "preferredNotifChannel": "terminal_bell",
+  "autoCompactEnabled": true,
+  "switchModelsOnFlag": true,
+  "autoScrollEnabled": true,
+  "fileCheckpointingEnabled": false,
+  "showTurnDuration": true,
+  "terminalProgressBarEnabled": true,
+  "skipAutoPermissionPrompt": false,
+  "useAutoModeDuringPlan": true,
+  "skipWorkflowUsageWarning": false,
+  "skipDangerousModePermissionPrompt": false
+}

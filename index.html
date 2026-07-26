@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Settings Editor</title>
+<style>
+  :root {
+    --bg: #1a1a1a;
+    --bg2: #242424;
+    --bg3: #2e2e2e;
+    --border: #3a3a3a;
+    --text: #e0e0e0;
+    --text2: #a0a0a0;
+    --accent: #cc785c;
+    --accent2: #e8956b;
+    --green: #4caf78;
+    --red: #e05252;
+    --blue: #5c9dcc;
+    --radius: 6px;
+    --font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Header */
+  header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  header h1 { font-size: 14px; font-weight: 600; color: var(--accent); letter-spacing: 0.5px; flex: 1; }
+  header h1 span { color: var(--text2); font-weight: 400; }
+  .btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 5px 12px; border-radius: var(--radius); cursor: pointer; font-family: var(--font); font-size: 12px; transition: all 0.15s; white-space: nowrap; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+  .btn.danger { border-color: var(--red); color: var(--red); }
+  .btn.danger:hover { background: var(--red); color: #fff; }
+  #status { font-size: 11px; color: var(--text2); min-width: 120px; text-align: right; }
+  #status.ok { color: var(--green); }
+  #status.err { color: var(--red); }
+
+  /* Layout */
+  .layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* Sidebar */
+  nav { width: 160px; background: var(--bg2); border-right: 1px solid var(--border); padding: 8px 0; flex-shrink: 0; overflow-y: auto; }
+  nav button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text2); padding: 8px 16px; cursor: pointer; font-family: var(--font); font-size: 12px; transition: all 0.15s; border-left: 2px solid transparent; }
+  nav button:hover { color: var(--text); background: var(--bg3); }
+  nav button.active { color: var(--accent); background: var(--bg3); border-left-color: var(--accent); }
+  nav .nav-section { padding: 12px 16px 4px; font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Content */
+  main { flex: 1; overflow-y: auto; padding: 20px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Form */
+  .section-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .section-desc { color: var(--text2); font-size: 12px; margin-bottom: 20px; line-height: 1.6; }
+  .field-group { margin-bottom: 16px; }
+  .field-label { display: block; font-size: 11px; color: var(--text2); margin-bottom: 4px; letter-spacing: 0.3px; }
+  .field-label code { color: var(--blue); font-family: var(--font); }
+  input[type=text], input[type=password], input[type=number], select, textarea { width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: var(--radius); font-family: var(--font); font-size: 12px; outline: none; transition: border-color 0.15s; }
+  input[type=text]:focus, input[type=password]:focus, input[type=number]:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select option { background: var(--bg3); }
+  .input-wrap { display: flex; gap: 6px; }
+  .input-wrap input { flex: 1; }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+  .checkbox-row input[type=checkbox] { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
+  .checkbox-row label { color: var(--text); cursor: pointer; flex: 1; }
+  .checkbox-row .field-desc { color: var(--text2); font-size: 11px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Fallback models list */
+  #fallback-list { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; max-height: 480px; overflow-y: auto; }
+  .model-item { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--border); background: var(--bg3); }
+  .model-item:last-child { border-bottom: none; }
+  .model-item:hover { background: var(--bg); }
+  .model-item .drag-handle { cursor: grab; color: var(--text2); font-size: 14px; width: 16px; text-align: center; flex-shrink: 0; }
+  .model-item input { flex: 1; background: transparent; border: none; border-bottom: 1px solid transparent; color: var(--text); padding: 2px 4px; font-family: var(--font); font-size: 12px; outline: none; }
+  .model-item input:focus { border-bottom-color: var(--accent); }
+  .model-item .move-btns { display: flex; flex-direction: column; gap: 2px; }
+  .model-item .move-btns button { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 10px; padding: 1px 3px; line-height: 1; }
+  .model-item .move-btns button:hover { color: var(--accent); }
+  .model-item .del-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; padding: 2px 4px; }
+  .model-item .del-btn:hover { color: var(--red); }
+  .model-item .idx { color: var(--text2); font-size: 10px; width: 20px; text-align: right; flex-shrink: 0; }
+
+  /* Plugins */
+  #plugin-list { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; }
+  .plugin-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .plugin-item:last-child { border-bottom: none; }
+  .plugin-item input[type=checkbox] { accent-color: var(--green); width: 14px; height: 14px; }
+  .plugin-item .plugin-name { flex: 1; }
+  .plugin-item .del-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; }
+  .plugin-item .del-btn:hover { color: var(--red); }
+  .add-plugin-row { display: flex; gap: 6px; margin-bottom: 12px; }
+  .add-plugin-row input { flex: 1; }
+
+  /* Advanced JSON */
+  #json-editor { width: 100%; height: calc(100vh - 180px); background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: var(--radius); font-family: var(--font); font-size: 12px; line-height: 1.6; outline: none; resize: none; }
+  #json-editor:focus { border-color: var(--accent); }
+  .json-toolbar { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .json-toolbar span { flex: 1; font-size: 11px; color: var(--text2); }
+  #json-error { color: var(--red); font-size: 11px; margin-top: 6px; min-height: 16px; }
+
+  /* Hooks */
+  #hooks-container { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 12px; }
+  .hook-event { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .hook-event:last-child { border-bottom: none; }
+  .hook-event-name { font-size: 12px; color: var(--blue); margin-bottom: 8px; font-weight: 600; }
+  .hook-cmd-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .hook-cmd-row input { flex: 1; }
+  .hook-cmd-row .timeout-input { width: 70px; }
+  .hook-cmd-row .del-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; }
+  .hook-cmd-row .del-btn:hover { color: var(--red); }
+  .hook-add-cmd { font-size: 11px; color: var(--blue); cursor: pointer; background: none; border: none; padding: 2px 0; }
+  .hook-add-cmd:hover { color: var(--accent); }
+  .add-hook-row { display: flex; gap: 6px; margin-bottom: 12px; }
+
+  /* Status line preview */
+  #statusline-preview { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; font-size: 11px; color: var(--text2); margin-top: 8px; font-family: var(--font); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+
+  /* Hidden file input */
+  #file-input { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Claude <span>Settings Editor</span></h1>
+  <button class="btn" onclick="loadFile()">Load JSON</button>
+  <button class="btn" onclick="loadSample()">Load Sample</button>
+  <button class="btn primary" onclick="downloadFile()">Download settings.json</button>
+  <span id="status">Ready</span>
+  <input type="file" id="file-input" accept=".json" onchange="onFileSelect(event)">
+</header>
+
+<div class="layout">
+  <nav>
+    <div class="nav-section">Config</div>
+    <button class="active" onclick="switchTab('api')">API & Models</button>
+    <button onclick="switchTab('fallback')">Fallback Models</button>
+    <button onclick="switchTab('permissions')">Permissions</button>
+    <div class="nav-section">Interface</div>
+    <button onclick="switchTab('ui')">UI & Behavior</button>
+    <button onclick="switchTab('plugins')">Plugins</button>
+    <button onclick="switchTab('hooks')">Hooks</button>
+    <button onclick="switchTab('statusline')">Status Line</button>
+    <div class="nav-section">Raw</div>
+    <button onclick="switchTab('advanced')">Advanced JSON</button>
+  </nav>
+
+  <main>
+    <!-- API & Models -->
+    <div class="tab-panel active" id="tab-api">
+      <div class="section-title">API & Models</div>
+      <div class="section-desc">Configure API endpoint, authentication, and model overrides for each Claude tier.</div>
+      <div class="grid-2">
+        <div class="field-group">
+          <label class="field-label"><code>env.ANTHROPIC_BASE_URL</code></label>
+          <input type="text" id="env_ANTHROPIC_BASE_URL" placeholder="https://api.anthropic.com" oninput="onFormChange()">
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>model</code> — Primary model</label>
+          <input type="text" id="model" placeholder="fable" oninput="onFormChange()">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label"><code>env.ANTHROPIC_API_KEY</code></label>
+        <div class="input-wrap">
+          <input type="password" id="env_ANTHROPIC_API_KEY" placeholder="sk-ant-..." oninput="onFormChange()">
+          <button class="btn" onclick="toggleApiKeyVisibility()">Show</button>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field-group">
+          <label class="field-label"><code>env.ANTHROPIC_DEFAULT_FABLE_MODEL</code></label>
+          <input type="text" id="env_ANTHROPIC_DEFAULT_FABLE_MODEL" placeholder="claude-fable-5" oninput="onFormChange()">
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>env.ANTHROPIC_DEFAULT_OPUS_MODEL</code></label>
+          <input type="text" id="env_ANTHROPIC_DEFAULT_OPUS_MODEL" placeholder="claude-opus-5" oninput="onFormChange()">
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>env.ANTHROPIC_DEFAULT_SONNET_MODEL</code></label>
+          <input type="text" id="env_ANTHROPIC_DEFAULT_SONNET_MODEL" placeholder="claude-sonnet-5" oninput="onFormChange()">
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>env.ANTHROPIC_DEFAULT_HAIKU_MODEL</code></label>
+          <input type="text" id="env_ANTHROPIC_DEFAULT_HAIKU_MODEL" placeholder="claude-haiku-4-5-20251001" oninput="onFormChange()">
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>env.CLAUDE_CODE_SUBAGENT_MODEL</code></label>
+          <input type="text" id="env_CLAUDE_CODE_SUBAGENT_MODEL" placeholder="claude-haiku-4-5-20251001" oninput="onFormChange()">
+        </div>
+      </div>
+      <div class="section-title" style="margin-top:20px;">Custom Model Option</div>
+      <div class="grid-2">
+        <div class="field-group">
+          <label class="field-label"><code>env.ANTHROPIC_CUSTOM_MODEL_OPTION</code> — Model ID</label>
+          <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION" oninput="onFormChange()">
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME</code></label>
+          <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION_NAME" oninput="onFormChange()">
+        </div>
+        <div class="field-group" style="grid-column:span 2;">
+          <label class="field-label"><code>env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION</code></label>
+          <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" oninput="onFormChange()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Fallback Models -->
+    <div class="tab-panel" id="tab-fallback">
+      <div class="section-title">Fallback Models</div>
+      <div class="section-desc">Ordered list of fallback models. Claude tries each in sequence when the primary model fails. Drag or use arrows to reorder.</div>
+      <div id="fallback-list"></div>
+      <div class="input-wrap">
+        <input type="text" id="new-model-input" placeholder="Model ID (e.g. claude-sonnet-5)" onkeydown="if(event.key==='Enter')addFallbackModel()">
+        <button class="btn primary" onclick="addFallbackModel()">+ Add Model</button>
+      </div>
+    </div>
+
+    <!-- Permissions -->
+    <div class="tab-panel" id="tab-permissions">
+      <div class="section-title">Permissions</div>
+      <div class="section-desc">Control how Claude Code requests permission for file edits and shell commands.</div>
+      <div class="field-group">
+        <label class="field-label"><code>permissions.defaultMode</code></label>
+        <select id="permissions_defaultMode" onchange="onFormChange()">
+          <option value="default">default — prompt for everything</option>
+          <option value="autoEdit">autoEdit — auto-approve file edits only</option>
+          <option value="bypassPermissions">bypassPermissions — skip all prompts</option>
+          <option value="plan">plan — plan-only mode, no execution</option>
+        </select>
+      </div>
+      <div class="section-title" style="margin-top:20px;">Permission Flags</div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="permissions_skipDangerousModePermissionPrompt" onchange="onFormChange()">
+        <label for="permissions_skipDangerousModePermissionPrompt"><code>permissions.skipDangerousModePermissionPrompt</code></label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="skipDangerousModePermissionPrompt" onchange="onFormChange()">
+        <label for="skipDangerousModePermissionPrompt"><code>skipDangerousModePermissionPrompt</code> (top-level)</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="skipAutoPermissionPrompt" onchange="onFormChange()">
+        <label for="skipAutoPermissionPrompt"><code>skipAutoPermissionPrompt</code></label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="skipWorkflowUsageWarning" onchange="onFormChange()">
+        <label for="skipWorkflowUsageWarning"><code>skipWorkflowUsageWarning</code></label>
+      </div>
+    </div>
+
+    <!-- UI & Behavior -->
+    <div class="tab-panel" id="tab-ui">
+      <div class="section-title">UI & Behavior</div>
+      <div class="grid-2">
+        <div class="field-group">
+          <label class="field-label"><code>theme</code></label>
+          <select id="theme" onchange="onFormChange()">
+            <option value="dark">dark</option>
+            <option value="light">light</option>
+            <option value="system">system</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>tui</code></label>
+          <select id="tui" onchange="onFormChange()">
+            <option value="fullscreen">fullscreen</option>
+            <option value="default">default</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>editorMode</code></label>
+          <select id="editorMode" onchange="onFormChange()">
+            <option value="normal">normal</option>
+            <option value="vim">vim</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>effortLevel</code></label>
+          <select id="effortLevel" onchange="onFormChange()">
+            <option value="low">low</option>
+            <option value="medium">medium</option>
+            <option value="high">high</option>
+            <option value="xhigh">xhigh</option>
+            <option value="max">max</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>language</code></label>
+          <input type="text" id="language" placeholder="english" oninput="onFormChange()">
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>preferredNotifChannel</code></label>
+          <select id="preferredNotifChannel" onchange="onFormChange()">
+            <option value="terminal_bell">terminal_bell</option>
+            <option value="desktop">desktop</option>
+            <option value="none">none</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>autoCompactWindow</code> (tokens)</label>
+          <input type="number" id="autoCompactWindow" placeholder="850000" oninput="onFormChange()">
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>askUserQuestionTimeout</code></label>
+          <input type="text" id="askUserQuestionTimeout" placeholder="10m" oninput="onFormChange()">
+        </div>
+        <div class="field-group">
+          <label class="field-label"><code>worktree.baseRef</code></label>
+          <select id="worktree_baseRef" onchange="onFormChange()">
+            <option value="fresh">fresh — branch from origin/default</option>
+            <option value="head">head — branch from current HEAD</option>
+          </select>
+        </div>
+      </div>
+      <div class="section-title" style="margin-top:20px;">Feature Toggles</div>
+      <div class="grid-2">
+        <div>
+          <div class="checkbox-row"><input type="checkbox" id="autoCompactEnabled" onchange="onFormChange()"><label for="autoCompactEnabled"><code>autoCompactEnabled</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="verbose" onchange="onFormChange()"><label for="verbose"><code>verbose</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="autoScrollEnabled" onchange="onFormChange()"><label for="autoScrollEnabled"><code>autoScrollEnabled</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="showTurnDuration" onchange="onFormChange()"><label for="showTurnDuration"><code>showTurnDuration</code></label></div>
+        </div>
+        <div>
+          <div class="checkbox-row"><input type="checkbox" id="terminalProgressBarEnabled" onchange="onFormChange()"><label for="terminalProgressBarEnabled"><code>terminalProgressBarEnabled</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="fileCheckpointingEnabled" onchange="onFormChange()"><label for="fileCheckpointingEnabled"><code>fileCheckpointingEnabled</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="useAutoModeDuringPlan" onchange="onFormChange()"><label for="useAutoModeDuringPlan"><code>useAutoModeDuringPlan</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="switchModelsOnFlag" onchange="onFormChange()"><label for="switchModelsOnFlag"><code>switchModelsOnFlag</code></label></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plugins -->
+    <div class="tab-panel" id="tab-plugins">
+      <div class="section-title">Enabled Plugins</div>
+      <div class="section-desc">Toggle Claude Code plugins. Format: <code>plugin-name@marketplace</code></div>
+      <div id="plugin-list"></div>
+      <div class="add-plugin-row">
+        <input type="text" id="new-plugin-key" placeholder="plugin-name@marketplace" onkeydown="if(event.key==='Enter')addPlugin()">
+        <button class="btn primary" onclick="addPlugin()">+ Add Plugin</button>
+      </div>
+      <div class="section-title" style="margin-top:20px;">Extra Marketplaces</div>
+      <div class="section-desc">Custom plugin marketplaces. Edit in <strong>Advanced JSON</strong> tab for full control over <code>extraKnownMarketplaces</code>.</div>
+      <div id="marketplace-list"></div>
+    </div>
+
+    <!-- Hooks -->
+    <div class="tab-panel" id="tab-hooks">
+      <div class="section-title">Hooks</div>
+      <div class="section-desc">Shell commands that run on Claude Code lifecycle events (UserPromptSubmit, PreToolUse, PostToolUse, Stop, etc.)</div>
+      <div id="hooks-container"></div>
+      <div class="add-hook-row">
+        <input type="text" id="new-hook-event" placeholder="Event name (e.g. UserPromptSubmit)" onkeydown="if(event.key==='Enter')addHookEvent()">
+        <button class="btn primary" onclick="addHookEvent()">+ Add Event</button>
+      </div>
+    </div>
+
+    <!-- Status Line -->
+    <div class="tab-panel" id="tab-statusline">
+      <div class="section-title">Status Line</div>
+      <div class="section-desc">Custom shell command that generates the Claude Code status bar. Receives JSON on stdin.</div>
+      <div class="field-group">
+        <label class="field-label"><code>statusLine.type</code></label>
+        <select id="statusLine_type" onchange="onFormChange()">
+          <option value="command">command</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label"><code>statusLine.command</code></label>
+        <textarea id="statusLine_command" rows="3" style="resize:vertical;" oninput="onFormChange()"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label"><code>statusLine.padding</code></label>
+        <input type="number" id="statusLine_padding" placeholder="2" oninput="onFormChange()">
+      </div>
+      <div id="statusline-preview">Preview: (configure command above)</div>
+    </div>
+
+    <!-- Advanced JSON -->
+    <div class="tab-panel" id="tab-advanced">
+      <div class="json-toolbar">
+        <span>Raw JSON — edits sync to form automatically</span>
+        <button class="btn" onclick="formatJson()">Format</button>
+        <button class="btn" onclick="copyJson()">Copy</button>
+        <button class="btn danger" onclick="resetJson()">Reset to Sample</button>
+      </div>
+      <textarea id="json-editor" spellcheck="false" oninput="onJsonChange()"></textarea>
+      <div id="json-error"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let state = {};
+let _jsonDebounce = null;
+let _formDebounce = null;
+let _activeTab = 'api';
+let _isDragging = false;
+let _dragIdx = -1;
+
+// ── Tab switching ──────────────────────────────────────────────────────────────
+function switchTab(name) {
+  _activeTab = name;
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (name === 'advanced') syncJsonEditor();
+}
+
+// ── Load / Download ────────────────────────────────────────────────────────────
+function loadFile() { document.getElementById('file-input').click(); }
+
+function onFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      state = JSON.parse(e.target.result);
+      renderForm();
+      syncJsonEditor();
+      setStatus('Loaded: ' + file.name, 'ok');
+    } catch(err) {
+      setStatus('Invalid JSON: ' + err.message, 'err');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+async function loadSample() {
+  try {
+    const res = await fetch('./sample.json');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    state = await res.json();
+    renderForm();
+    syncJsonEditor();
+    setStatus('Sample loaded', 'ok');
+  } catch(err) {
+    setStatus('Could not load sample: ' + err.message, 'err');
+  }
+}
+
+function downloadFile() {
+  formToState();
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'settings.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  setStatus('Downloaded', 'ok');
+}
+
+// ── Status ─────────────────────────────────────────────────────────────────────
+function setStatus(msg, type) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = type || '';
+  setTimeout(() => { el.textContent = 'Ready'; el.className = ''; }, 3000);
+}
+
+// ── Toggle API key visibility ──────────────────────────────────────────────────
+function toggleApiKeyVisibility() {
+  const input = document.getElementById('env_ANTHROPIC_API_KEY');
+  const btn = event.currentTarget;
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = 'Hide'; }
+  else { input.type = 'password'; btn.textContent = 'Show'; }
+}
+
+// ── Form → State ───────────────────────────────────────────────────────────────
+function formToState() {
+  if (!state.env) state.env = {};
+  if (!state.permissions) state.permissions = {};
+  if (!state.worktree) state.worktree = {};
+  if (!state.statusLine) state.statusLine = {};
+
+  // API & Models
+  setStateEnv('ANTHROPIC_BASE_URL');
+  setStateEnv('ANTHROPIC_API_KEY');
+  setStateEnv('ANTHROPIC_DEFAULT_FABLE_MODEL');
+  setStateEnv('ANTHROPIC_DEFAULT_OPUS_MODEL');
+  setStateEnv('ANTHROPIC_DEFAULT_SONNET_MODEL');
+  setStateEnv('ANTHROPIC_DEFAULT_HAIKU_MODEL');
+  setStateEnv('ANTHROPIC_CUSTOM_MODEL_OPTION');
+  setStateEnv('ANTHROPIC_CUSTOM_MODEL_OPTION_NAME');
+  setStateEnv('ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION');
+  setStateEnv('CLAUDE_CODE_SUBAGENT_MODEL');
+  state.model = val('model') || undefined;
+
+  // Permissions
+  state.permissions.defaultMode = val('permissions_defaultMode') || undefined;
+  state.permissions.skipDangerousModePermissionPrompt = boolVal('permissions_skipDangerousModePermissionPrompt');
+  state.skipDangerousModePermissionPrompt = boolVal('skipDangerousModePermissionPrompt');
+  state.skipAutoPermissionPrompt = boolVal('skipAutoPermissionPrompt');
+  state.skipWorkflowUsageWarning = boolVal('skipWorkflowUsageWarning');
+
+  // UI
+  state.theme = val('theme') || undefined;
+  state.tui = val('tui') || undefined;
+  state.editorMode = val('editorMode') || undefined;
+  state.effortLevel = val('effortLevel') || undefined;
+  state.language = val('language') || undefined;
+  state.preferredNotifChannel = val('preferredNotifChannel') || undefined;
+  const acw = numVal('autoCompactWindow');
+  state.autoCompactWindow = acw !== null ? acw : undefined;
+  state.askUserQuestionTimeout = val('askUserQuestionTimeout') || undefined;
+  state.worktree.baseRef = val('worktree_baseRef') || undefined;
+  state.autoCompactEnabled = boolVal('autoCompactEnabled');
+  state.verbose = boolVal('verbose');
+  state.autoScrollEnabled = boolVal('autoScrollEnabled');
+  state.showTurnDuration = boolVal('showTurnDuration');
+  state.terminalProgressBarEnabled = boolVal('terminalProgressBarEnabled');
+  state.fileCheckpointingEnabled = boolVal('fileCheckpointingEnabled');
+  state.useAutoModeDuringPlan = boolVal('useAutoModeDuringPlan');
+  state.switchModelsOnFlag = boolVal('switchModelsOnFlag');
+
+  // Status line
+  state.statusLine.type = val('statusLine_type') || undefined;
+  state.statusLine.command = val('statusLine_command') || undefined;
+  const slp = numVal('statusLine_padding');
+  state.statusLine.padding = slp !== null ? slp : undefined;
+
+  // Fallback models (already managed via renderFallbackList)
+  // Plugins (already managed via renderPluginList)
+  // Hooks (already managed via renderHooks)
+
+  cleanEmpty(state.env);
+  cleanEmpty(state.permissions);
+  cleanEmpty(state.worktree);
+  cleanEmpty(state.statusLine);
+}
+
+function setStateEnv(key) {
+  const v = val('env_' + key);
+  if (v) state.env[key] = v;
+  else delete state.env[key];
+}
+
+function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function boolVal(id) { const el = document.getElementById(id); return el ? el.checked : false; }
+function numVal(id) { const el = document.getElementById(id); if (!el || el.value === '') return null; const n = Number(el.value); return isNaN(n) ? null : n; }
+
+function cleanEmpty(obj) {
+  Object.keys(obj).forEach(k => {
+    if (obj[k] === undefined || obj[k] === '' || obj[k] === null) delete obj[k];
+  });
+}
+
+// ── State → Form ───────────────────────────────────────────────────────────────
+function renderForm() {
+  const env = state.env || {};
+  const perm = state.permissions || {};
+  const wt = state.worktree || {};
+  const sl = state.statusLine || {};
+
+  setField('env_ANTHROPIC_BASE_URL', env.ANTHROPIC_BASE_URL);
+  setField('env_ANTHROPIC_API_KEY', env.ANTHROPIC_API_KEY);
+  setField('env_ANTHROPIC_DEFAULT_FABLE_MODEL', env.ANTHROPIC_DEFAULT_FABLE_MODEL);
+  setField('env_ANTHROPIC_DEFAULT_OPUS_MODEL', env.ANTHROPIC_DEFAULT_OPUS_MODEL);
+  setField('env_ANTHROPIC_DEFAULT_SONNET_MODEL', env.ANTHROPIC_DEFAULT_SONNET_MODEL);
+  setField('env_ANTHROPIC_DEFAULT_HAIKU_MODEL', env.ANTHROPIC_DEFAULT_HAIKU_MODEL);
+  setField('env_ANTHROPIC_CUSTOM_MODEL_OPTION', env.ANTHROPIC_CUSTOM_MODEL_OPTION);
+  setField('env_ANTHROPIC_CUSTOM_MODEL_OPTION_NAME', env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME);
+  setField('env_ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION', env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION);
+  setField('env_CLAUDE_CODE_SUBAGENT_MODEL', env.CLAUDE_CODE_SUBAGENT_MODEL);
+  setField('model', state.model);
+
+  setField('permissions_defaultMode', perm.defaultMode || 'default');
+  setCheck('permissions_skipDangerousModePermissionPrompt', perm.skipDangerousModePermissionPrompt);
+  setCheck('skipDangerousModePermissionPrompt', state.skipDangerousModePermissionPrompt);
+  setCheck('skipAutoPermissionPrompt', state.skipAutoPermissionPrompt);
+  setCheck('skipWorkflowUsageWarning', state.skipWorkflowUsageWarning);
+
+  setField('theme', state.theme || 'dark');
+  setField('tui', state.tui || 'default');
+  setField('editorMode', state.editorMode || 'normal');
+  setField('effortLevel', state.effortLevel || 'medium');
+  setField('language', state.language);
+  setField('preferredNotifChannel', state.preferredNotifChannel || 'terminal_bell');
+  setField('autoCompactWindow', state.autoCompactWindow != null ? state.autoCompactWindow : '');
+  setField('askUserQuestionTimeout', state.askUserQuestionTimeout);
+  setField('worktree_baseRef', wt.baseRef || 'fresh');
+
+  setCheck('autoCompactEnabled', state.autoCompactEnabled);
+  setCheck('verbose', state.verbose);
+  setCheck('autoScrollEnabled', state.autoScrollEnabled);
+  setCheck('showTurnDuration', state.showTurnDuration);
+  setCheck('terminalProgressBarEnabled', state.terminalProgressBarEnabled);
+  setCheck('fileCheckpointingEnabled', state.fileCheckpointingEnabled);
+  setCheck('useAutoModeDuringPlan', state.useAutoModeDuringPlan);
+  setCheck('switchModelsOnFlag', state.switchModelsOnFlag);
+
+  setField('statusLine_type', sl.type || 'command');
+  setField('statusLine_command', sl.command);
+  setField('statusLine_padding', sl.padding != null ? sl.padding : '');
+
+  renderFallbackList();
+  renderPluginList();
+  renderHooks();
+  renderMarketplaces();
+}
+
+function setField(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.value = value != null ? value : '';
+}
+
+function setCheck(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.checked = !!value;
+}
+
+// ── Fallback Models List ───────────────────────────────────────────────────────
+function renderFallbackList() {
+  const list = state.fallbackModel || [];
+  const container = document.getElementById('fallback-list');
+  container.innerHTML = '';
+  list.forEach((m, i) => {
+    const div = document.createElement('div');
+    div.className = 'model-item';
+    div.draggable = true;
+    div.dataset.idx = i;
+    div.innerHTML = `
+      <span class="drag-handle" title="Drag to reorder">⣿</span>
+      <span class="idx">${i + 1}</span>
+      <input type="text" value="${escHtml(m)}" oninput="updateFallbackModel(${i}, this.value)">
+      <div class="move-btns">
+        <button onclick="moveFallbackModel(${i}, -1)" title="Move up">▲</button>
+        <button onclick="moveFallbackModel(${i}, 1)" title="Move down">▼</button>
+      </div>
+      <button class="del-btn" onclick="removeFallbackModel(${i})" title="Remove">×</button>`;
+    div.addEventListener('dragstart', onDragStart);
+    div.addEventListener('dragover', onDragOver);
+    div.addEventListener('drop', onDrop);
+    div.addEventListener('dragend', onDragEnd);
+    container.appendChild(div);
+  });
+}
+
+function addFallbackModel() {
+  const input = document.getElementById('new-model-input');
+  const v = input.value.trim();
+  if (!v) return;
+  if (!state.fallbackModel) state.fallbackModel = [];
+  state.fallbackModel.push(v);
+  input.value = '';
+  renderFallbackList();
+  syncJsonEditor();
+}
+
+function removeFallbackModel(i) {
+  state.fallbackModel.splice(i, 1);
+  renderFallbackList();
+  syncJsonEditor();
+}
+
+function updateFallbackModel(i, v) {
+  state.fallbackModel[i] = v;
+  clearTimeout(_formDebounce);
+  _formDebounce = setTimeout(syncJsonEditor, 400);
+}
+
+function moveFallbackModel(i, dir) {
+  const list = state.fallbackModel;
+  const j = i + dir;
+  if (j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  renderFallbackList();
+  syncJsonEditor();
+}
+
+// Drag-and-drop for fallback list
+function onDragStart(e) { _dragIdx = +e.currentTarget.dataset.idx; e.dataTransfer.effectAllowed = 'move'; }
+function onDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function onDrop(e) {
+  e.preventDefault();
+  const targetIdx = +e.currentTarget.dataset.idx;
+  if (_dragIdx === targetIdx) return;
+  const list = state.fallbackModel;
+  const item = list.splice(_dragIdx, 1)[0];
+  list.splice(targetIdx, 0, item);
+  _dragIdx = -1;
+  renderFallbackList();
+  syncJsonEditor();
+}
+function onDragEnd() { _dragIdx = -1; }
+
+// ── Plugins ────────────────────────────────────────────────────────────────────
+function renderPluginList() {
+  const plugins = state.enabledPlugins || {};
+  const container = document.getElementById('plugin-list');
+  container.innerHTML = '';
+  Object.entries(plugins).forEach(([key, enabled]) => {
+    const div = document.createElement('div');
+    div.className = 'plugin-item';
+    div.innerHTML = `
+      <input type="checkbox" ${enabled ? 'checked' : ''} onchange="togglePlugin('${escHtml(key)}', this.checked)">
+      <span class="plugin-name"><code>${escHtml(key)}</code></span>
+      <button class="del-btn" onclick="removePlugin('${escHtml(key)}')">×</button>`;
+    container.appendChild(div);
+  });
+}
+
+function togglePlugin(key, enabled) {
+  state.enabledPlugins[key] = enabled;
+  syncJsonEditor();
+}
+
+function addPlugin() {
+  const input = document.getElementById('new-plugin-key');
+  const k = input.value.trim();
+  if (!k) return;
+  if (!state.enabledPlugins) state.enabledPlugins = {};
+  state.enabledPlugins[k] = true;
+  input.value = '';
+  renderPluginList();
+  syncJsonEditor();
+}
+
+function removePlugin(key) {
+  delete state.enabledPlugins[key];
+  renderPluginList();
+  syncJsonEditor();
+}
+
+function renderMarketplaces() {
+  const mkt = state.extraKnownMarketplaces || {};
+  const container = document.getElementById('marketplace-list');
+  if (!Object.keys(mkt).length) {
+    container.innerHTML = '<div style="color:var(--text2);font-size:11px;">No extra marketplaces. Edit in Advanced JSON tab.</div>';
+    return;
+  }
+  container.innerHTML = Object.entries(mkt).map(([k, v]) =>
+    `<div class="plugin-item"><span class="plugin-name"><code>${escHtml(k)}</code></span><span style="color:var(--text2);font-size:11px;flex:1;text-align:right;">${escHtml(JSON.stringify(v.source?.source || v))}</span></div>`
+  ).join('');
+}
+
+// ── Hooks ──────────────────────────────────────────────────────────────────────
+function renderHooks() {
+  const hooks = state.hooks || {};
+  const container = document.getElementById('hooks-container');
+  container.innerHTML = '';
+  Object.entries(hooks).forEach(([event, arr]) => {
+    const cmds = (arr[0]?.hooks || []);
+    const div = document.createElement('div');
+    div.className = 'hook-event';
+    div.innerHTML = `
+      <div class="hook-event-name">${escHtml(event)} <button class="del-btn" style="float:right" onclick="removeHookEvent('${escHtml(event)}')">×</button></div>
+      <div id="hook-cmds-${escHtml(event)}">
+        ${cmds.map((cmd, i) => hookCmdHtml(event, i, cmd)).join('')}
+      </div>
+      <button class="hook-add-cmd" onclick="addHookCmd('${escHtml(event)}')">+ Add command</button>`;
+    container.appendChild(div);
+  });
+}
+
+function hookCmdHtml(event, i, cmd) {
+  return `<div class="hook-cmd-row">
+    <input type="text" value="${escHtml(cmd.command || '')}" placeholder="Shell command" oninput="updateHookCmd('${escHtml(event)}', ${i}, 'command', this.value)">
+    <input type="number" class="timeout-input" value="${cmd.timeout || ''}" placeholder="timeout" title="Timeout (seconds)" oninput="updateHookCmd('${escHtml(event)}', ${i}, 'timeout', +this.value)">
+    <button class="del-btn" onclick="removeHookCmd('${escHtml(event)}', ${i})">×</button>
+  </div>`;
+}
+
+function addHookEvent() {
+  const input = document.getElementById('new-hook-event');
+  const ev = input.value.trim();
+  if (!ev) return;
+  if (!state.hooks) state.hooks = {};
+  if (!state.hooks[ev]) state.hooks[ev] = [{ hooks: [] }];
+  input.value = '';
+  renderHooks();
+  syncJsonEditor();
+}
+
+function removeHookEvent(ev) {
+  delete state.hooks[ev];
+  renderHooks();
+  syncJsonEditor();
+}
+
+function addHookCmd(ev) {
+  if (!state.hooks[ev][0].hooks) state.hooks[ev][0].hooks = [];
+  state.hooks[ev][0].hooks.push({ type: 'command', command: '', timeout: 30 });
+  renderHooks();
+  syncJsonEditor();
+}
+
+function removeHookCmd(ev, i) {
+  state.hooks[ev][0].hooks.splice(i, 1);
+  renderHooks();
+  syncJsonEditor();
+}
+
+function updateHookCmd(ev, i, field, value) {
+  state.hooks[ev][0].hooks[i][field] = value;
+  clearTimeout(_formDebounce);
+  _formDebounce = setTimeout(syncJsonEditor, 400);
+}
+
+// ── JSON editor ────────────────────────────────────────────────────────────────
+function syncJsonEditor() {
+  if (_activeTab !== 'advanced') return;
+  const el = document.getElementById('json-editor');
+  const pos = el.selectionStart;
+  el.value = JSON.stringify(state, null, 2);
+  el.selectionStart = el.selectionEnd = pos;
+  document.getElementById('json-error').textContent = '';
+}
+
+function onJsonChange() {
+  clearTimeout(_jsonDebounce);
+  _jsonDebounce = setTimeout(() => {
+    const src = document.getElementById('json-editor').value;
+    const errEl = document.getElementById('json-error');
+    try {
+      state = JSON.parse(src);
+      renderForm();
+      errEl.textContent = '';
+    } catch(e) {
+      errEl.textContent = 'JSON error: ' + e.message;
+    }
+  }, 600);
+}
+
+function formatJson() {
+  formToState();
+  const el = document.getElementById('json-editor');
+  try {
+    el.value = JSON.stringify(JSON.parse(el.value), null, 2);
+    document.getElementById('json-error').textContent = '';
+  } catch(e) {
+    document.getElementById('json-error').textContent = 'JSON error: ' + e.message;
+  }
+}
+
+function copyJson() {
+  formToState();
+  navigator.clipboard.writeText(JSON.stringify(state, null, 2))
+    .then(() => setStatus('Copied!', 'ok'))
+    .catch(() => setStatus('Copy failed', 'err'));
+}
+
+async function resetJson() {
+  if (!confirm('Reset to sample settings? Unsaved changes will be lost.')) return;
+  await loadSample();
+}
+
+// ── Form change handler ────────────────────────────────────────────────────────
+function onFormChange() {
+  clearTimeout(_formDebounce);
+  _formDebounce = setTimeout(() => {
+    formToState();
+    if (_activeTab === 'advanced') syncJsonEditor();
+  }, 200);
+}
+
+// ── Utils ──────────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+loadSample().catch(() => {
+  state = {};
+  setStatus('No sample loaded. Use "Load JSON" or "Load Sample".', '');
+});
+</script>
+</body>
+</html>
