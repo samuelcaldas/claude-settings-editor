@@ -1,0 +1,26 @@
+{
+  "name": "Claude Settings Editor",
+  "short_name": "Claude Config",
+  "description": "Visual editor for Claude Code settings.json — edit, download, done.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#cc785c",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["developer", "productivity", "utilities"]
+}

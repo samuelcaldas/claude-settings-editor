@@ -2,8 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Claude Settings Editor</title>
+<meta name="description" content="Visual editor for Claude Code settings.json">
+<meta name="theme-color" content="#cc785c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Claude Config">
+<link rel="apple-touch-icon" href="icons/icon.svg">
+<link rel="manifest" href="manifest.json">
 <style>
   :root {
     --bg: #1a1a1a;
@@ -19,36 +27,95 @@
     --blue: #5c9dcc;
     --radius: 6px;
     --font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --nav-h: 56px;
+    --safe-b: env(safe-area-inset-bottom, 0px);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    height: 100dvh;
+    height: 100vh; /* fallback */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
   /* Header */
-  header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
   header h1 { font-size: 14px; font-weight: 600; color: var(--accent); letter-spacing: 0.5px; flex: 1; }
   header h1 span { color: var(--text2); font-weight: 400; }
-  .btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 5px 12px; border-radius: var(--radius); cursor: pointer; font-family: var(--font); font-size: 12px; transition: all 0.15s; white-space: nowrap; }
+  .btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 12px;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    white-space: nowrap;
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+  }
   .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   .btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
   .btn.danger { border-color: var(--red); color: var(--red); }
   .btn.danger:hover { background: var(--red); color: #fff; }
-  #status { font-size: 11px; color: var(--text2); min-width: 120px; text-align: right; }
+  #status { font-size: 11px; color: var(--text2); min-width: 80px; text-align: right; }
   #status.ok { color: var(--green); }
   #status.err { color: var(--red); }
 
   /* Layout */
   .layout { display: flex; flex: 1; overflow: hidden; }
 
-  /* Sidebar */
-  nav { width: 160px; background: var(--bg2); border-right: 1px solid var(--border); padding: 8px 0; flex-shrink: 0; overflow-y: auto; }
-  nav button { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text2); padding: 8px 16px; cursor: pointer; font-family: var(--font); font-size: 12px; transition: all 0.15s; border-left: 2px solid transparent; }
+  /* Sidebar — desktop */
+  nav {
+    width: 160px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    padding: 8px 0;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+  nav button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text2);
+    padding: 8px 16px;
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 12px;
+    transition: color 0.15s, background 0.15s;
+    border-left: 2px solid transparent;
+    min-height: 36px;
+  }
   nav button:hover { color: var(--text); background: var(--bg3); }
+  nav button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   nav button.active { color: var(--accent); background: var(--bg3); border-left-color: var(--accent); }
   nav .nav-section { padding: 12px 16px 4px; font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
 
   /* Content */
-  main { flex: 1; overflow-y: auto; padding: 20px; }
+  main { flex: 1; overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
@@ -58,48 +125,76 @@
   .field-group { margin-bottom: 16px; }
   .field-label { display: block; font-size: 11px; color: var(--text2); margin-bottom: 4px; letter-spacing: 0.3px; }
   .field-label code { color: var(--blue); font-family: var(--font); }
-  input[type=text], input[type=password], input[type=number], select, textarea { width: 100%; background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: var(--radius); font-family: var(--font); font-size: 12px; outline: none; transition: border-color 0.15s; }
+  input[type=text], input[type=password], input[type=number], select, textarea {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    font-family: var(--font);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
   input[type=text]:focus, input[type=password]:focus, input[type=number]:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23a0a0a0'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
   select option { background: var(--bg3); }
   .input-wrap { display: flex; gap: 6px; }
   .input-wrap input { flex: 1; }
-  .checkbox-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
-  .checkbox-row input[type=checkbox] { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
-  .checkbox-row label { color: var(--text); cursor: pointer; flex: 1; }
+  .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; min-height: 44px; }
+  .checkbox-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+  .checkbox-row label { color: var(--text); cursor: pointer; flex: 1; line-height: 1.4; }
   .checkbox-row .field-desc { color: var(--text2); font-size: 11px; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
   /* Fallback models list */
   #fallback-list { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; max-height: 480px; overflow-y: auto; }
-  .model-item { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--border); background: var(--bg3); }
+  .model-item { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--bg3); min-height: 44px; }
   .model-item:last-child { border-bottom: none; }
   .model-item:hover { background: var(--bg); }
   .model-item .drag-handle { cursor: grab; color: var(--text2); font-size: 14px; width: 16px; text-align: center; flex-shrink: 0; }
-  .model-item input { flex: 1; background: transparent; border: none; border-bottom: 1px solid transparent; color: var(--text); padding: 2px 4px; font-family: var(--font); font-size: 12px; outline: none; }
+  .model-item input { flex: 1; background: transparent; border: none; border-bottom: 1px solid transparent; color: var(--text); padding: 2px 4px; font-family: var(--font); font-size: 13px; outline: none; }
   .model-item input:focus { border-bottom-color: var(--accent); }
   .model-item .move-btns { display: flex; flex-direction: column; gap: 2px; }
-  .model-item .move-btns button { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 10px; padding: 1px 3px; line-height: 1; }
+  .model-item .move-btns button { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 10px; padding: 3px 4px; line-height: 1; min-height: 20px; }
   .model-item .move-btns button:hover { color: var(--accent); }
-  .model-item .del-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; padding: 2px 4px; }
+  .model-item .del-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 18px; padding: 4px 6px; min-width: 32px; text-align: center; }
   .model-item .del-btn:hover { color: var(--red); }
   .model-item .idx { color: var(--text2); font-size: 10px; width: 20px; text-align: right; flex-shrink: 0; }
 
   /* Plugins */
   #plugin-list { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; }
-  .plugin-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .plugin-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); min-height: 44px; }
   .plugin-item:last-child { border-bottom: none; }
-  .plugin-item input[type=checkbox] { accent-color: var(--green); width: 14px; height: 14px; }
+  .plugin-item input[type=checkbox] { accent-color: var(--green); width: 18px; height: 18px; flex-shrink: 0; }
   .plugin-item .plugin-name { flex: 1; }
-  .plugin-item .del-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; }
+  .plugin-item .del-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 18px; padding: 4px 6px; min-width: 32px; text-align: center; }
   .plugin-item .del-btn:hover { color: var(--red); }
   .add-plugin-row { display: flex; gap: 6px; margin-bottom: 12px; }
   .add-plugin-row input { flex: 1; }
 
   /* Advanced JSON */
-  #json-editor { width: 100%; height: calc(100vh - 180px); background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: var(--radius); font-family: var(--font); font-size: 12px; line-height: 1.6; outline: none; resize: none; }
+  #json-editor {
+    width: 100%;
+    height: calc(100dvh - 180px);
+    height: calc(100vh - 180px); /* fallback */
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px;
+    border-radius: var(--radius);
+    font-family: var(--font);
+    font-size: 12px;
+    line-height: 1.6;
+    outline: none;
+    resize: none;
+  }
   #json-editor:focus { border-color: var(--accent); }
-  .json-toolbar { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
-  .json-toolbar span { flex: 1; font-size: 11px; color: var(--text2); }
+  .json-toolbar { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+  .json-toolbar span { flex: 1; font-size: 11px; color: var(--text2); min-width: 120px; }
   #json-error { color: var(--red); font-size: 11px; margin-top: 6px; min-height: 16px; }
 
   /* Hooks */
@@ -110,9 +205,9 @@
   .hook-cmd-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
   .hook-cmd-row input { flex: 1; }
   .hook-cmd-row .timeout-input { width: 70px; }
-  .hook-cmd-row .del-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; }
+  .hook-cmd-row .del-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 18px; padding: 4px 6px; min-width: 32px; text-align: center; }
   .hook-cmd-row .del-btn:hover { color: var(--red); }
-  .hook-add-cmd { font-size: 11px; color: var(--blue); cursor: pointer; background: none; border: none; padding: 2px 0; }
+  .hook-add-cmd { font-size: 11px; color: var(--blue); cursor: pointer; background: none; border: none; padding: 4px 0; min-height: 32px; }
   .hook-add-cmd:hover { color: var(--accent); }
   .add-hook-row { display: flex; gap: 6px; margin-bottom: 12px; }
 
@@ -127,15 +222,108 @@
 
   /* Hidden file input */
   #file-input { display: none; }
+
+  /* Nav label switching */
+  .nav-label-short { display: none; }
+  @media (max-width: 639px) {
+    .nav-label-full { display: none; }
+    .nav-label-short { display: inline; }
+  }
+
+  /* ── Mobile ──────────────────────────────────────────────────── */
+  @media (max-width: 639px) {
+    body { height: 100dvh; height: 100vh; overflow: hidden; }
+
+    /* Compact header */
+    header { padding: 8px 12px; gap: 8px; }
+    header h1 { font-size: 13px; }
+    header h1 span { display: none; }
+    .header-full { display: none; }
+    .header-icon { display: inline-flex !important; }
+    #status { min-width: 0; font-size: 10px; }
+
+    /* Layout flips: nav goes to bottom */
+    .layout { flex-direction: column; }
+
+    /* Main scrolls freely above the nav */
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 14px calc(var(--nav-h) + var(--safe-b) + 8px);
+    }
+
+    /* JSON editor height on mobile */
+    #json-editor { height: 60vh; }
+
+    /* Bottom nav strip */
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: calc(var(--nav-h) + var(--safe-b));
+      border-right: none;
+      border-top: 1px solid var(--border);
+      padding: 0 0 var(--safe-b);
+      display: flex;
+      flex-direction: row;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      z-index: 100;
+    }
+    nav::-webkit-scrollbar { display: none; }
+    nav .nav-section { display: none; }
+    nav button {
+      flex: 0 0 auto;
+      min-width: 64px;
+      height: var(--nav-h);
+      border-left: none;
+      border-top: 2px solid transparent;
+      padding: 6px 10px 4px;
+      font-size: 10px;
+      white-space: nowrap;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      scroll-snap-align: start;
+      transition: border-top-color 0.2s, color 0.15s, background 0.15s;
+    }
+    nav button.active {
+      border-left-color: transparent;
+      border-top-color: var(--accent);
+    }
+
+    /* Single column grid */
+    .grid-2 { grid-template-columns: 1fr; }
+
+    /* 16px inputs prevent iOS zoom-on-focus */
+    input[type=text], input[type=password], input[type=number], select, textarea { font-size: 16px; }
+
+    /* Bigger touch targets for del buttons */
+    .model-item .del-btn, .plugin-item .del-btn, .hook-cmd-row .del-btn { font-size: 20px; padding: 6px 8px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, .btn, nav button { transition: none !important; }
+  }
 </style>
 </head>
 <body>
 
 <header>
   <h1>Claude <span>Settings Editor</span></h1>
-  <button class="btn" onclick="loadFile()">Load JSON</button>
-  <button class="btn" onclick="loadSample()">Load Sample</button>
-  <button class="btn primary" onclick="downloadFile()">Download settings.json</button>
+  <button class="btn header-full" onclick="loadFile()">Load JSON</button>
+  <button class="btn header-full" onclick="loadSample()">Load Sample</button>
+  <button class="btn primary header-full" onclick="downloadFile()">Download settings.json</button>
+  <!-- Mobile icon buttons -->
+  <button class="btn header-icon" style="display:none" onclick="loadFile()" title="Load JSON file" aria-label="Load JSON">↑ Load</button>
+  <button class="btn primary header-icon" style="display:none" onclick="downloadFile()" title="Download settings.json" aria-label="Download">↓ Save</button>
   <span id="status">Ready</span>
   <input type="file" id="file-input" accept=".json" onchange="onFileSelect(event)">
 </header>
@@ -143,16 +331,16 @@
 <div class="layout">
   <nav>
     <div class="nav-section">Config</div>
-    <button class="active" onclick="switchTab('api')">API & Models</button>
-    <button onclick="switchTab('fallback')">Fallback Models</button>
-    <button onclick="switchTab('permissions')">Permissions</button>
+    <button class="active" onclick="switchTab('api')"><span class="nav-label-full">API &amp; Models</span><span class="nav-label-short" aria-hidden="true">API</span></button>
+    <button onclick="switchTab('fallback')"><span class="nav-label-full">Fallback Models</span><span class="nav-label-short" aria-hidden="true">Fallback</span></button>
+    <button onclick="switchTab('permissions')"><span class="nav-label-full">Permissions</span><span class="nav-label-short" aria-hidden="true">Perms</span></button>
     <div class="nav-section">Interface</div>
-    <button onclick="switchTab('ui')">UI & Behavior</button>
-    <button onclick="switchTab('plugins')">Plugins</button>
-    <button onclick="switchTab('hooks')">Hooks</button>
-    <button onclick="switchTab('statusline')">Status Line</button>
+    <button onclick="switchTab('ui')"><span class="nav-label-full">UI &amp; Behavior</span><span class="nav-label-short" aria-hidden="true">UI</span></button>
+    <button onclick="switchTab('plugins')"><span class="nav-label-full">Plugins</span><span class="nav-label-short" aria-hidden="true">Plugins</span></button>
+    <button onclick="switchTab('hooks')"><span class="nav-label-full">Hooks</span><span class="nav-label-short" aria-hidden="true">Hooks</span></button>
+    <button onclick="switchTab('statusline')"><span class="nav-label-full">Status Line</span><span class="nav-label-short" aria-hidden="true">Status</span></button>
     <div class="nav-section">Raw</div>
-    <button onclick="switchTab('advanced')">Advanced JSON</button>
+    <button onclick="switchTab('advanced')"><span class="nav-label-full">Advanced JSON</span><span class="nav-label-short" aria-hidden="true">JSON</span></button>
   </nav>
 
   <main>
@@ -415,7 +603,9 @@ function switchTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  event.currentTarget.classList.add('active');
+  const btn = event.currentTarget;
+  btn.classList.add('active');
+  btn.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
   if (name === 'advanced') syncJsonEditor();
 }
 
@@ -930,6 +1120,10 @@ loadSample().catch(() => {
   state = {};
   setStatus('No sample loaded. Use "Load JSON" or "Load Sample".', '');
 });
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>
