@@ -1,12 +1,12 @@
 {
   "name": "Claude Settings Editor",
   "short_name": "Claude Config",
-  "description": "Visual editor for Claude Code settings.json — edit, download, done.",
+  "description": "Visual editor for Claude Code settings.json — safe, client-side, zero data loss.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#cc785c",
+  "background_color": "#141619",
+  "theme_color": "#d19a66",
   "orientation": "any",
   "icons": [
     {

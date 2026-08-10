@@ -4,478 +4,254 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Claude Settings Editor</title>
-<meta name="description" content="Visual editor for Claude Code settings.json">
-<meta name="theme-color" content="#cc785c">
+<meta name="description" content="Visual editor for Claude Code settings.json — safe, client-side, zero data loss">
+<meta name="theme-color" content="#d19a66">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Claude Config">
 <link rel="apple-touch-icon" href="icons/icon.svg">
 <link rel="manifest" href="manifest.json">
-<style>
-  :root {
-    --bg: #1a1a1a;
-    --bg2: #242424;
-    --bg3: #2e2e2e;
-    --border: #3a3a3a;
-    --text: #e0e0e0;
-    --text2: #a0a0a0;
-    --accent: #cc785c;
-    --accent2: #e8956b;
-    --green: #4caf78;
-    --red: #e05252;
-    --blue: #5c9dcc;
-    --radius: 6px;
-    --font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-    --nav-h: 56px;
-    --safe-b: env(safe-area-inset-bottom, 0px);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font);
-    font-size: 13px;
-    height: 100dvh;
-    height: 100vh; /* fallback */
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  /* Header */
-  header {
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
-    padding-left: max(16px, env(safe-area-inset-left));
-    padding-right: max(16px, env(safe-area-inset-right));
-  }
-  header h1 { font-size: 14px; font-weight: 600; color: var(--accent); letter-spacing: 0.5px; flex: 1; }
-  header h1 span { color: var(--text2); font-weight: 400; }
-  .btn {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 6px 12px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-family: var(--font);
-    font-size: 12px;
-    transition: border-color 0.15s, color 0.15s, background 0.15s;
-    white-space: nowrap;
-    min-height: 34px;
-    display: inline-flex;
-    align-items: center;
-  }
-  .btn:hover { border-color: var(--accent); color: var(--accent); }
-  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
-  .btn.danger { border-color: var(--red); color: var(--red); }
-  .btn.danger:hover { background: var(--red); color: #fff; }
-  #status { font-size: 11px; color: var(--text2); min-width: 80px; text-align: right; }
-  #status.ok { color: var(--green); }
-  #status.err { color: var(--red); }
-
-  /* Layout */
-  .layout { display: flex; flex: 1; overflow: hidden; }
-
-  /* Sidebar — desktop */
-  nav {
-    width: 160px;
-    background: var(--bg2);
-    border-right: 1px solid var(--border);
-    padding: 8px 0;
-    flex-shrink: 0;
-    overflow-y: auto;
-  }
-  nav button {
-    display: block;
-    width: 100%;
-    text-align: left;
-    background: none;
-    border: none;
-    color: var(--text2);
-    padding: 8px 16px;
-    cursor: pointer;
-    font-family: var(--font);
-    font-size: 12px;
-    transition: color 0.15s, background 0.15s;
-    border-left: 2px solid transparent;
-    min-height: 36px;
-  }
-  nav button:hover { color: var(--text); background: var(--bg3); }
-  nav button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-  nav button.active { color: var(--accent); background: var(--bg3); border-left-color: var(--accent); }
-  nav .nav-section { padding: 12px 16px 4px; font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
-
-  /* Content */
-  main { flex: 1; overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
-
-  /* Form */
-  .section-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-  .section-desc { color: var(--text2); font-size: 12px; margin-bottom: 20px; line-height: 1.6; }
-  .field-group { margin-bottom: 16px; }
-  .field-label { display: block; font-size: 11px; color: var(--text2); margin-bottom: 4px; letter-spacing: 0.3px; }
-  .field-label code { color: var(--blue); font-family: var(--font); }
-  input[type=text], input[type=password], input[type=number], select, textarea {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 8px 10px;
-    border-radius: var(--radius);
-    font-family: var(--font);
-    font-size: 13px;
-    outline: none;
-    transition: border-color 0.15s;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  input[type=text]:focus, input[type=password]:focus, input[type=number]:focus, select:focus, textarea:focus { border-color: var(--accent); }
-  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23a0a0a0'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
-  select option { background: var(--bg3); }
-  .input-wrap { display: flex; gap: 6px; }
-  .input-wrap input { flex: 1; }
-  .checkbox-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; min-height: 44px; }
-  .checkbox-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
-  .checkbox-row label { color: var(--text); cursor: pointer; flex: 1; line-height: 1.4; }
-  .checkbox-row .field-desc { color: var(--text2); font-size: 11px; }
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-  /* Fallback models list */
-  #fallback-list { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; max-height: 480px; overflow-y: auto; }
-  .model-item { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--bg3); min-height: 44px; }
-  .model-item:last-child { border-bottom: none; }
-  .model-item:hover { background: var(--bg); }
-  .model-item .drag-handle { cursor: grab; color: var(--text2); font-size: 14px; width: 16px; text-align: center; flex-shrink: 0; }
-  .model-item input { flex: 1; background: transparent; border: none; border-bottom: 1px solid transparent; color: var(--text); padding: 2px 4px; font-family: var(--font); font-size: 13px; outline: none; }
-  .model-item input:focus { border-bottom-color: var(--accent); }
-  .model-item .move-btns { display: flex; flex-direction: column; gap: 2px; }
-  .model-item .move-btns button { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 10px; padding: 3px 4px; line-height: 1; min-height: 20px; }
-  .model-item .move-btns button:hover { color: var(--accent); }
-  .model-item .del-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 18px; padding: 4px 6px; min-width: 32px; text-align: center; }
-  .model-item .del-btn:hover { color: var(--red); }
-  .model-item .idx { color: var(--text2); font-size: 10px; width: 20px; text-align: right; flex-shrink: 0; }
-
-  /* Plugins */
-  #plugin-list { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; }
-  .plugin-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); min-height: 44px; }
-  .plugin-item:last-child { border-bottom: none; }
-  .plugin-item input[type=checkbox] { accent-color: var(--green); width: 18px; height: 18px; flex-shrink: 0; }
-  .plugin-item .plugin-name { flex: 1; }
-  .plugin-item .del-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 18px; padding: 4px 6px; min-width: 32px; text-align: center; }
-  .plugin-item .del-btn:hover { color: var(--red); }
-  .add-plugin-row { display: flex; gap: 6px; margin-bottom: 12px; }
-  .add-plugin-row input { flex: 1; }
-
-  /* Advanced JSON */
-  #json-editor {
-    width: 100%;
-    height: calc(100dvh - 180px);
-    height: calc(100vh - 180px); /* fallback */
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 12px;
-    border-radius: var(--radius);
-    font-family: var(--font);
-    font-size: 12px;
-    line-height: 1.6;
-    outline: none;
-    resize: none;
-  }
-  #json-editor:focus { border-color: var(--accent); }
-  .json-toolbar { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
-  .json-toolbar span { flex: 1; font-size: 11px; color: var(--text2); min-width: 120px; }
-  #json-error { color: var(--red); font-size: 11px; margin-top: 6px; min-height: 16px; }
-
-  /* Hooks */
-  #hooks-container { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 12px; }
-  .hook-event { padding: 10px 12px; border-bottom: 1px solid var(--border); }
-  .hook-event:last-child { border-bottom: none; }
-  .hook-event-name { font-size: 12px; color: var(--blue); margin-bottom: 8px; font-weight: 600; }
-  .hook-cmd-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
-  .hook-cmd-row input { flex: 1; }
-  .hook-cmd-row .timeout-input { width: 70px; }
-  .hook-cmd-row .del-btn { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 18px; padding: 4px 6px; min-width: 32px; text-align: center; }
-  .hook-cmd-row .del-btn:hover { color: var(--red); }
-  .hook-add-cmd { font-size: 11px; color: var(--blue); cursor: pointer; background: none; border: none; padding: 4px 0; min-height: 32px; }
-  .hook-add-cmd:hover { color: var(--accent); }
-  .add-hook-row { display: flex; gap: 6px; margin-bottom: 12px; }
-
-  /* Status line preview */
-  #statusline-preview { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; font-size: 11px; color: var(--text2); margin-top: 8px; font-family: var(--font); }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--text2); }
-
-  /* Hidden file input */
-  #file-input { display: none; }
-
-  /* Nav label switching */
-  .nav-label-short { display: none; }
-  @media (max-width: 639px) {
-    .nav-label-full { display: none; }
-    .nav-label-short { display: inline; }
-  }
-
-  /* ── Mobile ──────────────────────────────────────────────────── */
-  @media (max-width: 639px) {
-    body { height: 100dvh; height: 100vh; overflow: hidden; }
-
-    /* Compact header */
-    header { padding: 8px 12px; gap: 8px; }
-    header h1 { font-size: 13px; }
-    header h1 span { display: none; }
-    .header-full { display: none; }
-    .header-icon { display: inline-flex !important; }
-    #status { min-width: 0; font-size: 10px; }
-
-    /* Layout flips: nav goes to bottom */
-    .layout { flex-direction: column; }
-
-    /* Main scrolls freely above the nav */
-    main {
-      flex: 1;
-      overflow-y: auto;
-      padding: 14px 14px calc(var(--nav-h) + var(--safe-b) + 8px);
-    }
-
-    /* JSON editor height on mobile */
-    #json-editor { height: 60vh; }
-
-    /* Bottom nav strip */
-    nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      width: 100%;
-      height: calc(var(--nav-h) + var(--safe-b));
-      border-right: none;
-      border-top: 1px solid var(--border);
-      padding: 0 0 var(--safe-b);
-      display: flex;
-      flex-direction: row;
-      overflow-x: auto;
-      overflow-y: hidden;
-      scroll-snap-type: x mandatory;
-      scrollbar-width: none;
-      z-index: 100;
-    }
-    nav::-webkit-scrollbar { display: none; }
-    nav .nav-section { display: none; }
-    nav button {
-      flex: 0 0 auto;
-      min-width: 64px;
-      height: var(--nav-h);
-      border-left: none;
-      border-top: 2px solid transparent;
-      padding: 6px 10px 4px;
-      font-size: 10px;
-      white-space: nowrap;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      scroll-snap-align: start;
-      transition: border-top-color 0.2s, color 0.15s, background 0.15s;
-    }
-    nav button.active {
-      border-left-color: transparent;
-      border-top-color: var(--accent);
-    }
-
-    /* Single column grid */
-    .grid-2 { grid-template-columns: 1fr; }
-
-    /* 16px inputs prevent iOS zoom-on-focus */
-    input[type=text], input[type=password], input[type=number], select, textarea { font-size: 16px; }
-
-    /* Bigger touch targets for del buttons */
-    .model-item .del-btn, .plugin-item .del-btn, .hook-cmd-row .del-btn { font-size: 20px; padding: 6px 8px; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    *, .btn, nav button { transition: none !important; }
-  }
-</style>
+<link rel="stylesheet" href="css/app.css">
+<script defer src="js/settings-model.js"></script>
+<script defer src="js/app.js"></script>
 </head>
 <body>
 
 <header>
-  <h1>Claude <span>Settings Editor</span></h1>
-  <button class="btn header-full" onclick="loadFile()">Load JSON</button>
-  <button class="btn header-full" onclick="loadSample()">Load Sample</button>
-  <button class="btn primary header-full" onclick="downloadFile()">Download settings.json</button>
-  <!-- Mobile icon buttons -->
-  <button class="btn header-icon" style="display:none" onclick="loadFile()" title="Load JSON file" aria-label="Load JSON">↑ Load</button>
-  <button class="btn primary header-icon" style="display:none" onclick="downloadFile()" title="Download settings.json" aria-label="Download">↓ Save</button>
-  <span id="status">Ready</span>
-  <input type="file" id="file-input" accept=".json" onchange="onFileSelect(event)">
+  <div class="brand">
+    <h1>Claude <span>Settings Editor</span></h1>
+    <span id="dirty-badge" class="dirty-badge">UNSAVED</span>
+  </div>
+  <div class="header-actions">
+    <button id="btn-undo" class="btn small" title="Undo change" disabled>Undo</button>
+    <button id="btn-redo" class="btn small" title="Redo change" disabled>Redo</button>
+    <button id="btn-load" class="btn btn-full">Load JSON</button>
+    <button id="btn-sample" class="btn btn-full">Load Sample</button>
+    <button id="btn-download" class="btn primary btn-full">Download settings.json</button>
+
+    <button id="btn-load-mobile" class="btn small" style="display:none">Load</button>
+    <button id="btn-download-mobile" class="btn primary small" style="display:none">Save</button>
+    <span id="status">Ready</span>
+    <input type="file" id="file-input" accept=".json">
+  </div>
 </header>
 
 <div class="layout">
-  <nav>
-    <div class="nav-section">Config</div>
-    <button class="active" onclick="switchTab('api')"><span class="nav-label-full">API &amp; Models</span><span class="nav-label-short" aria-hidden="true">API</span></button>
-    <button onclick="switchTab('fallback')"><span class="nav-label-full">Fallback Models</span><span class="nav-label-short" aria-hidden="true">Fallback</span></button>
-    <button onclick="switchTab('permissions')"><span class="nav-label-full">Permissions</span><span class="nav-label-short" aria-hidden="true">Perms</span></button>
-    <div class="nav-section">Interface</div>
-    <button onclick="switchTab('ui')"><span class="nav-label-full">UI &amp; Behavior</span><span class="nav-label-short" aria-hidden="true">UI</span></button>
-    <button onclick="switchTab('plugins')"><span class="nav-label-full">Plugins</span><span class="nav-label-short" aria-hidden="true">Plugins</span></button>
-    <button onclick="switchTab('hooks')"><span class="nav-label-full">Hooks</span><span class="nav-label-short" aria-hidden="true">Hooks</span></button>
-    <button onclick="switchTab('statusline')"><span class="nav-label-full">Status Line</span><span class="nav-label-short" aria-hidden="true">Status</span></button>
-    <div class="nav-section">Raw</div>
-    <button onclick="switchTab('advanced')"><span class="nav-label-full">Advanced JSON</span><span class="nav-label-short" aria-hidden="true">JSON</span></button>
+  <nav aria-label="Settings categories">
+    <div role="tablist" aria-orientation="vertical">
+      <div class="nav-section">Config</div>
+      <button role="tab" id="tab-btn-api" data-tab="api" aria-selected="true" aria-controls="tab-api" class="active">API &amp; Models</button>
+      <button role="tab" id="tab-btn-fallback" data-tab="fallback" aria-selected="false" aria-controls="tab-fallback">Fallback Models</button>
+      <button role="tab" id="tab-btn-permissions" data-tab="permissions" aria-selected="false" aria-controls="tab-permissions">Permissions</button>
+
+      <div class="nav-section">Interface</div>
+      <button role="tab" id="tab-btn-ui" data-tab="ui" aria-selected="false" aria-controls="tab-ui">UI &amp; Behavior</button>
+      <button role="tab" id="tab-btn-plugins" data-tab="plugins" aria-selected="false" aria-controls="tab-plugins">Plugins</button>
+      <button role="tab" id="tab-btn-hooks" data-tab="hooks" aria-selected="false" aria-controls="tab-hooks">Hooks</button>
+      <button role="tab" id="tab-btn-statusline" data-tab="statusline" aria-selected="false" aria-controls="tab-statusline">Status Line</button>
+
+      <div class="nav-section">Raw</div>
+      <button role="tab" id="tab-btn-advanced" data-tab="advanced" aria-selected="false" aria-controls="tab-advanced">Advanced JSON</button>
+    </div>
   </nav>
 
   <main>
+    <div id="diagnostic-banner" class="diagnostic-banner" role="alert"></div>
+
     <!-- API & Models -->
-    <div class="tab-panel active" id="tab-api">
-      <div class="section-title">API & Models</div>
-      <div class="section-desc">Configure API endpoint, authentication, and model overrides for each Claude tier.</div>
+    <section id="tab-api" class="tab-panel active" role="tabpanel" aria-labelledby="tab-btn-api" aria-hidden="false">
+      <div class="section-title">API &amp; Models</div>
+      <div class="section-desc">Configure API endpoint, authentication credentials, and default model assignments for each Claude Code tier.</div>
+
       <div class="grid-2">
         <div class="field-group">
-          <label class="field-label"><code>env.ANTHROPIC_BASE_URL</code></label>
-          <input type="text" id="env_ANTHROPIC_BASE_URL" placeholder="https://api.anthropic.com" oninput="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="env_ANTHROPIC_BASE_URL"><code>env.ANTHROPIC_BASE_URL</code></label>
+            <button class="unset-btn" data-unset-path="env.ANTHROPIC_BASE_URL">unset</button>
+          </div>
+          <input type="text" id="env_ANTHROPIC_BASE_URL" data-setting-path="env.ANTHROPIC_BASE_URL" placeholder="https://api.anthropic.com">
         </div>
         <div class="field-group">
-          <label class="field-label"><code>model</code> — Primary model</label>
-          <input type="text" id="model" placeholder="fable" oninput="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="model"><code>model</code> — Primary model</label>
+            <button class="unset-btn" data-unset-path="model">unset</button>
+          </div>
+          <input type="text" id="model" data-setting-path="model" placeholder="fable">
         </div>
       </div>
+
       <div class="field-group">
-        <label class="field-label"><code>env.ANTHROPIC_API_KEY</code></label>
+        <div class="field-header">
+          <label class="field-label" for="env_ANTHROPIC_API_KEY"><code>env.ANTHROPIC_API_KEY</code></label>
+          <button class="unset-btn" data-unset-path="env.ANTHROPIC_API_KEY">unset</button>
+        </div>
         <div class="input-wrap">
-          <input type="password" id="env_ANTHROPIC_API_KEY" placeholder="sk-ant-..." oninput="onFormChange()">
-          <button class="btn" onclick="toggleApiKeyVisibility()">Show</button>
+          <input type="password" id="env_ANTHROPIC_API_KEY" data-setting-path="env.ANTHROPIC_API_KEY" placeholder="sk-ant-...">
+          <button id="btn-toggle-key" class="btn">Show</button>
         </div>
       </div>
+
       <div class="grid-2">
         <div class="field-group">
-          <label class="field-label"><code>env.ANTHROPIC_DEFAULT_FABLE_MODEL</code></label>
-          <input type="text" id="env_ANTHROPIC_DEFAULT_FABLE_MODEL" placeholder="claude-fable-5" oninput="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="env_ANTHROPIC_DEFAULT_FABLE_MODEL"><code>env.ANTHROPIC_DEFAULT_FABLE_MODEL</code></label>
+            <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL">unset</button>
+          </div>
+          <input type="text" id="env_ANTHROPIC_DEFAULT_FABLE_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL" placeholder="claude-fable-5">
         </div>
         <div class="field-group">
-          <label class="field-label"><code>env.ANTHROPIC_DEFAULT_OPUS_MODEL</code></label>
-          <input type="text" id="env_ANTHROPIC_DEFAULT_OPUS_MODEL" placeholder="claude-opus-5" oninput="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="env_ANTHROPIC_DEFAULT_OPUS_MODEL"><code>env.ANTHROPIC_DEFAULT_OPUS_MODEL</code></label>
+            <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL">unset</button>
+          </div>
+          <input type="text" id="env_ANTHROPIC_DEFAULT_OPUS_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL" placeholder="claude-opus-5">
         </div>
         <div class="field-group">
-          <label class="field-label"><code>env.ANTHROPIC_DEFAULT_SONNET_MODEL</code></label>
-          <input type="text" id="env_ANTHROPIC_DEFAULT_SONNET_MODEL" placeholder="claude-sonnet-5" oninput="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="env_ANTHROPIC_DEFAULT_SONNET_MODEL"><code>env.ANTHROPIC_DEFAULT_SONNET_MODEL</code></label>
+            <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL">unset</button>
+          </div>
+          <input type="text" id="env_ANTHROPIC_DEFAULT_SONNET_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL" placeholder="claude-sonnet-5">
         </div>
         <div class="field-group">
-          <label class="field-label"><code>env.ANTHROPIC_DEFAULT_HAIKU_MODEL</code></label>
-          <input type="text" id="env_ANTHROPIC_DEFAULT_HAIKU_MODEL" placeholder="claude-haiku-4-5-20251001" oninput="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="env_ANTHROPIC_DEFAULT_HAIKU_MODEL"><code>env.ANTHROPIC_DEFAULT_HAIKU_MODEL</code></label>
+            <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL">unset</button>
+          </div>
+          <input type="text" id="env_ANTHROPIC_DEFAULT_HAIKU_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL" placeholder="claude-haiku-4-5-20251001">
         </div>
         <div class="field-group">
-          <label class="field-label"><code>env.CLAUDE_CODE_SUBAGENT_MODEL</code></label>
-          <input type="text" id="env_CLAUDE_CODE_SUBAGENT_MODEL" placeholder="claude-haiku-4-5-20251001" oninput="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="env_CLAUDE_CODE_SUBAGENT_MODEL"><code>env.CLAUDE_CODE_SUBAGENT_MODEL</code></label>
+            <button class="unset-btn" data-unset-path="env.CLAUDE_CODE_SUBAGENT_MODEL">unset</button>
+          </div>
+          <input type="text" id="env_CLAUDE_CODE_SUBAGENT_MODEL" data-setting-path="env.CLAUDE_CODE_SUBAGENT_MODEL" placeholder="claude-haiku-4-5-20251001">
         </div>
       </div>
+
       <div class="section-title" style="margin-top:20px;">Custom Model Option</div>
       <div class="grid-2">
         <div class="field-group">
-          <label class="field-label"><code>env.ANTHROPIC_CUSTOM_MODEL_OPTION</code> — Model ID</label>
-          <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION" oninput="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="env_ANTHROPIC_CUSTOM_MODEL_OPTION"><code>env.ANTHROPIC_CUSTOM_MODEL_OPTION</code></label>
+            <button class="unset-btn" data-unset-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION">unset</button>
+          </div>
+          <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION" data-setting-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION">
         </div>
         <div class="field-group">
-          <label class="field-label"><code>env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME</code></label>
-          <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION_NAME" oninput="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="env_ANTHROPIC_CUSTOM_MODEL_OPTION_NAME"><code>env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME</code></label>
+            <button class="unset-btn" data-unset-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME">unset</button>
+          </div>
+          <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION_NAME" data-setting-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME">
         </div>
         <div class="field-group" style="grid-column:span 2;">
-          <label class="field-label"><code>env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION</code></label>
-          <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" oninput="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="env_ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION"><code>env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION</code></label>
+            <button class="unset-btn" data-unset-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION">unset</button>
+          </div>
+          <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" data-setting-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION">
         </div>
       </div>
-    </div>
+    </section>
 
     <!-- Fallback Models -->
-    <div class="tab-panel" id="tab-fallback">
+    <section id="tab-fallback" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-fallback" aria-hidden="true">
       <div class="section-title">Fallback Models</div>
-      <div class="section-desc">Ordered list of fallback models. Claude tries each in sequence when the primary model fails. Drag or use arrows to reorder.</div>
+      <div class="section-desc">Ordered list of fallback models. Claude tries each model in order when the primary model fails or encounters rate limits.</div>
+
       <div id="fallback-list"></div>
-      <div class="input-wrap">
-        <input type="text" id="new-model-input" placeholder="Model ID (e.g. claude-sonnet-5)" onkeydown="if(event.key==='Enter')addFallbackModel()">
-        <button class="btn primary" onclick="addFallbackModel()">+ Add Model</button>
+
+      <div class="input-wrap" style="margin-top:12px;">
+        <input type="text" id="new-model-input" placeholder="Model ID (e.g. claude-sonnet-5)">
+        <button id="btn-add-fallback" class="btn primary">+ Add Model</button>
       </div>
-    </div>
+    </section>
 
     <!-- Permissions -->
-    <div class="tab-panel" id="tab-permissions">
+    <section id="tab-permissions" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-permissions" aria-hidden="true">
       <div class="section-title">Permissions</div>
-      <div class="section-desc">Control how Claude Code requests permission for file edits and shell commands.</div>
+      <div class="section-desc">Configure security modes and permission prompt rules for tools, terminal commands, and file edits.</div>
+
       <div class="field-group">
-        <label class="field-label"><code>permissions.defaultMode</code></label>
-        <select id="permissions_defaultMode" onchange="onFormChange()">
+        <div class="field-header">
+          <label class="field-label" for="permissions_defaultMode"><code>permissions.defaultMode</code></label>
+          <button class="unset-btn" data-unset-path="permissions.defaultMode">unset</button>
+        </div>
+        <select id="permissions_defaultMode" data-setting-path="permissions.defaultMode">
+          <option value="">(Not specified)</option>
           <option value="default">default — prompt for everything</option>
           <option value="autoEdit">autoEdit — auto-approve file edits only</option>
           <option value="bypassPermissions">bypassPermissions — skip all prompts</option>
           <option value="plan">plan — plan-only mode, no execution</option>
         </select>
       </div>
+
       <div class="section-title" style="margin-top:20px;">Permission Flags</div>
       <div class="checkbox-row">
-        <input type="checkbox" id="permissions_skipDangerousModePermissionPrompt" onchange="onFormChange()">
+        <input type="checkbox" id="permissions_skipDangerousModePermissionPrompt" data-setting-path="permissions.skipDangerousModePermissionPrompt">
         <label for="permissions_skipDangerousModePermissionPrompt"><code>permissions.skipDangerousModePermissionPrompt</code></label>
       </div>
       <div class="checkbox-row">
-        <input type="checkbox" id="skipDangerousModePermissionPrompt" onchange="onFormChange()">
+        <input type="checkbox" id="skipDangerousModePermissionPrompt" data-setting-path="skipDangerousModePermissionPrompt">
         <label for="skipDangerousModePermissionPrompt"><code>skipDangerousModePermissionPrompt</code> (top-level)</label>
       </div>
       <div class="checkbox-row">
-        <input type="checkbox" id="skipAutoPermissionPrompt" onchange="onFormChange()">
+        <input type="checkbox" id="skipAutoPermissionPrompt" data-setting-path="skipAutoPermissionPrompt">
         <label for="skipAutoPermissionPrompt"><code>skipAutoPermissionPrompt</code></label>
       </div>
       <div class="checkbox-row">
-        <input type="checkbox" id="skipWorkflowUsageWarning" onchange="onFormChange()">
+        <input type="checkbox" id="skipWorkflowUsageWarning" data-setting-path="skipWorkflowUsageWarning">
         <label for="skipWorkflowUsageWarning"><code>skipWorkflowUsageWarning</code></label>
       </div>
-    </div>
+    </section>
 
     <!-- UI & Behavior -->
-    <div class="tab-panel" id="tab-ui">
-      <div class="section-title">UI & Behavior</div>
+    <section id="tab-ui" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-ui" aria-hidden="true">
+      <div class="section-title">UI &amp; Behavior</div>
       <div class="grid-2">
         <div class="field-group">
-          <label class="field-label"><code>theme</code></label>
-          <select id="theme" onchange="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="theme"><code>theme</code></label>
+            <button class="unset-btn" data-unset-path="theme">unset</button>
+          </div>
+          <select id="theme" data-setting-path="theme">
+            <option value="">(Not specified)</option>
             <option value="dark">dark</option>
             <option value="light">light</option>
             <option value="system">system</option>
           </select>
         </div>
         <div class="field-group">
-          <label class="field-label"><code>tui</code></label>
-          <select id="tui" onchange="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="tui"><code>tui</code></label>
+            <button class="unset-btn" data-unset-path="tui">unset</button>
+          </div>
+          <select id="tui" data-setting-path="tui">
+            <option value="">(Not specified)</option>
             <option value="fullscreen">fullscreen</option>
             <option value="default">default</option>
           </select>
         </div>
         <div class="field-group">
-          <label class="field-label"><code>editorMode</code></label>
-          <select id="editorMode" onchange="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="editorMode"><code>editorMode</code></label>
+            <button class="unset-btn" data-unset-path="editorMode">unset</button>
+          </div>
+          <select id="editorMode" data-setting-path="editorMode">
+            <option value="">(Not specified)</option>
             <option value="normal">normal</option>
             <option value="vim">vim</option>
           </select>
         </div>
         <div class="field-group">
-          <label class="field-label"><code>effortLevel</code></label>
-          <select id="effortLevel" onchange="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="effortLevel"><code>effortLevel</code></label>
+            <button class="unset-btn" data-unset-path="effortLevel">unset</button>
+          </div>
+          <select id="effortLevel" data-setting-path="effortLevel">
+            <option value="">(Not specified)</option>
             <option value="low">low</option>
             <option value="medium">medium</option>
             <option value="high">high</option>
@@ -484,646 +260,146 @@
           </select>
         </div>
         <div class="field-group">
-          <label class="field-label"><code>language</code></label>
-          <input type="text" id="language" placeholder="english" oninput="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="language"><code>language</code></label>
+            <button class="unset-btn" data-unset-path="language">unset</button>
+          </div>
+          <input type="text" id="language" data-setting-path="language" placeholder="english">
         </div>
         <div class="field-group">
-          <label class="field-label"><code>preferredNotifChannel</code></label>
-          <select id="preferredNotifChannel" onchange="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="preferredNotifChannel"><code>preferredNotifChannel</code></label>
+            <button class="unset-btn" data-unset-path="preferredNotifChannel">unset</button>
+          </div>
+          <select id="preferredNotifChannel" data-setting-path="preferredNotifChannel">
+            <option value="">(Not specified)</option>
             <option value="terminal_bell">terminal_bell</option>
             <option value="desktop">desktop</option>
             <option value="none">none</option>
           </select>
         </div>
         <div class="field-group">
-          <label class="field-label"><code>autoCompactWindow</code> (tokens)</label>
-          <input type="number" id="autoCompactWindow" placeholder="850000" oninput="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="autoCompactWindow"><code>autoCompactWindow</code></label>
+            <button class="unset-btn" data-unset-path="autoCompactWindow">unset</button>
+          </div>
+          <input type="number" id="autoCompactWindow" data-setting-path="autoCompactWindow" placeholder="850000">
         </div>
         <div class="field-group">
-          <label class="field-label"><code>askUserQuestionTimeout</code></label>
-          <input type="text" id="askUserQuestionTimeout" placeholder="10m" oninput="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="askUserQuestionTimeout"><code>askUserQuestionTimeout</code></label>
+            <button class="unset-btn" data-unset-path="askUserQuestionTimeout">unset</button>
+          </div>
+          <input type="text" id="askUserQuestionTimeout" data-setting-path="askUserQuestionTimeout" placeholder="10m">
         </div>
         <div class="field-group">
-          <label class="field-label"><code>worktree.baseRef</code></label>
-          <select id="worktree_baseRef" onchange="onFormChange()">
+          <div class="field-header">
+            <label class="field-label" for="worktree_baseRef"><code>worktree.baseRef</code></label>
+            <button class="unset-btn" data-unset-path="worktree.baseRef">unset</button>
+          </div>
+          <select id="worktree_baseRef" data-setting-path="worktree.baseRef">
+            <option value="">(Not specified)</option>
             <option value="fresh">fresh — branch from origin/default</option>
             <option value="head">head — branch from current HEAD</option>
           </select>
         </div>
       </div>
+
       <div class="section-title" style="margin-top:20px;">Feature Toggles</div>
       <div class="grid-2">
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="autoCompactEnabled" onchange="onFormChange()"><label for="autoCompactEnabled"><code>autoCompactEnabled</code></label></div>
-          <div class="checkbox-row"><input type="checkbox" id="verbose" onchange="onFormChange()"><label for="verbose"><code>verbose</code></label></div>
-          <div class="checkbox-row"><input type="checkbox" id="autoScrollEnabled" onchange="onFormChange()"><label for="autoScrollEnabled"><code>autoScrollEnabled</code></label></div>
-          <div class="checkbox-row"><input type="checkbox" id="showTurnDuration" onchange="onFormChange()"><label for="showTurnDuration"><code>showTurnDuration</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="autoCompactEnabled" data-setting-path="autoCompactEnabled"><label for="autoCompactEnabled"><code>autoCompactEnabled</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="verbose" data-setting-path="verbose"><label for="verbose"><code>verbose</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="autoScrollEnabled" data-setting-path="autoScrollEnabled"><label for="autoScrollEnabled"><code>autoScrollEnabled</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="showTurnDuration" data-setting-path="showTurnDuration"><label for="showTurnDuration"><code>showTurnDuration</code></label></div>
         </div>
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="terminalProgressBarEnabled" onchange="onFormChange()"><label for="terminalProgressBarEnabled"><code>terminalProgressBarEnabled</code></label></div>
-          <div class="checkbox-row"><input type="checkbox" id="fileCheckpointingEnabled" onchange="onFormChange()"><label for="fileCheckpointingEnabled"><code>fileCheckpointingEnabled</code></label></div>
-          <div class="checkbox-row"><input type="checkbox" id="useAutoModeDuringPlan" onchange="onFormChange()"><label for="useAutoModeDuringPlan"><code>useAutoModeDuringPlan</code></label></div>
-          <div class="checkbox-row"><input type="checkbox" id="switchModelsOnFlag" onchange="onFormChange()"><label for="switchModelsOnFlag"><code>switchModelsOnFlag</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="terminalProgressBarEnabled" data-setting-path="terminalProgressBarEnabled"><label for="terminalProgressBarEnabled"><code>terminalProgressBarEnabled</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="fileCheckpointingEnabled" data-setting-path="fileCheckpointingEnabled"><label for="fileCheckpointingEnabled"><code>fileCheckpointingEnabled</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="useAutoModeDuringPlan" data-setting-path="useAutoModeDuringPlan"><label for="useAutoModeDuringPlan"><code>useAutoModeDuringPlan</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="switchModelsOnFlag" data-setting-path="switchModelsOnFlag"><label for="switchModelsOnFlag"><code>switchModelsOnFlag</code></label></div>
         </div>
       </div>
-    </div>
+    </section>
 
     <!-- Plugins -->
-    <div class="tab-panel" id="tab-plugins">
+    <section id="tab-plugins" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-plugins" aria-hidden="true">
       <div class="section-title">Enabled Plugins</div>
       <div class="section-desc">Toggle Claude Code plugins. Format: <code>plugin-name@marketplace</code></div>
+
       <div id="plugin-list"></div>
-      <div class="add-plugin-row">
-        <input type="text" id="new-plugin-key" placeholder="plugin-name@marketplace" onkeydown="if(event.key==='Enter')addPlugin()">
-        <button class="btn primary" onclick="addPlugin()">+ Add Plugin</button>
+
+      <div class="input-wrap" style="margin-top:12px;">
+        <input type="text" id="new-plugin-key" placeholder="plugin-name@marketplace">
+        <button id="btn-add-plugin" class="btn primary">+ Add Plugin</button>
       </div>
+
       <div class="section-title" style="margin-top:20px;">Extra Marketplaces</div>
-      <div class="section-desc">Custom plugin marketplaces. Edit in <strong>Advanced JSON</strong> tab for full control over <code>extraKnownMarketplaces</code>.</div>
+      <div class="section-desc">Configured custom marketplaces. Full shape details are preserved and editable in Advanced JSON.</div>
       <div id="marketplace-list"></div>
-    </div>
+    </section>
 
     <!-- Hooks -->
-    <div class="tab-panel" id="tab-hooks">
+    <section id="tab-hooks" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-hooks" aria-hidden="true">
       <div class="section-title">Hooks</div>
-      <div class="section-desc">Shell commands that run on Claude Code lifecycle events (UserPromptSubmit, PreToolUse, PostToolUse, Stop, etc.)</div>
+      <div class="section-desc">Shell commands attached to Claude Code lifecycle events (UserPromptSubmit, PreToolUse, Stop, etc.).</div>
+
       <div id="hooks-container"></div>
-      <div class="add-hook-row">
-        <input type="text" id="new-hook-event" placeholder="Event name (e.g. UserPromptSubmit)" onkeydown="if(event.key==='Enter')addHookEvent()">
-        <button class="btn primary" onclick="addHookEvent()">+ Add Event</button>
+
+      <div class="input-wrap" style="margin-top:12px;">
+        <input type="text" id="new-hook-event" placeholder="Event name (e.g. UserPromptSubmit)">
+        <button id="btn-add-hook" class="btn primary">+ Add Event</button>
       </div>
-    </div>
+    </section>
 
     <!-- Status Line -->
-    <div class="tab-panel" id="tab-statusline">
+    <section id="tab-statusline" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-statusline" aria-hidden="true">
       <div class="section-title">Status Line</div>
-      <div class="section-desc">Custom shell command that generates the Claude Code status bar. Receives JSON on stdin.</div>
+      <div class="section-desc">Shell command that prints the CLI status bar output.</div>
+
       <div class="field-group">
-        <label class="field-label"><code>statusLine.type</code></label>
-        <select id="statusLine_type" onchange="onFormChange()">
+        <div class="field-header">
+          <label class="field-label" for="statusLine_type"><code>statusLine.type</code></label>
+          <button class="unset-btn" data-unset-path="statusLine.type">unset</button>
+        </div>
+        <select id="statusLine_type" data-setting-path="statusLine.type">
+          <option value="">(Not specified)</option>
           <option value="command">command</option>
         </select>
       </div>
+
       <div class="field-group">
-        <label class="field-label"><code>statusLine.command</code></label>
-        <textarea id="statusLine_command" rows="3" style="resize:vertical;" oninput="onFormChange()"></textarea>
+        <div class="field-header">
+          <label class="field-label" for="statusLine_command"><code>statusLine.command</code></label>
+          <button class="unset-btn" data-unset-path="statusLine.command">unset</button>
+        </div>
+        <textarea id="statusLine_command" data-setting-path="statusLine.command" rows="3"></textarea>
       </div>
+
       <div class="field-group">
-        <label class="field-label"><code>statusLine.padding</code></label>
-        <input type="number" id="statusLine_padding" placeholder="2" oninput="onFormChange()">
+        <div class="field-header">
+          <label class="field-label" for="statusLine_padding"><code>statusLine.padding</code></label>
+          <button class="unset-btn" data-unset-path="statusLine.padding">unset</button>
+        </div>
+        <input type="number" id="statusLine_padding" data-setting-path="statusLine.padding" placeholder="2">
       </div>
-      <div id="statusline-preview">Preview: (configure command above)</div>
-    </div>
+    </section>
 
     <!-- Advanced JSON -->
-    <div class="tab-panel" id="tab-advanced">
+    <section id="tab-advanced" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-advanced" aria-hidden="true">
       <div class="json-toolbar">
-        <span>Raw JSON — edits sync to form automatically</span>
-        <button class="btn" onclick="formatJson()">Format</button>
-        <button class="btn" onclick="copyJson()">Copy</button>
-        <button class="btn danger" onclick="resetJson()">Reset to Sample</button>
+        <span class="status-hint">Raw JSON draft — apply or discard explicit changes</span>
+        <button id="btn-apply-json" class="btn primary">Apply JSON</button>
+        <button id="btn-discard-json" class="btn">Discard Draft</button>
+        <button id="btn-format-json" class="btn">Format</button>
+        <button id="btn-copy-json" class="btn">Copy</button>
+        <button id="btn-reset-json" class="btn danger">Reset to Sample</button>
       </div>
-      <textarea id="json-editor" spellcheck="false" oninput="onJsonChange()"></textarea>
+      <textarea id="json-editor" spellcheck="false"></textarea>
       <div id="json-error"></div>
-    </div>
+    </section>
   </main>
 </div>
 
-<script>
-// ── State ──────────────────────────────────────────────────────────────────────
-let state = {};
-let _jsonDebounce = null;
-let _formDebounce = null;
-let _activeTab = 'api';
-let _isDragging = false;
-let _dragIdx = -1;
-
-// ── Tab switching ──────────────────────────────────────────────────────────────
-function switchTab(name) {
-  _activeTab = name;
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  const btn = event.currentTarget;
-  btn.classList.add('active');
-  btn.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
-  if (name === 'advanced') syncJsonEditor();
-}
-
-// ── Load / Download ────────────────────────────────────────────────────────────
-function loadFile() { document.getElementById('file-input').click(); }
-
-function onFileSelect(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      state = JSON.parse(e.target.result);
-      renderForm();
-      syncJsonEditor();
-      setStatus('Loaded: ' + file.name, 'ok');
-    } catch(err) {
-      setStatus('Invalid JSON: ' + err.message, 'err');
-    }
-  };
-  reader.readAsText(file);
-  event.target.value = '';
-}
-
-async function loadSample() {
-  try {
-    const res = await fetch('./sample.json');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    state = await res.json();
-    renderForm();
-    syncJsonEditor();
-    setStatus('Sample loaded', 'ok');
-  } catch(err) {
-    setStatus('Could not load sample: ' + err.message, 'err');
-  }
-}
-
-function downloadFile() {
-  formToState();
-  const json = JSON.stringify(state, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'settings.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
-  setStatus('Downloaded', 'ok');
-}
-
-// ── Status ─────────────────────────────────────────────────────────────────────
-function setStatus(msg, type) {
-  const el = document.getElementById('status');
-  el.textContent = msg;
-  el.className = type || '';
-  setTimeout(() => { el.textContent = 'Ready'; el.className = ''; }, 3000);
-}
-
-// ── Toggle API key visibility ──────────────────────────────────────────────────
-function toggleApiKeyVisibility() {
-  const input = document.getElementById('env_ANTHROPIC_API_KEY');
-  const btn = event.currentTarget;
-  if (input.type === 'password') { input.type = 'text'; btn.textContent = 'Hide'; }
-  else { input.type = 'password'; btn.textContent = 'Show'; }
-}
-
-// ── Form → State ───────────────────────────────────────────────────────────────
-function formToState() {
-  if (!state.env) state.env = {};
-  if (!state.permissions) state.permissions = {};
-  if (!state.worktree) state.worktree = {};
-  if (!state.statusLine) state.statusLine = {};
-
-  // API & Models
-  setStateEnv('ANTHROPIC_BASE_URL');
-  setStateEnv('ANTHROPIC_API_KEY');
-  setStateEnv('ANTHROPIC_DEFAULT_FABLE_MODEL');
-  setStateEnv('ANTHROPIC_DEFAULT_OPUS_MODEL');
-  setStateEnv('ANTHROPIC_DEFAULT_SONNET_MODEL');
-  setStateEnv('ANTHROPIC_DEFAULT_HAIKU_MODEL');
-  setStateEnv('ANTHROPIC_CUSTOM_MODEL_OPTION');
-  setStateEnv('ANTHROPIC_CUSTOM_MODEL_OPTION_NAME');
-  setStateEnv('ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION');
-  setStateEnv('CLAUDE_CODE_SUBAGENT_MODEL');
-  state.model = val('model') || undefined;
-
-  // Permissions
-  state.permissions.defaultMode = val('permissions_defaultMode') || undefined;
-  state.permissions.skipDangerousModePermissionPrompt = boolVal('permissions_skipDangerousModePermissionPrompt');
-  state.skipDangerousModePermissionPrompt = boolVal('skipDangerousModePermissionPrompt');
-  state.skipAutoPermissionPrompt = boolVal('skipAutoPermissionPrompt');
-  state.skipWorkflowUsageWarning = boolVal('skipWorkflowUsageWarning');
-
-  // UI
-  state.theme = val('theme') || undefined;
-  state.tui = val('tui') || undefined;
-  state.editorMode = val('editorMode') || undefined;
-  state.effortLevel = val('effortLevel') || undefined;
-  state.language = val('language') || undefined;
-  state.preferredNotifChannel = val('preferredNotifChannel') || undefined;
-  const acw = numVal('autoCompactWindow');
-  state.autoCompactWindow = acw !== null ? acw : undefined;
-  state.askUserQuestionTimeout = val('askUserQuestionTimeout') || undefined;
-  state.worktree.baseRef = val('worktree_baseRef') || undefined;
-  state.autoCompactEnabled = boolVal('autoCompactEnabled');
-  state.verbose = boolVal('verbose');
-  state.autoScrollEnabled = boolVal('autoScrollEnabled');
-  state.showTurnDuration = boolVal('showTurnDuration');
-  state.terminalProgressBarEnabled = boolVal('terminalProgressBarEnabled');
-  state.fileCheckpointingEnabled = boolVal('fileCheckpointingEnabled');
-  state.useAutoModeDuringPlan = boolVal('useAutoModeDuringPlan');
-  state.switchModelsOnFlag = boolVal('switchModelsOnFlag');
-
-  // Status line
-  state.statusLine.type = val('statusLine_type') || undefined;
-  state.statusLine.command = val('statusLine_command') || undefined;
-  const slp = numVal('statusLine_padding');
-  state.statusLine.padding = slp !== null ? slp : undefined;
-
-  // Fallback models (already managed via renderFallbackList)
-  // Plugins (already managed via renderPluginList)
-  // Hooks (already managed via renderHooks)
-
-  cleanEmpty(state.env);
-  cleanEmpty(state.permissions);
-  cleanEmpty(state.worktree);
-  cleanEmpty(state.statusLine);
-}
-
-function setStateEnv(key) {
-  const v = val('env_' + key);
-  if (v) state.env[key] = v;
-  else delete state.env[key];
-}
-
-function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
-function boolVal(id) { const el = document.getElementById(id); return el ? el.checked : false; }
-function numVal(id) { const el = document.getElementById(id); if (!el || el.value === '') return null; const n = Number(el.value); return isNaN(n) ? null : n; }
-
-function cleanEmpty(obj) {
-  Object.keys(obj).forEach(k => {
-    if (obj[k] === undefined || obj[k] === '' || obj[k] === null) delete obj[k];
-  });
-}
-
-// ── State → Form ───────────────────────────────────────────────────────────────
-function renderForm() {
-  const env = state.env || {};
-  const perm = state.permissions || {};
-  const wt = state.worktree || {};
-  const sl = state.statusLine || {};
-
-  setField('env_ANTHROPIC_BASE_URL', env.ANTHROPIC_BASE_URL);
-  setField('env_ANTHROPIC_API_KEY', env.ANTHROPIC_API_KEY);
-  setField('env_ANTHROPIC_DEFAULT_FABLE_MODEL', env.ANTHROPIC_DEFAULT_FABLE_MODEL);
-  setField('env_ANTHROPIC_DEFAULT_OPUS_MODEL', env.ANTHROPIC_DEFAULT_OPUS_MODEL);
-  setField('env_ANTHROPIC_DEFAULT_SONNET_MODEL', env.ANTHROPIC_DEFAULT_SONNET_MODEL);
-  setField('env_ANTHROPIC_DEFAULT_HAIKU_MODEL', env.ANTHROPIC_DEFAULT_HAIKU_MODEL);
-  setField('env_ANTHROPIC_CUSTOM_MODEL_OPTION', env.ANTHROPIC_CUSTOM_MODEL_OPTION);
-  setField('env_ANTHROPIC_CUSTOM_MODEL_OPTION_NAME', env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME);
-  setField('env_ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION', env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION);
-  setField('env_CLAUDE_CODE_SUBAGENT_MODEL', env.CLAUDE_CODE_SUBAGENT_MODEL);
-  setField('model', state.model);
-
-  setField('permissions_defaultMode', perm.defaultMode || 'default');
-  setCheck('permissions_skipDangerousModePermissionPrompt', perm.skipDangerousModePermissionPrompt);
-  setCheck('skipDangerousModePermissionPrompt', state.skipDangerousModePermissionPrompt);
-  setCheck('skipAutoPermissionPrompt', state.skipAutoPermissionPrompt);
-  setCheck('skipWorkflowUsageWarning', state.skipWorkflowUsageWarning);
-
-  setField('theme', state.theme || 'dark');
-  setField('tui', state.tui || 'default');
-  setField('editorMode', state.editorMode || 'normal');
-  setField('effortLevel', state.effortLevel || 'medium');
-  setField('language', state.language);
-  setField('preferredNotifChannel', state.preferredNotifChannel || 'terminal_bell');
-  setField('autoCompactWindow', state.autoCompactWindow != null ? state.autoCompactWindow : '');
-  setField('askUserQuestionTimeout', state.askUserQuestionTimeout);
-  setField('worktree_baseRef', wt.baseRef || 'fresh');
-
-  setCheck('autoCompactEnabled', state.autoCompactEnabled);
-  setCheck('verbose', state.verbose);
-  setCheck('autoScrollEnabled', state.autoScrollEnabled);
-  setCheck('showTurnDuration', state.showTurnDuration);
-  setCheck('terminalProgressBarEnabled', state.terminalProgressBarEnabled);
-  setCheck('fileCheckpointingEnabled', state.fileCheckpointingEnabled);
-  setCheck('useAutoModeDuringPlan', state.useAutoModeDuringPlan);
-  setCheck('switchModelsOnFlag', state.switchModelsOnFlag);
-
-  setField('statusLine_type', sl.type || 'command');
-  setField('statusLine_command', sl.command);
-  setField('statusLine_padding', sl.padding != null ? sl.padding : '');
-
-  renderFallbackList();
-  renderPluginList();
-  renderHooks();
-  renderMarketplaces();
-}
-
-function setField(id, value) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.value = value != null ? value : '';
-}
-
-function setCheck(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.checked = !!value;
-}
-
-// ── Fallback Models List ───────────────────────────────────────────────────────
-function renderFallbackList() {
-  const list = state.fallbackModel || [];
-  const container = document.getElementById('fallback-list');
-  container.innerHTML = '';
-  list.forEach((m, i) => {
-    const div = document.createElement('div');
-    div.className = 'model-item';
-    div.draggable = true;
-    div.dataset.idx = i;
-    div.innerHTML = `
-      <span class="drag-handle" title="Drag to reorder">⣿</span>
-      <span class="idx">${i + 1}</span>
-      <input type="text" value="${escHtml(m)}" oninput="updateFallbackModel(${i}, this.value)">
-      <div class="move-btns">
-        <button onclick="moveFallbackModel(${i}, -1)" title="Move up">▲</button>
-        <button onclick="moveFallbackModel(${i}, 1)" title="Move down">▼</button>
-      </div>
-      <button class="del-btn" onclick="removeFallbackModel(${i})" title="Remove">×</button>`;
-    div.addEventListener('dragstart', onDragStart);
-    div.addEventListener('dragover', onDragOver);
-    div.addEventListener('drop', onDrop);
-    div.addEventListener('dragend', onDragEnd);
-    container.appendChild(div);
-  });
-}
-
-function addFallbackModel() {
-  const input = document.getElementById('new-model-input');
-  const v = input.value.trim();
-  if (!v) return;
-  if (!state.fallbackModel) state.fallbackModel = [];
-  state.fallbackModel.push(v);
-  input.value = '';
-  renderFallbackList();
-  syncJsonEditor();
-}
-
-function removeFallbackModel(i) {
-  state.fallbackModel.splice(i, 1);
-  renderFallbackList();
-  syncJsonEditor();
-}
-
-function updateFallbackModel(i, v) {
-  state.fallbackModel[i] = v;
-  clearTimeout(_formDebounce);
-  _formDebounce = setTimeout(syncJsonEditor, 400);
-}
-
-function moveFallbackModel(i, dir) {
-  const list = state.fallbackModel;
-  const j = i + dir;
-  if (j < 0 || j >= list.length) return;
-  [list[i], list[j]] = [list[j], list[i]];
-  renderFallbackList();
-  syncJsonEditor();
-}
-
-// Drag-and-drop for fallback list
-function onDragStart(e) { _dragIdx = +e.currentTarget.dataset.idx; e.dataTransfer.effectAllowed = 'move'; }
-function onDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
-function onDrop(e) {
-  e.preventDefault();
-  const targetIdx = +e.currentTarget.dataset.idx;
-  if (_dragIdx === targetIdx) return;
-  const list = state.fallbackModel;
-  const item = list.splice(_dragIdx, 1)[0];
-  list.splice(targetIdx, 0, item);
-  _dragIdx = -1;
-  renderFallbackList();
-  syncJsonEditor();
-}
-function onDragEnd() { _dragIdx = -1; }
-
-// ── Plugins ────────────────────────────────────────────────────────────────────
-function renderPluginList() {
-  const plugins = state.enabledPlugins || {};
-  const container = document.getElementById('plugin-list');
-  container.innerHTML = '';
-  Object.entries(plugins).forEach(([key, enabled]) => {
-    const div = document.createElement('div');
-    div.className = 'plugin-item';
-
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = !!enabled;
-    cb.addEventListener('change', () => togglePlugin(key, cb.checked));
-
-    const name = document.createElement('span');
-    name.className = 'plugin-name';
-    name.innerHTML = `<code>${escHtml(key)}</code>`;
-
-    const del = document.createElement('button');
-    del.className = 'del-btn';
-    del.textContent = '×';
-    del.addEventListener('click', () => removePlugin(key));
-
-    div.append(cb, name, del);
-    container.appendChild(div);
-  });
-}
-
-function togglePlugin(key, enabled) {
-  state.enabledPlugins[key] = enabled;
-  syncJsonEditor();
-}
-
-function addPlugin() {
-  const input = document.getElementById('new-plugin-key');
-  const k = input.value.trim();
-  if (!k) return;
-  if (!state.enabledPlugins) state.enabledPlugins = {};
-  state.enabledPlugins[k] = true;
-  input.value = '';
-  renderPluginList();
-  syncJsonEditor();
-}
-
-function removePlugin(key) {
-  delete state.enabledPlugins[key];
-  renderPluginList();
-  syncJsonEditor();
-}
-
-function renderMarketplaces() {
-  const mkt = state.extraKnownMarketplaces || {};
-  const container = document.getElementById('marketplace-list');
-  if (!Object.keys(mkt).length) {
-    container.innerHTML = '<div style="color:var(--text2);font-size:11px;">No extra marketplaces. Edit in Advanced JSON tab.</div>';
-    return;
-  }
-  container.innerHTML = Object.entries(mkt).map(([k, v]) =>
-    `<div class="plugin-item"><span class="plugin-name"><code>${escHtml(k)}</code></span><span style="color:var(--text2);font-size:11px;flex:1;text-align:right;">${escHtml(JSON.stringify(v.source?.source || v))}</span></div>`
-  ).join('');
-}
-
-// ── Hooks ──────────────────────────────────────────────────────────────────────
-function renderHooks() {
-  const hooks = state.hooks || {};
-  const container = document.getElementById('hooks-container');
-  container.innerHTML = '';
-  Object.entries(hooks).forEach(([eventName, arr]) => {
-    const cmds = (arr[0]?.hooks || []);
-    const section = document.createElement('div');
-    section.className = 'hook-event';
-
-    const header = document.createElement('div');
-    header.className = 'hook-event-name';
-    header.textContent = eventName;
-    const delEvt = document.createElement('button');
-    delEvt.className = 'del-btn';
-    delEvt.style.float = 'right';
-    delEvt.textContent = '×';
-    delEvt.addEventListener('click', () => removeHookEvent(eventName));
-    header.appendChild(delEvt);
-    section.appendChild(header);
-
-    const cmdsContainer = document.createElement('div');
-    cmds.forEach((cmd, i) => cmdsContainer.appendChild(buildHookCmdRow(eventName, i, cmd)));
-    section.appendChild(cmdsContainer);
-
-    const addBtn = document.createElement('button');
-    addBtn.className = 'hook-add-cmd';
-    addBtn.textContent = '+ Add command';
-    addBtn.addEventListener('click', () => addHookCmd(eventName));
-    section.appendChild(addBtn);
-
-    container.appendChild(section);
-  });
-}
-
-function buildHookCmdRow(eventName, i, cmd) {
-  const row = document.createElement('div');
-  row.className = 'hook-cmd-row';
-
-  const cmdInput = document.createElement('input');
-  cmdInput.type = 'text';
-  cmdInput.value = String(cmd.command || '');
-  cmdInput.placeholder = 'Shell command';
-  cmdInput.addEventListener('input', () => updateHookCmd(eventName, i, 'command', cmdInput.value));
-
-  const timeoutInput = document.createElement('input');
-  timeoutInput.type = 'number';
-  timeoutInput.className = 'timeout-input';
-  timeoutInput.value = (typeof cmd.timeout === 'number') ? String(cmd.timeout) : '';
-  timeoutInput.placeholder = 'timeout';
-  timeoutInput.title = 'Timeout (seconds)';
-  timeoutInput.addEventListener('input', () => {
-    const n = Number(timeoutInput.value);
-    updateHookCmd(eventName, i, 'timeout', isNaN(n) ? 30 : n);
-  });
-
-  const delBtn = document.createElement('button');
-  delBtn.className = 'del-btn';
-  delBtn.textContent = '×';
-  delBtn.addEventListener('click', () => removeHookCmd(eventName, i));
-
-  row.append(cmdInput, timeoutInput, delBtn);
-  return row;
-}
-
-function addHookEvent() {
-  const input = document.getElementById('new-hook-event');
-  const ev = input.value.trim();
-  if (!ev) return;
-  if (!state.hooks) state.hooks = {};
-  if (!state.hooks[ev]) state.hooks[ev] = [{ hooks: [] }];
-  input.value = '';
-  renderHooks();
-  syncJsonEditor();
-}
-
-function removeHookEvent(ev) {
-  delete state.hooks[ev];
-  renderHooks();
-  syncJsonEditor();
-}
-
-function addHookCmd(ev) {
-  if (!state.hooks[ev][0].hooks) state.hooks[ev][0].hooks = [];
-  state.hooks[ev][0].hooks.push({ type: 'command', command: '', timeout: 30 });
-  renderHooks();
-  syncJsonEditor();
-}
-
-function removeHookCmd(ev, i) {
-  state.hooks[ev][0].hooks.splice(i, 1);
-  renderHooks();
-  syncJsonEditor();
-}
-
-function updateHookCmd(ev, i, field, value) {
-  state.hooks[ev][0].hooks[i][field] = value;
-  clearTimeout(_formDebounce);
-  _formDebounce = setTimeout(syncJsonEditor, 400);
-}
-
-// ── JSON editor ────────────────────────────────────────────────────────────────
-function syncJsonEditor() {
-  if (_activeTab !== 'advanced') return;
-  const el = document.getElementById('json-editor');
-  const pos = el.selectionStart;
-  el.value = JSON.stringify(state, null, 2);
-  el.selectionStart = el.selectionEnd = pos;
-  document.getElementById('json-error').textContent = '';
-}
-
-function onJsonChange() {
-  clearTimeout(_jsonDebounce);
-  _jsonDebounce = setTimeout(() => {
-    const src = document.getElementById('json-editor').value;
-    const errEl = document.getElementById('json-error');
-    try {
-      state = JSON.parse(src);
-      renderForm();
-      errEl.textContent = '';
-    } catch(e) {
-      errEl.textContent = 'JSON error: ' + e.message;
-    }
-  }, 600);
-}
-
-function formatJson() {
-  formToState();
-  const el = document.getElementById('json-editor');
-  try {
-    el.value = JSON.stringify(JSON.parse(el.value), null, 2);
-    document.getElementById('json-error').textContent = '';
-  } catch(e) {
-    document.getElementById('json-error').textContent = 'JSON error: ' + e.message;
-  }
-}
-
-function copyJson() {
-  formToState();
-  navigator.clipboard.writeText(JSON.stringify(state, null, 2))
-    .then(() => setStatus('Copied!', 'ok'))
-    .catch(() => setStatus('Copy failed', 'err'));
-}
-
-async function resetJson() {
-  if (!confirm('Reset to sample settings? Unsaved changes will be lost.')) return;
-  await loadSample();
-}
-
-// ── Form change handler ────────────────────────────────────────────────────────
-function onFormChange() {
-  clearTimeout(_formDebounce);
-  _formDebounce = setTimeout(() => {
-    formToState();
-    if (_activeTab === 'advanced') syncJsonEditor();
-  }, 200);
-}
-
-// ── Utils ──────────────────────────────────────────────────────────────────────
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-// ── Init ───────────────────────────────────────────────────────────────────────
-loadSample().catch(() => {
-  state = {};
-  setStatus('No sample loaded. Use "Load JSON" or "Load Sample".', '');
-});
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
-}
-</script>
 </body>
 </html>

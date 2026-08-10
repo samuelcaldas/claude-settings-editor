@@ -1,54 +1,43 @@
 # Claude Settings Editor
 
-Browser-based editor for Claude Code `settings.json`. Edit your configuration visually and download the result — no install, no backend.
+Visual web editor for Claude Code `settings.json` — zero dependencies, zero build step, 100% client-side.
 
-**Live demo:** https://samuelcaldas.github.io/claude-settings-editor
+## Features
 
----
+- **Data Preservation**: Preserves unknown future settings, absent vs explicit falsy values (`false`, `0`, `""`, `null`), extra hook groups, and unmodeled marketplace properties.
+- **Path-Based Patches**: Form fields modify exact JSON target paths instead of full-document re-serialization.
+- **Advanced JSON Draft**: Raw JSON edits have explicit Apply/Discard controls to avoid race conditions.
+- **Safety First**: Runs locally in browser. No settings persistence (`localStorage`, IndexedDB), no external tracking, no backend calls, and zero command execution.
+- **Terminal Refined UI**: Monospace visual theme, dark palette, mobile touch support, keyboard tabs, and undo/redo history.
+- **Offline PWA**: Service Worker app-shell caching with network-first fallback.
 
-## Usage
+## Running Locally
 
-1. Open the editor (link above or `index.html` locally)
-2. Click **Load JSON** to import your existing `settings.json`, or **Load Sample** to start from the template
-3. Edit settings across the tabs:
-   - **API & Models** — endpoint, API key, model overrides per tier
-   - **Fallback Models** — ordered list, drag to reorder
-   - **Permissions** — default mode, permission prompt flags
-   - **UI & Behavior** — theme, TUI mode, effort level, feature toggles
-   - **Plugins** — enable/disable Claude Code plugins
-   - **Hooks** — lifecycle shell commands (UserPromptSubmit, etc.)
-   - **Status Line** — custom status bar command
-   - **Advanced JSON** — raw JSON with bidirectional sync to the form
-4. Click **Download settings.json** to save
-
----
-
-## Settings file location
-
-| Platform | Path |
-|----------|------|
-| Linux/Mac | `~/.claude/settings.json` |
-| Windows | `%APPDATA%\Claude\settings.json` |
-| Project-level | `.claude/settings.json` |
-
----
-
-## Local use
-
-No build step. Open `index.html` directly in any browser:
+Because this project uses standard ES modules, launch a local HTTP server to avoid CORS restriction on `fetch('./sample.json')`:
 
 ```bash
-# Serve locally (avoids fetch CORS for sample.json)
 python3 -m http.server 8080
-# then open http://localhost:8080
 ```
 
-Or use any static file server.
+Open `http://localhost:8080` in your browser.
 
----
+## File Structure
 
-## Notes
+```
+index.html             Semantic HTML shell & tab panels
+css/app.css            Terminal refined styles & responsive media queries
+js/settings-model.js   Pure settings parser, path operations, validation & serialization
+js/app.js              Browser controller, DOM event bindings, undo/redo & JSON draft flow
+tests/                 Pure model test suite
+sample.json            Public sample configuration fixture
+sw.js                  Network-first PWA service worker
+manifest.json          PWA manifest
+```
 
-- `artifacts/` is gitignored — keep your personal `settings.json` there locally without committing keys
-- `sample.json` is the public template with placeholder values
-- All edits happen client-side; nothing is sent to any server
+## Running Tests
+
+Run the pure model test suite via Node.js built-in test runner:
+
+```bash
+node --test tests/settings-model.test.cjs
+```
