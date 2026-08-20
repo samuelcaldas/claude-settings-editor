@@ -5,7 +5,7 @@
   --border: #353b45;
   --border-focus: #e06c75;
   --text: #abb2bf;
-  --text-muted: #636d83;
+  --text-muted: #8b95a8;
   --text-bright: #eceff4;
   --accent: #d19a66;
   --accent-hover: #e5c07b;
@@ -52,7 +52,8 @@
 }
 
 html, body {
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-mono);
@@ -411,7 +412,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23636d83'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b95a8'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   padding-right: 28px;
@@ -469,9 +470,9 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
   margin-bottom: 12px;
 }
 
-.rule-deny { border-color: rgba(224, 108, 117, 0.4); }
-.rule-ask { border-color: rgba(229, 192, 123, 0.4); }
-.rule-allow { border-color: rgba(152, 195, 121, 0.4); }
+.rule-deny { border-color: var(--red); }
+.rule-ask { border-color: var(--yellow); }
+.rule-allow { border-color: var(--green); }
 
 .rule-box-header {
   display: flex;
@@ -650,6 +651,7 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
 #json-editor {
   width: 100%;
   height: calc(100vh - 210px);
+  height: calc(100dvh - 210px);
   background: var(--bg-surface);
   border: 1px solid var(--border);
   color: var(--text-bright);
@@ -690,16 +692,16 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
 /* Hidden inputs */
 #file-input { display: none; }
 
-/* Coarse Pointer Touch Adaptations */
+/* Coarse Pointer Touch Adaptations (44x44px Touch Target Floor) */
 @media (pointer: coarse) {
-  .btn { min-height: 38px; padding: 8px 14px; font-size: 13px; }
-  .btn.small { min-height: 32px; padding: 6px 10px; font-size: 12px; }
-  .del-btn { min-width: 32px; min-height: 32px; font-size: 18px; }
-  .unset-btn { padding: 4px 6px; font-size: 11px; }
-  .checkbox-row { min-height: 40px; }
-  .checkbox-row input[type=checkbox] { width: 18px; height: 18px; }
-  select, input[type=text], input[type=password], input[type=number] { padding: 9px 10px; font-size: 13px; }
-  .scope-select, .lang-select { padding: 6px 20px 6px 8px; }
+  .btn { min-height: 44px; padding: 10px 16px; font-size: 13px; }
+  .btn.small { min-height: 44px; padding: 8px 12px; font-size: 12px; }
+  .del-btn { min-width: 44px; min-height: 44px; font-size: 18px; }
+  .unset-btn { min-height: 44px; padding: 10px 8px; font-size: 11px; display: inline-flex; align-items: center; }
+  .checkbox-row { min-height: 44px; padding: 6px 0; }
+  .checkbox-row input[type=checkbox] { width: 20px; height: 20px; }
+  select, input[type=text], input[type=password], input[type=number] { padding: 10px 12px; font-size: 14px; min-height: 44px; }
+  .scope-select, .lang-select { padding: 8px 24px 8px 10px; min-height: 40px; }
 }
 
 /* Tablet & Intermediate Viewports */
@@ -759,22 +761,24 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
 
   nav [role="tablist"] {
     flex-direction: row;
+    width: max-content;
     height: var(--nav-h-mobile);
   }
 
   nav .nav-section { display: none; }
 
   nav button[role="tab"] {
+    width: auto;
+    flex: 0 0 auto;
     min-width: 84px;
     height: var(--nav-h-mobile);
     border-left: none;
     border-top: 2px solid transparent;
-    padding: 4px 10px;
+    padding: 4px 12px;
     font-size: 11px;
     justify-content: center;
     text-align: center;
     white-space: nowrap;
-    flex-shrink: 0;
   }
 
   nav button[role="tab"]:hover { background: transparent; }
@@ -791,7 +795,10 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
   .section-title { font-size: 13px; }
   .section-desc { font-size: 11px; margin-bottom: 12px; }
 
-  #json-editor { height: calc(100vh - 280px); }
+  #json-editor {
+    height: calc(100vh - 280px);
+    height: calc(100dvh - 280px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

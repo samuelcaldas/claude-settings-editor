@@ -43,8 +43,8 @@
       "text-muted": {
         "role": "neutral",
         "displayName": "Muted Text",
-        "canonical": "#636d83",
-        "tonalRamp": ["#1e2127", "#2e3440", "#434c5e", "#636d83", "#7d889b", "#9ba4b4", "#bcc3cd", "#eceff4"]
+        "canonical": "#8b95a8",
+        "tonalRamp": ["#2e3440", "#434c5e", "#636d83", "#8b95a8", "#9ba4b4", "#bcc3cd", "#dfe2e8", "#eceff4"]
       },
       "text-bright": {
         "role": "neutral",

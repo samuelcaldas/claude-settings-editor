@@ -8,7 +8,7 @@ colors:
   border: "#353b45"
   border-focus: "#e06c75"
   text: "#abb2bf"
-  text-muted: "#636d83"
+  text-muted: "#8b95a8"
   text-bright: "#eceff4"
   accent: "#d19a66"
   accent-hover: "#e5c07b"
