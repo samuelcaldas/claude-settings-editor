@@ -5,6 +5,11 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#141619",
   "theme_color": "#d19a66",
   "orientation": "any",
@@ -22,5 +27,47 @@
       "purpose": "maskable"
     }
   ],
-  "categories": ["developer", "productivity", "utilities"]
+  "categories": ["developer", "productivity", "utilities"],
+  "file_handlers": [
+    {
+      "action": "./",
+      "name": "Claude Code Settings Document",
+      "icons": [
+        {
+          "src": "icons/icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ],
+      "accept": {
+        "application/json": [".json"]
+      }
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Settings File",
+      "short_name": "Open",
+      "description": "Open a local Claude settings JSON file",
+      "url": "./?action=open",
+      "icons": [
+        {
+          "src": "icons/icon.svg",
+          "sizes": "any"
+        }
+      ]
+    },
+    {
+      "name": "Load Sample Settings",
+      "short_name": "Sample",
+      "description": "Load default sample Claude settings fixture",
+      "url": "./?action=sample",
+      "icons": [
+        {
+          "src": "icons/icon.svg",
+          "sizes": "any"
+        }
+      ]
+    }
+  ]
 }

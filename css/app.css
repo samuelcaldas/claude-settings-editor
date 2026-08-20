@@ -113,6 +113,29 @@ header {
   display: inline-block;
 }
 
+/* Active File Pill */
+.active-file-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--text-bright);
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+.active-file-pill.direct-disk {
+  border-color: var(--green);
+  color: var(--green);
+}
+
 /* Scope Selector in Header */
 .scope-selector-wrap {
   display: flex;
@@ -736,7 +759,7 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
   }
 
   .header-actions .btn-full { display: none; }
-  .header-actions #btn-load-mobile, .header-actions #btn-download-mobile { display: inline-flex !important; }
+  .header-actions #btn-open-mobile, .header-actions #btn-save-mobile { display: inline-flex !important; }
 
   main {
     padding: 12px 12px calc(var(--nav-h-mobile) + var(--safe-bottom) + 16px);

@@ -4,10 +4,13 @@
   const i18n = window.I18n;
   if (!model) throw new Error('SettingsModel script not loaded');
 
-  // Application document state
+  // Application document and persistence state
   const state = {
     document: {},
     baseline: {},
+    fileHandle: null,
+    fileName: 'sample.json',
+    isSample: true,
     targetScope: 'user',
     jsonDraft: '',
     jsonError: '',
@@ -16,14 +19,17 @@
     isDirty: false,
     history: [],
     historyIdx: -1,
-    envMasked: true
+    envMasked: true,
+    isSaving: false
   };
 
   document.addEventListener('DOMContentLoaded', () => {
     initLocale();
     bindEvents();
+    registerLaunchQueue();
     registerServiceWorker();
     loadDefaultSample();
+    checkUrlActions();
   });
 
   function initLocale() {
@@ -49,14 +55,45 @@
     }
   }
 
+  function registerLaunchQueue() {
+    if ('launchQueue' in window && 'setConsumer' in window.launchQueue) {
+      window.launchQueue.setConsumer(async launchParams => {
+        if (launchParams.files && launchParams.files.length > 0) {
+          const handle = launchParams.files[0];
+          await loadFromFileHandle(handle);
+        }
+      });
+    }
+  }
+
+  function checkUrlActions() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const action = params.get('action');
+      if (action === 'open') {
+        setTimeout(() => openFile(), 150);
+      } else if (action === 'sample') {
+        setTimeout(() => loadDefaultSample(), 150);
+      }
+    } catch (_) {}
+  }
+
   function loadDefaultSample() {
     fetch('./sample.json')
       .then(res => {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.text();
       })
-      .then(source => setDocumentFromSource(source, 'status.sampleLoaded'))
+      .then(source => {
+        state.fileHandle = null;
+        state.fileName = 'sample.json';
+        state.isSample = true;
+        setDocumentFromSource(source, 'status.sampleLoaded');
+      })
       .catch(err => {
+        state.fileHandle = null;
+        state.fileName = 'settings.json';
+        state.isSample = false;
         setDocumentFromObject({}, 'status.initEmpty');
         setStatus('status.loadSampleErr', 'err', { error: err.message });
       });
@@ -71,11 +108,12 @@
       renderDiagnostics();
       renderJsonEditor();
       setStatus('status.invalidSource', 'err');
-      return;
+      return false;
     }
     state.jsonError = '';
     state.diagnostics = model.inspectSettings(result.value, state.targetScope);
     setDocumentFromObject(result.value, statusMsgKey, statusParams);
+    return true;
   }
 
   function setDocumentFromObject(obj, statusMsgKey, statusParams) {
@@ -92,6 +130,137 @@
     if (statusMsgKey) setStatus(statusMsgKey, 'ok', statusParams);
   }
 
+  async function openFile() {
+    if (state.isDirty && i18n) {
+      const confirmDiscard = window.confirm(i18n.t('confirm.discardUnsaved'));
+      if (!confirmDiscard) {
+        setStatus('status.openCancelled', 'ok');
+        return;
+      }
+    }
+
+    if ('showOpenFilePicker' in window) {
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          types: [{
+            description: i18n ? i18n.t('file.jsonDescription') : 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }],
+          multiple: false
+        });
+        await loadFromFileHandle(handle);
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          setStatus('status.openCancelled', 'ok');
+        } else {
+          setStatus('status.fileSaveErr', 'err', { error: err.message });
+        }
+      }
+    } else {
+      const fileInput = getElement('file-input');
+      if (fileInput) fileInput.click();
+    }
+  }
+
+  async function loadFromFileHandle(handle) {
+    try {
+      const file = await handle.getFile();
+      const text = await file.text();
+      const result = model.parseSettingsJson(text);
+      if (!result.ok) {
+        state.jsonDraft = text;
+        state.jsonError = result.diagnostics.map(d => d.message).join('; ');
+        state.diagnostics = result.diagnostics;
+        renderDiagnostics();
+        renderJsonEditor();
+        setStatus('status.invalidSource', 'err');
+        return;
+      }
+      state.fileHandle = handle;
+      state.fileName = handle.name;
+      state.isSample = false;
+      setDocumentFromObject(result.value, 'status.fileLoaded', { name: handle.name });
+    } catch (err) {
+      setStatus('status.fileSaveErr', 'err', { error: err.message });
+    }
+  }
+
+  async function saveFile() {
+    if (state.isSaving) return;
+
+    if (state.fileHandle && !state.isSample) {
+      try {
+        state.isSaving = true;
+        const options = { mode: 'readwrite' };
+        if (typeof state.fileHandle.queryPermission === 'function') {
+          const perm = await state.fileHandle.queryPermission(options);
+          if (perm !== 'granted') {
+            const req = await state.fileHandle.requestPermission(options);
+            if (req !== 'granted') {
+              setStatus('status.permissionDenied', 'err');
+              return;
+            }
+          }
+        }
+        const writable = await state.fileHandle.createWritable();
+        const json = model.serializeSettings(state.document);
+        await writable.write(json + '\n');
+        await writable.close();
+
+        state.baseline = model.clone(state.document);
+        state.isDirty = false;
+        renderHeaderStatus();
+        setStatus('status.fileSavedDirect', 'ok', { name: state.fileName });
+      } catch (err) {
+        setStatus('status.fileSaveErr', 'err', { error: err.message });
+      } finally {
+        state.isSaving = false;
+      }
+    } else {
+      await saveFileAs();
+    }
+  }
+
+  async function saveFileAs() {
+    if (state.isSaving) return;
+
+    if ('showSaveFilePicker' in window) {
+      try {
+        state.isSaving = true;
+        const suggestedName = state.fileName === 'sample.json' ? 'settings.json' : (state.fileName || 'settings.json');
+        const handle = await window.showSaveFilePicker({
+          suggestedName,
+          types: [{
+            description: i18n ? i18n.t('file.jsonDescription') : 'JSON Files',
+            accept: { 'application/json': ['.json'] }
+          }]
+        });
+        const writable = await handle.createWritable();
+        const json = model.serializeSettings(state.document);
+        await writable.write(json + '\n');
+        await writable.close();
+
+        state.fileHandle = handle;
+        state.fileName = handle.name;
+        state.isSample = false;
+        state.baseline = model.clone(state.document);
+        state.isDirty = false;
+        renderHeaderStatus();
+        setStatus('status.fileSavedDirect', 'ok', { name: state.fileName });
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          setStatus('status.saveCancelled', 'ok');
+        } else {
+          setStatus('status.fileSaveErr', 'err', { error: err.message });
+        }
+      } finally {
+        state.isSaving = false;
+      }
+    } else {
+      downloadSettings();
+    }
+  }
+
   function applyPatch(patch) {
     try {
       const next = model.applyPatch(state.document, patch);
@@ -101,25 +270,18 @@
         return;
       }
       state.document = next;
+      state.history = state.history.slice(0, state.historyIdx + 1);
+      state.history.push(model.clone(state.document));
+      state.historyIdx++;
+      state.isDirty = !model.deepEqual(state.document, state.baseline);
       state.jsonDraft = model.serializeSettings(state.document);
       state.jsonError = '';
       state.diagnostics = model.inspectSettings(state.document, state.targetScope);
-      state.isDirty = !model.deepEqual(state.document, state.baseline);
 
-      pushHistory(state.document);
       renderAll();
     } catch (err) {
       setStatus('status.editFailed', 'err', { error: err.message });
     }
-  }
-
-  function pushHistory(doc) {
-    if (state.historyIdx < state.history.length - 1) {
-      state.history = state.history.slice(0, state.historyIdx + 1);
-    }
-    state.history.push(model.clone(doc));
-    if (state.history.length > 50) state.history.shift();
-    state.historyIdx = state.history.length - 1;
   }
 
   function undo() {
@@ -146,14 +308,54 @@
 
   function bindEvents() {
     // Header actions
-    getElement('btn-load')?.addEventListener('click', () => getElement('file-input')?.click());
-    getElement('btn-load-mobile')?.addEventListener('click', () => getElement('file-input')?.click());
+    getElement('btn-open')?.addEventListener('click', () => openFile());
+    getElement('btn-open-mobile')?.addEventListener('click', () => openFile());
+    getElement('btn-save')?.addEventListener('click', () => saveFile());
+    getElement('btn-save-mobile')?.addEventListener('click', () => saveFile());
+    getElement('btn-save-as')?.addEventListener('click', () => saveFileAs());
     getElement('btn-sample')?.addEventListener('click', () => loadDefaultSample());
-    getElement('btn-download')?.addEventListener('click', downloadSettings);
-    getElement('btn-download-mobile')?.addEventListener('click', downloadSettings);
     getElement('btn-undo')?.addEventListener('click', undo);
     getElement('btn-redo')?.addEventListener('click', redo);
     getElement('file-input')?.addEventListener('change', onFileSelected);
+
+    // Global keyboard shortcuts
+    window.addEventListener('keydown', e => {
+      const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+      if (!isCmdOrCtrl || e.altKey) return;
+      const key = e.key ? e.key.toLowerCase() : '';
+
+      if (key === 's') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          saveFileAs();
+        } else {
+          saveFile();
+        }
+      } else if (key === 'o' && !e.shiftKey) {
+        e.preventDefault();
+        openFile();
+      } else if (key === 'z' && !e.shiftKey) {
+        const tag = document.activeElement ? document.activeElement.tagName : '';
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+          e.preventDefault();
+          undo();
+        }
+      } else if ((key === 'y' && !e.shiftKey) || (key === 'z' && e.shiftKey)) {
+        const tag = document.activeElement ? document.activeElement.tagName : '';
+        if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+          e.preventDefault();
+          redo();
+        }
+      }
+    });
+
+    // Unsaved changes guard before unload
+    window.addEventListener('beforeunload', e => {
+      if (state.isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
 
     // Scope selection
     const scopeSelect = getElement('scope-select');
@@ -210,115 +412,107 @@
       });
     });
 
-    // String lists add buttons
-    setupStringListAdders();
+    // Permission Rule Add Buttons
+    bindListAdd('btn-add-deny', 'new-deny-rule', 'permissions.deny');
+    bindListAdd('btn-add-ask', 'new-ask-rule', 'permissions.ask');
+    bindListAdd('btn-add-allow', 'new-allow-rule', 'permissions.allow');
+    bindListAdd('btn-add-dir', 'new-dir-rule', 'permissions.additionalDirectories');
 
-    // Environment Presets
-    getElement('btn-preset-anthropic')?.addEventListener('click', () => {
-      const current = model.getAtPath(state.document, 'env') || {};
-      const next = { ...current, ANTHROPIC_API_KEY: current.ANTHROPIC_API_KEY || 'sk-ant-api03-...', ANTHROPIC_BASE_URL: current.ANTHROPIC_BASE_URL || 'https://api.anthropic.com' };
-      applyPatch({ op: 'set', path: 'env', value: next });
-    });
+    // Sandbox Rule Add Buttons
+    bindListAdd('btn-add-sb-allow-write', 'new-sb-allow-write', 'sandbox.filesystem.allowWrite');
+    bindListAdd('btn-add-sb-deny-write', 'new-sb-deny-write', 'sandbox.filesystem.denyWrite');
+    bindListAdd('btn-add-sb-deny-read', 'new-sb-deny-read', 'sandbox.filesystem.denyRead');
+    bindListAdd('btn-add-sb-allow-read', 'new-sb-allow-read', 'sandbox.filesystem.allowRead');
+    bindListAdd('btn-add-sb-allow-domain', 'new-sb-allow-domain', 'sandbox.network.allowedDomains');
+    bindListAdd('btn-add-sb-deny-domain', 'new-sb-deny-domain', 'sandbox.network.deniedDomains');
+    bindListAdd('btn-add-sb-ex-cmd', 'new-sb-ex-cmd', 'sandbox.excludedCommands');
 
-    getElement('btn-preset-telemetry')?.addEventListener('click', () => {
-      const current = model.getAtPath(state.document, 'env') || {};
-      const next = { ...current, OTEL_EXPORTER_OTLP_ENDPOINT: current.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4317', OTEL_EXPORTER_OTLP_HEADERS: current.OTEL_EXPORTER_OTLP_HEADERS || 'api-key=secret' };
-      applyPatch({ op: 'set', path: 'env', value: next });
-    });
+    // Worktree Rule Add Buttons
+    bindListAdd('btn-add-wt-symlink', 'new-wt-symlink', 'worktree.symlinkDirectories');
+    bindListAdd('btn-add-wt-sparse', 'new-wt-sparse', 'worktree.sparsePaths');
 
-    getElement('btn-preset-models')?.addEventListener('click', () => {
-      const current = model.getAtPath(state.document, 'env') || {};
-      const next = { ...current, ANTHROPIC_MODEL: current.ANTHROPIC_MODEL || 'claude-sonnet-5' };
-      applyPatch({ op: 'set', path: 'env', value: next });
-    });
+    // MCP Policy Rule Add Buttons
+    bindListAdd('btn-add-mcp-approved', 'new-mcp-approved', 'mcp.approvedServers');
+    bindListAdd('btn-add-mcp-rejected', 'new-mcp-rejected', 'mcp.rejectedServers');
 
-    getElement('btn-add-env-var')?.addEventListener('click', addEnvVar);
+    // Env vars add
+    getElement('btn-add-env')?.addEventListener('click', addEnvVar);
     getElement('new-env-val')?.addEventListener('keydown', e => {
       if (e.key === 'Enter') addEnvVar();
     });
+    getElement('btn-mask-env')?.addEventListener('click', toggleEnvMask);
 
-    // Dynamic builders
+    // Fallback models add
     getElement('btn-add-fallback')?.addEventListener('click', addFallbackModel);
     getElement('new-model-input')?.addEventListener('keydown', e => {
       if (e.key === 'Enter') addFallbackModel();
     });
 
+    // Enabled plugins add
     getElement('btn-add-plugin')?.addEventListener('click', addPlugin);
     getElement('new-plugin-key')?.addEventListener('keydown', e => {
       if (e.key === 'Enter') addPlugin();
     });
 
-    getElement('btn-add-marketplace')?.addEventListener('click', addMarketplace);
-    getElement('btn-add-hook')?.addEventListener('click', addHookEvent);
+    // Marketplaces add
+    getElement('btn-add-mkt')?.addEventListener('click', addMarketplace);
 
-    // Advanced JSON Toolbar
+    // Hook groups & URLs
+    getElement('btn-add-hook-group')?.addEventListener('click', addHookGroup);
+    getElement('btn-add-hook-url')?.addEventListener('click', addHookUrl);
+
+    // Raw JSON toolbar
     getElement('btn-apply-json')?.addEventListener('click', applyJsonDraft);
     getElement('btn-discard-json')?.addEventListener('click', discardJsonDraft);
     getElement('btn-format-json')?.addEventListener('click', formatJsonDraft);
     getElement('btn-copy-json')?.addEventListener('click', copyJsonDraft);
     getElement('btn-reset-json')?.addEventListener('click', loadDefaultSample);
 
-    getElement('json-editor')?.addEventListener('input', e => {
-      state.jsonDraft = e.target.value;
-      validateDraftOnly(state.jsonDraft);
-    });
-  }
-
-  function setupStringListAdders() {
-    const mappings = [
-      { btn: 'btn-add-deny-rule', inp: 'new-deny-rule', path: 'permissions.deny' },
-      { btn: 'btn-add-ask-rule', inp: 'new-ask-rule', path: 'permissions.ask' },
-      { btn: 'btn-add-allow-rule', inp: 'new-allow-rule', path: 'permissions.allow' },
-      { btn: 'btn-add-dir', inp: 'new-add-dir', path: 'permissions.additionalDirectories' },
-      { btn: 'btn-add-sb-allow-write', inp: 'new-sb-allow-write', path: 'sandbox.filesystem.allowWrite' },
-      { btn: 'btn-add-sb-deny-write', inp: 'new-sb-deny-write', path: 'sandbox.filesystem.denyWrite' },
-      { btn: 'btn-add-sb-deny-read', inp: 'new-sb-deny-read', path: 'sandbox.filesystem.denyRead' },
-      { btn: 'btn-add-sb-allow-read', inp: 'new-sb-allow-read', path: 'sandbox.filesystem.allowRead' },
-      { btn: 'btn-add-sb-allow-domain', inp: 'new-sb-allow-domain', path: 'sandbox.network.allowedDomains' },
-      { btn: 'btn-add-sb-deny-domain', inp: 'new-sb-deny-domain', path: 'sandbox.network.deniedDomains' },
-      { btn: 'btn-add-sb-excluded-cmd', inp: 'new-sb-excluded-cmd', path: 'sandbox.excludedCommands' },
-      { btn: 'btn-add-hook-url', inp: 'new-hook-url', path: 'allowedHttpHookUrls' },
-      { btn: 'btn-add-mcp-enabled', inp: 'new-mcp-enabled-server', path: 'enabledMcpjsonServers' },
-      { btn: 'btn-add-mcp-disabled', inp: 'new-mcp-disabled-server', path: 'disabledMcpjsonServers' },
-      { btn: 'btn-add-wt-symlink', inp: 'new-wt-symlink', path: 'worktree.symlinkDirectories' },
-      { btn: 'btn-add-wt-sparse', inp: 'new-wt-sparse', path: 'worktree.sparsePaths' }
-    ];
-
-    mappings.forEach(({ btn, inp, path }) => {
-      const btnEl = getElement(btn);
-      const inpEl = getElement(inp);
-      if (!btnEl || !inpEl) return;
-
-      const handler = () => {
-        const val = inpEl.value.trim();
-        if (!val) return;
-        const current = model.getAtPath(state.document, path) || [];
-        const next = Array.isArray(current) ? [...current, val] : [val];
-        applyPatch({ op: 'set', path, value: next });
-        inpEl.value = '';
-      };
-
-      btnEl.addEventListener('click', handler);
-      inpEl.addEventListener('keydown', e => {
-        if (e.key === 'Enter') handler();
+    const jsonEditor = getElement('json-editor');
+    if (jsonEditor) {
+      jsonEditor.addEventListener('input', e => {
+        state.jsonDraft = e.target.value;
+        validateJsonDraftLive();
       });
+    }
+  }
+
+  function bindListAdd(btnId, inputId, basePath) {
+    const btn = getElement(btnId);
+    const inp = getElement(inputId);
+    if (!btn || !inp) return;
+
+    const handler = () => {
+      const val = inp.value.trim();
+      if (!val) return;
+      const currentList = model.getAtPath(state.document, basePath) || [];
+      if (Array.isArray(currentList)) {
+        applyPatch({ op: 'set', path: `${basePath}.${currentList.length}`, value: val });
+      } else {
+        applyPatch({ op: 'set', path: basePath, value: [val] });
+      }
+      inp.value = '';
+    };
+
+    btn.addEventListener('click', handler);
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') handler();
     });
   }
 
-  function switchTab(tabName) {
-    state.activeTab = tabName;
-    document.querySelectorAll('[role="tab"]').forEach(b => {
-      const isActive = b.getAttribute('data-tab') === tabName;
-      b.setAttribute('aria-selected', isActive ? 'true' : 'false');
-      b.classList.toggle('active', isActive);
+  function switchTab(tabId) {
+    state.activeTab = tabId;
+    document.querySelectorAll('[role="tab"]').forEach(btn => {
+      const active = btn.getAttribute('data-tab') === tabId;
+      btn.setAttribute('aria-selected', active);
+      btn.classList.toggle('active', active);
     });
     document.querySelectorAll('.tab-panel').forEach(panel => {
-      const isActive = panel.id === 'tab-' + tabName;
-      panel.classList.toggle('active', isActive);
-      panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+      const active = panel.id === `tab-${tabId}`;
+      panel.classList.toggle('active', active);
+      panel.setAttribute('aria-hidden', !active);
     });
-
-    if (tabName === 'advanced') {
+    if (tabId === 'advanced') {
       renderJsonEditor();
     }
   }
@@ -327,10 +521,10 @@
     renderHeaderStatus();
     renderScopeInfo();
     renderFormFields();
-    renderStringLists();
+    renderRuleLists();
     renderEnvVars();
-    renderFallbackList();
-    renderPluginList();
+    renderFallbackModels();
+    renderPlugins();
     renderMarketplaces();
     renderHooks();
     renderDiagnostics();
@@ -340,10 +534,30 @@
   function renderHeaderStatus() {
     const badge = getElement('dirty-badge');
     if (badge) badge.classList.toggle('active', state.isDirty);
+
+    const activeFileName = getElement('active-file-name');
+    if (activeFileName) {
+      if (state.isSample) {
+        activeFileName.textContent = i18n ? i18n.t('file.activeSample') : 'sample.json (sample)';
+      } else {
+        activeFileName.textContent = state.fileName || (i18n ? i18n.t('file.untitled') : 'settings.json');
+      }
+    }
+
+    const pill = getElement('active-file-pill');
+    if (pill) {
+      pill.classList.toggle('direct-disk', Boolean(state.fileHandle && !state.isSample));
+    }
+
     const undoBtn = getElement('btn-undo');
     if (undoBtn) undoBtn.disabled = state.historyIdx <= 0;
     const redoBtn = getElement('btn-redo');
     if (redoBtn) redoBtn.disabled = state.historyIdx >= state.history.length - 1;
+
+    // Update document title with dirty marker
+    const appTitle = i18n ? i18n.t('app.title') : 'Claude Settings Editor';
+    const displayFile = state.isSample ? 'sample.json' : (state.fileName || 'settings.json');
+    document.title = (state.isDirty ? '• ' : '') + displayFile + ' — ' + appTitle;
   }
 
   function renderScopeInfo() {
@@ -366,508 +580,593 @@
       const val = model.getAtPath(state.document, path);
       if (input.type === 'checkbox') {
         input.checked = Boolean(val);
+      } else if (input.type === 'number') {
+        input.value = val === undefined ? '' : val;
       } else {
-        input.value = val !== undefined && val !== null ? String(val) : '';
+        input.value = val === undefined ? '' : val;
+      }
+
+      // Check if setting is ignored in target scope
+      const def = catalog.getDefinition(path);
+      const isIgnored = def && def.scopes && !def.scopes.includes(state.targetScope);
+      const fieldGroup = input.closest('.field-group') || input.closest('.checkbox-row');
+      if (fieldGroup) {
+        fieldGroup.classList.toggle('scope-mismatch', Boolean(isIgnored));
       }
     });
   }
 
-  function renderStringLists() {
-    const lists = [
-      { id: 'list-permissions-deny', path: 'permissions.deny' },
-      { id: 'list-permissions-ask', path: 'permissions.ask' },
-      { id: 'list-permissions-allow', path: 'permissions.allow' },
-      { id: 'list-permissions-additionalDirs', path: 'permissions.additionalDirectories' },
-      { id: 'list-sb-allow-write', path: 'sandbox.filesystem.allowWrite' },
-      { id: 'list-sb-deny-write', path: 'sandbox.filesystem.denyWrite' },
-      { id: 'list-sb-deny-read', path: 'sandbox.filesystem.denyRead' },
-      { id: 'list-sb-allow-read', path: 'sandbox.filesystem.allowRead' },
-      { id: 'list-sb-allow-domains', path: 'sandbox.network.allowedDomains' },
-      { id: 'list-sb-deny-domains', path: 'sandbox.network.deniedDomains' },
-      { id: 'list-sb-excluded-commands', path: 'sandbox.excludedCommands' },
-      { id: 'list-hook-allowed-urls', path: 'allowedHttpHookUrls' },
-      { id: 'list-mcp-enabled', path: 'enabledMcpjsonServers' },
-      { id: 'list-mcp-disabled', path: 'disabledMcpjsonServers' },
-      { id: 'list-worktree-symlinks', path: 'worktree.symlinkDirectories' },
-      { id: 'list-worktree-sparse', path: 'worktree.sparsePaths' }
-    ];
+  function renderRuleLists() {
+    renderStringList('list-deny', 'permissions.deny');
+    renderStringList('list-ask', 'permissions.ask');
+    renderStringList('list-allow', 'permissions.allow');
+    renderStringList('list-dirs', 'permissions.additionalDirectories');
 
-    lists.forEach(({ id, path }) => {
-      const container = getElement(id);
-      if (!container) return;
-      container.replaceChildren();
+    renderStringList('list-sb-allow-write', 'sandbox.filesystem.allowWrite');
+    renderStringList('list-sb-deny-write', 'sandbox.filesystem.denyWrite');
+    renderStringList('list-sb-deny-read', 'sandbox.filesystem.denyRead');
+    renderStringList('list-sb-allow-read', 'sandbox.filesystem.allowRead');
+    renderStringList('list-sb-allow-domain', 'sandbox.network.allowedDomains');
+    renderStringList('list-sb-deny-domain', 'sandbox.network.deniedDomains');
+    renderStringList('list-sb-ex-cmds', 'sandbox.excludedCommands');
 
-      const items = model.getAtPath(state.document, path) || [];
-      if (!Array.isArray(items)) {
-        const err = document.createElement('div');
-        err.className = 'field-hint';
-        err.textContent = path + ' is not an array; edit in Advanced JSON.';
-        container.appendChild(err);
-        return;
-      }
+    renderStringList('list-wt-symlinks', 'worktree.symlinkDirectories');
+    renderStringList('list-wt-sparse', 'worktree.sparsePaths');
 
-      if (items.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'field-hint';
-        empty.textContent = i18n ? i18n.t('empty.none') : 'None configured.';
-        container.appendChild(empty);
-        return;
-      }
+    renderStringList('list-mcp-approved', 'mcp.approvedServers');
+    renderStringList('list-mcp-rejected', 'mcp.rejectedServers');
+  }
 
-      items.forEach((itemVal, idx) => {
-        const row = document.createElement('div');
-        row.className = 'rule-item';
+  function renderStringList(containerId, basePath) {
+    const el = getElement(containerId);
+    if (!el) return;
+    el.replaceChildren();
 
-        const text = document.createElement('code');
-        text.className = 'rule-text';
-        text.textContent = String(itemVal);
+    const list = model.getAtPath(state.document, basePath) || [];
+    if (!Array.isArray(list) || list.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'field-hint';
+      empty.textContent = i18n ? i18n.t('empty.none') : 'None configured.';
+      el.appendChild(empty);
+      return;
+    }
 
-        const del = document.createElement('button');
-        del.className = 'del-btn';
-        del.textContent = '×';
-        del.title = i18n ? i18n.t('actions.remove') : 'Remove';
-        del.addEventListener('click', () => {
-          applyPatch({ op: 'delete', path: [...path.split('.'), idx] });
-        });
+    list.forEach((item, idx) => {
+      const row = document.createElement('div');
+      row.className = 'rule-item';
 
-        row.append(text, del);
-        container.appendChild(row);
+      const txt = document.createElement('span');
+      txt.className = 'rule-text';
+      txt.textContent = String(item);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-btn';
+      delBtn.setAttribute('data-i18n-title', 'actions.remove');
+      delBtn.title = i18n ? i18n.t('actions.remove') : 'Remove';
+      delBtn.textContent = '×';
+      delBtn.addEventListener('click', () => {
+        applyPatch({ op: 'delete', path: `${basePath}.${idx}` });
       });
+
+      row.appendChild(txt);
+      row.appendChild(delBtn);
+      el.appendChild(row);
     });
   }
 
   function renderEnvVars() {
-    const container = getElement('env-var-list');
-    if (!container) return;
-    container.replaceChildren();
+    const el = getElement('list-env');
+    if (!el) return;
+    el.replaceChildren();
 
-    const env = model.getAtPath(state.document, 'env') || {};
-    if (!model.isPlainObject(env)) {
+    renderEnvPresets();
+
+    const envObj = model.getAtPath(state.document, 'env') || {};
+    if (typeof envObj !== 'object' || Array.isArray(envObj)) {
       const err = document.createElement('div');
       err.className = 'field-hint';
       err.textContent = i18n ? i18n.t('env.notObject') : 'env is not an object; edit in Advanced JSON.';
-      container.appendChild(err);
+      el.appendChild(err);
       return;
     }
 
-    const entries = Object.entries(env);
-    if (!entries.length) {
+    const keys = Object.keys(envObj);
+    if (keys.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'field-hint';
       empty.textContent = i18n ? i18n.t('env.empty') : 'No environment variables set in settings.';
-      container.appendChild(empty);
+      el.appendChild(empty);
       return;
     }
 
-    entries.forEach(([key, val]) => {
+    keys.forEach(key => {
+      const val = envObj[key];
       const row = document.createElement('div');
       row.className = 'env-item';
 
       const keyInp = document.createElement('input');
       keyInp.type = 'text';
       keyInp.value = key;
-      keyInp.style.flex = '1';
       keyInp.addEventListener('change', () => {
         const newKey = keyInp.value.trim();
         if (newKey && newKey !== key) {
-          applyPatch({ op: 'renameKey', path: 'env', oldKey: key, newKey });
+          applyPatch({ op: 'rename_key', path: 'env', fromKey: key, toKey: newKey });
         }
       });
 
       const valInp = document.createElement('input');
-      valInp.type = 'text';
+      valInp.type = state.envMasked ? 'password' : 'text';
       valInp.value = String(val);
-      valInp.style.flex = '2';
       valInp.addEventListener('change', () => {
-        applyPatch({ op: 'set', path: ['env', key], value: valInp.value });
+        applyPatch({ op: 'set', path: `env.${key}`, value: valInp.value });
       });
 
-      const del = document.createElement('button');
-      del.className = 'del-btn';
-      del.textContent = '×';
-      del.title = i18n ? i18n.t('actions.remove') : 'Delete variable';
-      del.addEventListener('click', () => {
-        applyPatch({ op: 'delete', path: ['env', key] });
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-btn';
+      delBtn.setAttribute('data-i18n-title', 'actions.remove');
+      delBtn.title = i18n ? i18n.t('actions.remove') : 'Remove';
+      delBtn.textContent = '×';
+      delBtn.addEventListener('click', () => {
+        applyPatch({ op: 'delete', path: `env.${key}` });
       });
 
-      row.append(keyInp, valInp, del);
-      container.appendChild(row);
+      row.appendChild(keyInp);
+      row.appendChild(valInp);
+      row.appendChild(delBtn);
+      el.appendChild(row);
+    });
+  }
+
+  function renderEnvPresets() {
+    const bar = getElement('env-presets');
+    if (!bar) return;
+    bar.replaceChildren();
+
+    const presets = [
+      { nameKey: 'env.preset.anthropic', fallback: '+ Anthropic API', key: 'ANTHROPIC_API_KEY', val: '' },
+      { nameKey: 'env.preset.telemetry', fallback: '+ OpenTelemetry', key: 'OTEL_EXPORTER_OTLP_ENDPOINT', val: 'http://localhost:4318' },
+      { nameKey: 'env.preset.models', fallback: '+ Default Models', key: 'ANTHROPIC_MODEL', val: 'claude-sonnet-5' }
+    ];
+
+    presets.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'btn small';
+      btn.setAttribute('data-i18n', p.nameKey);
+      btn.textContent = i18n ? i18n.t(p.nameKey) : p.fallback;
+      btn.addEventListener('click', () => {
+        applyPatch({ op: 'set', path: `env.${p.key}`, value: p.val });
+      });
+      bar.appendChild(btn);
     });
   }
 
   function addEnvVar() {
     const keyInp = getElement('new-env-key');
     const valInp = getElement('new-env-val');
-    const k = keyInp?.value.trim();
-    const v = valInp?.value ?? '';
+    if (!keyInp || !valInp) return;
+    const k = keyInp.value.trim();
     if (!k) return;
-    applyPatch({ op: 'set', path: ['env', k], value: v });
+    applyPatch({ op: 'set', path: `env.${k}`, value: valInp.value });
     keyInp.value = '';
     valInp.value = '';
   }
 
-  function renderFallbackList() {
-    const container = getElement('fallback-list');
-    if (!container) return;
-    container.replaceChildren();
+  function toggleEnvMask() {
+    state.envMasked = !state.envMasked;
+    const btn = getElement('btn-mask-env');
+    if (btn) btn.textContent = state.envMasked ? '👁 Show' : '🔒 Hide';
+    renderEnvVars();
+  }
+
+  function renderFallbackModels() {
+    const el = getElement('list-fallback-models');
+    if (!el) return;
+    el.replaceChildren();
 
     const list = model.getAtPath(state.document, 'fallbackModel') || [];
     if (!Array.isArray(list)) {
       const err = document.createElement('div');
       err.className = 'field-hint';
       err.textContent = i18n ? i18n.t('fallback.notArray') : 'fallbackModel is not an array; edit in Advanced JSON.';
-      container.appendChild(err);
+      el.appendChild(err);
       return;
     }
 
     list.forEach((m, idx) => {
-      const item = document.createElement('div');
-      item.className = 'model-item';
+      const row = document.createElement('div');
+      row.className = 'model-item';
 
-      const num = document.createElement('span');
-      num.style.fontSize = '12px';
-      num.style.color = 'var(--text-muted)';
-      num.textContent = (idx + 1) + '.';
+      const badge = document.createElement('span');
+      badge.className = 'field-hint';
+      badge.textContent = `#${idx + 1}`;
 
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.value = String(m);
-      input.addEventListener('change', () => {
-        const next = input.value.trim();
-        if (next) {
-          applyPatch({ op: 'set', path: ['fallbackModel', idx], value: next });
-        }
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = String(m);
+      inp.addEventListener('change', () => {
+        applyPatch({ op: 'set', path: `fallbackModel.${idx}`, value: inp.value.trim() });
       });
 
-      const up = document.createElement('button');
-      up.className = 'btn small';
-      up.textContent = '▲';
-      up.title = i18n ? i18n.t('actions.moveUp') : 'Move up';
-      up.disabled = idx === 0;
-      up.addEventListener('click', () => applyPatch({ op: 'move', path: 'fallbackModel', from: idx, to: idx - 1 }));
+      const upBtn = document.createElement('button');
+      upBtn.className = 'del-btn';
+      upBtn.setAttribute('data-i18n-title', 'actions.moveUp');
+      upBtn.title = i18n ? i18n.t('actions.moveUp') : 'Move up';
+      upBtn.textContent = '↑';
+      upBtn.disabled = idx === 0;
+      upBtn.addEventListener('click', () => {
+        applyPatch({ op: 'move', path: 'fallbackModel', fromIndex: idx, toIndex: idx - 1 });
+      });
 
-      const down = document.createElement('button');
-      down.className = 'btn small';
-      down.textContent = '▼';
-      down.title = i18n ? i18n.t('actions.moveDown') : 'Move down';
-      down.disabled = idx === list.length - 1;
-      down.addEventListener('click', () => applyPatch({ op: 'move', path: 'fallbackModel', from: idx, to: idx + 1 }));
+      const dnBtn = document.createElement('button');
+      dnBtn.className = 'del-btn';
+      dnBtn.setAttribute('data-i18n-title', 'actions.moveDown');
+      dnBtn.title = i18n ? i18n.t('actions.moveDown') : 'Move down';
+      dnBtn.textContent = '↓';
+      dnBtn.disabled = idx === list.length - 1;
+      dnBtn.addEventListener('click', () => {
+        applyPatch({ op: 'move', path: 'fallbackModel', fromIndex: idx, toIndex: idx + 1 });
+      });
 
-      const del = document.createElement('button');
-      del.className = 'del-btn';
-      del.textContent = '×';
-      del.title = i18n ? i18n.t('actions.remove') : 'Remove';
-      del.addEventListener('click', () => applyPatch({ op: 'delete', path: ['fallbackModel', idx] }));
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-btn';
+      delBtn.setAttribute('data-i18n-title', 'actions.remove');
+      delBtn.title = i18n ? i18n.t('actions.remove') : 'Remove';
+      delBtn.textContent = '×';
+      delBtn.addEventListener('click', () => {
+        applyPatch({ op: 'delete', path: `fallbackModel.${idx}` });
+      });
 
-      item.append(num, input, up, down, del);
-      container.appendChild(item);
+      row.appendChild(badge);
+      row.appendChild(inp);
+      row.appendChild(upBtn);
+      row.appendChild(dnBtn);
+      row.appendChild(delBtn);
+      el.appendChild(row);
     });
   }
 
   function addFallbackModel() {
-    const input = getElement('new-model-input');
-    const v = input.value.trim();
-    if (!v) return;
+    const inp = getElement('new-model-input');
+    if (!inp) return;
+    const val = inp.value.trim();
+    if (!val) return;
     const current = model.getAtPath(state.document, 'fallbackModel') || [];
-    const list = Array.isArray(current) ? [...current, v] : [v];
-    applyPatch({ op: 'set', path: 'fallbackModel', value: list });
-    input.value = '';
+    if (Array.isArray(current)) {
+      applyPatch({ op: 'set', path: `fallbackModel.${current.length}`, value: val });
+    } else {
+      applyPatch({ op: 'set', path: 'fallbackModel', value: [val] });
+    }
+    inp.value = '';
   }
 
-  function renderPluginList() {
-    const container = getElement('plugin-list');
-    if (!container) return;
-    container.replaceChildren();
+  function renderPlugins() {
+    const el = getElement('list-plugins');
+    if (!el) return;
+    el.replaceChildren();
 
-    const plugins = model.getAtPath(state.document, 'enabledPlugins') || {};
-    if (!model.isPlainObject(plugins)) {
+    const pluginsObj = model.getAtPath(state.document, 'enabledPlugins') || {};
+    if (typeof pluginsObj !== 'object' || Array.isArray(pluginsObj)) {
       const err = document.createElement('div');
       err.className = 'field-hint';
       err.textContent = i18n ? i18n.t('plugin.notObject') : 'enabledPlugins is not an object; edit in Advanced JSON.';
-      container.appendChild(err);
+      el.appendChild(err);
       return;
     }
 
-    const entries = Object.entries(plugins);
-    if (!entries.length) {
+    const keys = Object.keys(pluginsObj);
+    if (keys.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'field-hint';
       empty.textContent = i18n ? i18n.t('plugin.empty') : 'No plugins registered in settings.';
-      container.appendChild(empty);
+      el.appendChild(empty);
       return;
     }
 
-    entries.forEach(([key, enabled]) => {
-      const item = document.createElement('div');
-      item.className = 'plugin-item';
+    keys.forEach(key => {
+      const isEnabled = Boolean(pluginsObj[key]);
+      const row = document.createElement('div');
+      row.className = 'plugin-item';
 
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.checked = Boolean(enabled);
-      cb.addEventListener('change', () => {
-        applyPatch({ op: 'set', path: ['enabledPlugins', key], value: cb.checked });
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.checked = isEnabled;
+      chk.addEventListener('change', () => {
+        applyPatch({ op: 'set', path: `enabledPlugins.${key}`, value: chk.checked });
       });
 
-      const label = document.createElement('code');
-      label.style.flex = '1';
-      label.textContent = key;
+      const lbl = document.createElement('span');
+      lbl.className = 'rule-text';
+      lbl.textContent = key;
 
-      const del = document.createElement('button');
-      del.className = 'del-btn';
-      del.textContent = '×';
-      del.title = i18n ? i18n.t('actions.remove') : 'Remove plugin';
-      del.addEventListener('click', () => {
-        applyPatch({ op: 'delete', path: ['enabledPlugins', key] });
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-btn';
+      delBtn.setAttribute('data-i18n-title', 'actions.remove');
+      delBtn.title = i18n ? i18n.t('actions.remove') : 'Remove';
+      delBtn.textContent = '×';
+      delBtn.addEventListener('click', () => {
+        applyPatch({ op: 'delete', path: `enabledPlugins.${key}` });
       });
 
-      item.append(cb, label, del);
-      container.appendChild(item);
+      row.appendChild(chk);
+      row.appendChild(lbl);
+      row.appendChild(delBtn);
+      el.appendChild(row);
     });
   }
 
   function addPlugin() {
-    const input = getElement('new-plugin-key');
-    const k = input.value.trim();
+    const inp = getElement('new-plugin-key');
+    if (!inp) return;
+    const k = inp.value.trim();
     if (!k) return;
-    applyPatch({ op: 'set', path: ['enabledPlugins', k], value: true });
-    input.value = '';
+    applyPatch({ op: 'set', path: `enabledPlugins.${k}`, value: true });
+    inp.value = '';
   }
 
   function renderMarketplaces() {
-    const container = getElement('marketplace-list');
-    if (!container) return;
-    container.replaceChildren();
+    const el = getElement('list-marketplaces');
+    if (!el) return;
+    el.replaceChildren();
 
-    const mkts = model.getAtPath(state.document, 'extraKnownMarketplaces') || {};
-    if (!Object.keys(mkts).length) {
+    const mkts = model.getAtPath(state.document, 'extraMarketplaces') || {};
+    const keys = Object.keys(mkts);
+    if (keys.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'field-hint';
       empty.textContent = i18n ? i18n.t('mkt.empty') : 'No extra marketplaces configured.';
-      container.appendChild(empty);
+      el.appendChild(empty);
       return;
     }
 
-    Object.entries(mkts).forEach(([name, config]) => {
-      const item = document.createElement('div');
-      item.className = 'plugin-item';
+    keys.forEach(key => {
+      const mkt = mkts[key] || {};
+      const card = document.createElement('div');
+      card.className = 'rule-box';
 
-      const code = document.createElement('code');
-      code.textContent = name;
+      const hdr = document.createElement('div');
+      hdr.className = 'field-header';
 
-      const desc = document.createElement('span');
-      desc.style.fontSize = '12px';
-      desc.style.color = 'var(--text-muted)';
-      desc.style.flex = '1';
-      desc.style.marginLeft = '12px';
+      const title = document.createElement('span');
+      title.className = 'rule-title';
+      title.textContent = key;
 
-      if (typeof config === 'object' && config !== null) {
-        desc.textContent = (config.source?.type || 'source') + ': ' + (config.source?.repo || config.source?.url || config.source?.path || JSON.stringify(config.source));
-      } else {
-        desc.textContent = String(config);
-      }
-
-      const del = document.createElement('button');
-      del.className = 'del-btn';
-      del.textContent = '×';
-      del.title = i18n ? i18n.t('actions.remove') : 'Remove marketplace';
-      del.addEventListener('click', () => {
-        applyPatch({ op: 'delete', path: ['extraKnownMarketplaces', name] });
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-btn';
+      delBtn.setAttribute('data-i18n-title', 'actions.remove');
+      delBtn.title = i18n ? i18n.t('actions.remove') : 'Remove';
+      delBtn.textContent = '×';
+      delBtn.addEventListener('click', () => {
+        applyPatch({ op: 'delete', path: `extraMarketplaces.${key}` });
       });
 
-      item.append(code, desc, del);
-      container.appendChild(item);
+      hdr.appendChild(title);
+      hdr.appendChild(delBtn);
+      card.appendChild(hdr);
+
+      const srcRow = document.createElement('div');
+      srcRow.className = 'input-wrap';
+
+      const srcInp = document.createElement('input');
+      srcInp.type = 'text';
+      srcInp.value = mkt.source || '';
+      srcInp.placeholder = i18n ? i18n.t('mkt.srcPlaceholder') : 'Source location';
+      srcInp.addEventListener('change', () => {
+        applyPatch({ op: 'set', path: `extraMarketplaces.${key}.source`, value: srcInp.value.trim() });
+      });
+
+      srcRow.appendChild(srcInp);
+      card.appendChild(srcRow);
+      el.appendChild(card);
     });
   }
 
   function addMarketplace() {
-    const nameInp = getElement('new-marketplace-name');
-    const typeSel = getElement('new-marketplace-type');
-    const srcInp = getElement('new-marketplace-src');
-    const name = nameInp?.value.trim();
-    const type = typeSel?.value || 'github';
-    const src = srcInp?.value.trim();
-    if (!name || !src) return;
+    const nameInp = getElement('new-mkt-name');
+    const typeSel = getElement('new-mkt-type');
+    const srcInp = getElement('new-mkt-source');
+    if (!nameInp || !typeSel || !srcInp) return;
+    const name = nameInp.value.trim();
+    if (!name) return;
 
-    let sourceObj = { type };
-    if (type === 'github') sourceObj.repo = src;
-    else if (type === 'git' || type === 'url') sourceObj.url = src;
-    else if (type === 'directory') sourceObj.path = src;
+    applyPatch({
+      op: 'set',
+      path: `extraMarketplaces.${name}`,
+      value: {
+        source: srcInp.value.trim()
+      }
+    });
 
-    applyPatch({ op: 'set', path: ['extraKnownMarketplaces', name], value: { source: sourceObj } });
     nameInp.value = '';
     srcInp.value = '';
   }
 
   function renderHooks() {
-    const container = getElement('hooks-container');
-    if (!container) return;
-    container.replaceChildren();
+    renderStringList('list-hook-urls', 'allowedHttpHookUrls');
+
+    const el = getElement('list-hook-groups');
+    if (!el) return;
+    el.replaceChildren();
 
     const hooks = model.getAtPath(state.document, 'hooks') || {};
-    if (!model.isPlainObject(hooks)) {
-      const err = document.createElement('div');
-      err.className = 'field-hint';
-      err.textContent = i18n ? i18n.t('hooks.notObject') : 'hooks is not an object; edit in Advanced JSON.';
-      container.appendChild(err);
-      return;
-    }
-
-    const events = Object.entries(hooks);
-    if (!events.length) {
+    const events = Object.keys(hooks);
+    if (events.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'field-hint';
       empty.textContent = i18n ? i18n.t('hooks.empty') : 'No hooks configured.';
-      container.appendChild(empty);
+      el.appendChild(empty);
       return;
     }
 
-    events.forEach(([eventName, groups]) => {
-      const card = document.createElement('div');
-      card.className = 'hook-card';
+    events.forEach(evtName => {
+      const groupList = hooks[evtName];
+      if (!Array.isArray(groupList)) return;
 
-      const head = document.createElement('div');
-      head.className = 'field-header';
+      groupList.forEach((group, gIdx) => {
+        const card = document.createElement('div');
+        card.className = 'hook-card';
 
-      const title = document.createElement('strong');
-      title.style.color = 'var(--blue)';
-      title.textContent = eventName;
+        const hdr = document.createElement('div');
+        hdr.className = 'field-header';
 
-      const delEvt = document.createElement('button');
-      delEvt.className = 'del-btn';
-      delEvt.textContent = '×';
-      delEvt.title = i18n ? i18n.t('hooks.deleteEvent') : 'Delete event';
-      delEvt.addEventListener('click', () => applyPatch({ op: 'delete', path: ['hooks', eventName] }));
+        const title = document.createElement('span');
+        title.className = 'rule-title';
+        const groupNum = gIdx + 1;
+        if (group.matcher) {
+          title.textContent = i18n ? i18n.t('hooks.groupWithMatcher', { number: groupNum, matcher: group.matcher }) : `${evtName} - Group ${groupNum} (matcher: ${group.matcher})`;
+        } else {
+          title.textContent = i18n ? i18n.t('hooks.group', { number: groupNum }) + ` — ${evtName}` : `${evtName} - Group ${groupNum}`;
+        }
 
-      head.append(title, delEvt);
-      card.appendChild(head);
-
-      if (Array.isArray(groups)) {
-        groups.forEach((group, gIdx) => {
-          const groupEl = document.createElement('div');
-          groupEl.className = 'hook-group';
-
-          const groupHead = document.createElement('div');
-          groupHead.className = 'hook-group-header';
-
-          const matchLabel = document.createElement('span');
-          if (group?.matcher) {
-            matchLabel.textContent = i18n ? i18n.t('hooks.groupWithMatcher', { number: gIdx + 1, matcher: group.matcher }) : ('Group ' + (gIdx + 1) + ' (matcher: ' + group.matcher + ')');
-          } else {
-            matchLabel.textContent = i18n ? i18n.t('hooks.group', { number: gIdx + 1 }) : ('Group ' + (gIdx + 1));
-          }
-          matchLabel.className = 'field-hint';
-
-          groupHead.appendChild(matchLabel);
-          groupEl.appendChild(groupHead);
-
-          const list = group && Array.isArray(group.hooks) ? group.hooks : [];
-          list.forEach((hookItem, cIdx) => {
-            const row = document.createElement('div');
-            row.className = 'hook-handler-row';
-
-            const typeSelect = document.createElement('select');
-            ['command', 'http', 'prompt', 'agent'].forEach(t => {
-              const opt = document.createElement('option');
-              opt.value = t;
-              opt.textContent = t;
-              if (t === (hookItem.type || 'command')) opt.selected = true;
-              typeSelect.appendChild(opt);
-            });
-            typeSelect.addEventListener('change', () => {
-              applyPatch({ op: 'set', path: ['hooks', eventName, gIdx, 'hooks', cIdx, 'type'], value: typeSelect.value });
-            });
-
-            const valInp = document.createElement('input');
-            valInp.type = 'text';
-            valInp.placeholder = hookItem.type === 'http' ? (i18n ? i18n.t('hooks.urlPlaceholder') : 'URL (https://...)') : (i18n ? i18n.t('hooks.cmdPlaceholder') : 'Command / prompt text');
-            valInp.value = String(hookItem.command || hookItem.url || hookItem.prompt || '');
-            valInp.style.flex = '1';
-            valInp.addEventListener('change', () => {
-              const key = hookItem.type === 'http' ? 'url' : (hookItem.type === 'prompt' ? 'prompt' : 'command');
-              applyPatch({ op: 'set', path: ['hooks', eventName, gIdx, 'hooks', cIdx, key], value: valInp.value });
-            });
-
-            const delCmd = document.createElement('button');
-            delCmd.className = 'del-btn';
-            delCmd.textContent = '×';
-            delCmd.addEventListener('click', () => {
-              applyPatch({ op: 'delete', path: ['hooks', eventName, gIdx, 'hooks', cIdx] });
-            });
-
-            row.append(typeSelect, valInp, delCmd);
-            groupEl.appendChild(row);
-          });
-
-          const addHandlerBtn = document.createElement('button');
-          addHandlerBtn.className = 'btn small';
-          addHandlerBtn.style.marginTop = '6px';
-          addHandlerBtn.textContent = i18n ? i18n.t('hooks.addHandler') : '+ Add handler';
-          addHandlerBtn.addEventListener('click', () => {
-            const currentHandlers = group?.hooks || [];
-            const nextHandlers = [...currentHandlers, { type: 'command', command: '', timeout: 30 }];
-            applyPatch({ op: 'set', path: ['hooks', eventName, gIdx, 'hooks'], value: nextHandlers });
-          });
-
-          groupEl.appendChild(addHandlerBtn);
-          card.appendChild(groupEl);
+        const delGroupBtn = document.createElement('button');
+        delGroupBtn.className = 'del-btn';
+        delGroupBtn.setAttribute('data-i18n-title', 'hooks.deleteEvent');
+        delGroupBtn.title = i18n ? i18n.t('hooks.deleteEvent') : 'Delete event';
+        delGroupBtn.textContent = '×';
+        delGroupBtn.addEventListener('click', () => {
+          applyPatch({ op: 'delete', path: `hooks.${evtName}.${gIdx}` });
         });
-      }
 
-      container.appendChild(card);
+        hdr.appendChild(title);
+        hdr.appendChild(delGroupBtn);
+        card.appendChild(hdr);
+
+        // Handlers inside group
+        const handlers = group.hooks || [];
+        handlers.forEach((h, hIdx) => {
+          const hRow = document.createElement('div');
+          hRow.className = 'hook-handler-row';
+
+          const typeSel = document.createElement('select');
+          ['command', 'http', 'prompt', 'agent'].forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t;
+            if (h.type === t) opt.selected = true;
+            typeSel.appendChild(opt);
+          });
+          typeSel.addEventListener('change', () => {
+            applyPatch({ op: 'set', path: `hooks.${evtName}.${gIdx}.hooks.${hIdx}.type`, value: typeSel.value });
+          });
+
+          const cmdInp = document.createElement('input');
+          cmdInp.type = 'text';
+          cmdInp.value = h.command || h.url || h.prompt || '';
+          cmdInp.placeholder = h.type === 'http' ? (i18n ? i18n.t('hooks.urlPlaceholder') : 'URL') : (i18n ? i18n.t('hooks.cmdPlaceholder') : 'Command / prompt text');
+          cmdInp.addEventListener('change', () => {
+            const field = h.type === 'http' ? 'url' : (h.type === 'prompt' ? 'prompt' : 'command');
+            applyPatch({ op: 'set', path: `hooks.${evtName}.${gIdx}.hooks.${hIdx}.${field}`, value: cmdInp.value.trim() });
+          });
+
+          const delHBtn = document.createElement('button');
+          delHBtn.className = 'del-btn';
+          delHBtn.setAttribute('data-i18n-title', 'actions.remove');
+          delHBtn.title = i18n ? i18n.t('actions.remove') : 'Remove';
+          delHBtn.textContent = '×';
+          delHBtn.addEventListener('click', () => {
+            applyPatch({ op: 'delete', path: `hooks.${evtName}.${gIdx}.hooks.${hIdx}` });
+          });
+
+          hRow.appendChild(typeSel);
+          hRow.appendChild(cmdInp);
+          hRow.appendChild(delHBtn);
+          card.appendChild(hRow);
+        });
+
+        // Add Handler Button
+        const addHBtn = document.createElement('button');
+        addHBtn.className = 'btn small';
+        addHBtn.style.marginTop = '6px';
+        addHBtn.setAttribute('data-i18n', 'hooks.addHandler');
+        addHBtn.textContent = i18n ? i18n.t('hooks.addHandler') : '+ Add handler';
+        addHBtn.addEventListener('click', () => {
+          const nextHIdx = handlers.length;
+          applyPatch({
+            op: 'set',
+            path: `hooks.${evtName}.${gIdx}.hooks.${nextHIdx}`,
+            value: { type: 'command', command: '' }
+          });
+        });
+        card.appendChild(addHBtn);
+
+        el.appendChild(card);
+      });
     });
   }
 
-  function addHookEvent() {
-    const sel = getElement('new-hook-event-select');
-    const ev = sel?.value;
-    if (!ev) return;
-    const current = model.getAtPath(state.document, ['hooks', ev]);
-    if (!current) {
-      applyPatch({ op: 'set', path: ['hooks', ev], value: [{ hooks: [{ type: 'command', command: '' }] }] });
+  function addHookGroup() {
+    const evtSel = getElement('new-hook-event');
+    const matchInp = getElement('new-hook-matcher');
+    if (!evtSel) return;
+    const evtName = evtSel.value;
+    const matcher = matchInp ? matchInp.value.trim() : '';
+
+    const current = model.getAtPath(state.document, `hooks.${evtName}`) || [];
+    const groupObj = { hooks: [{ type: 'command', command: '' }] };
+    if (matcher) groupObj.matcher = matcher;
+
+    if (Array.isArray(current)) {
+      applyPatch({ op: 'set', path: `hooks.${evtName}.${current.length}`, value: groupObj });
+    } else {
+      applyPatch({ op: 'set', path: `hooks.${evtName}`, value: [groupObj] });
     }
+
+    if (matchInp) matchInp.value = '';
+  }
+
+  function addHookUrl() {
+    const inp = getElement('new-hook-url-pattern');
+    if (!inp) return;
+    const val = inp.value.trim();
+    if (!val) return;
+    const current = model.getAtPath(state.document, 'allowedHttpHookUrls') || [];
+    if (Array.isArray(current)) {
+      applyPatch({ op: 'set', path: `allowedHttpHookUrls.${current.length}`, value: val });
+    } else {
+      applyPatch({ op: 'set', path: 'allowedHttpHookUrls', value: [val] });
+    }
+    inp.value = '';
   }
 
   function renderDiagnostics() {
     const banner = getElement('diagnostic-banner');
-    if (!banner) return;
-    banner.replaceChildren();
+    const listEl = getElement('diagnostic-list');
+    const titleEl = getElement('diag-banner-title');
+    if (!banner || !listEl) return;
 
-    if (!state.diagnostics || !state.diagnostics.length) {
+    if (!state.diagnostics || state.diagnostics.length === 0) {
       banner.classList.remove('active');
+      listEl.replaceChildren();
       return;
     }
 
     banner.classList.add('active');
+    listEl.replaceChildren();
 
-    const title = document.createElement('div');
-    title.className = 'diag-title';
-    const titleKey = state.diagnostics.length === 1 ? 'diag.title.one' : 'diag.title.other';
-    title.textContent = i18n ? i18n.t(titleKey, { count: state.diagnostics.length, scope: state.targetScope.toUpperCase() }) : ('Diagnostics (' + state.diagnostics.length + ' item' + (state.diagnostics.length > 1 ? 's' : '') + ' for ' + state.targetScope.toUpperCase() + ' scope):');
-    banner.appendChild(title);
+    if (titleEl && i18n) {
+      const key = state.diagnostics.length === 1 ? 'diag.title.one' : 'diag.title.other';
+      titleEl.textContent = i18n.t(key, { count: state.diagnostics.length, scope: state.targetScope.toUpperCase() });
+    }
 
-    const list = document.createElement('ul');
-    list.className = 'diag-list';
-
-    state.diagnostics.forEach(diag => {
+    state.diagnostics.forEach(d => {
       const li = document.createElement('li');
-      li.className = 'diag-item diag-' + diag.severity;
+      li.className = `diag-item diag-${d.severity}`;
 
       const badge = document.createElement('span');
       badge.className = 'diag-badge';
-      const severityKey = 'diag.severity.' + diag.severity.toLowerCase();
-      badge.textContent = i18n ? i18n.t(severityKey) : diag.severity.toUpperCase();
+      const severityKey = `diag.severity.${d.severity}`;
+      badge.textContent = i18n ? i18n.t(severityKey) : d.severity.toUpperCase();
 
       const pathCode = document.createElement('code');
-      pathCode.textContent = diag.path + ': ';
+      pathCode.textContent = d.path ? d.path + ':' : '';
 
       const msg = document.createElement('span');
-      msg.textContent = diag.message;
+      msg.textContent = d.message;
 
-      li.append(badge, pathCode, msg);
-      list.appendChild(li);
+      li.appendChild(badge);
+      if (d.path) li.appendChild(pathCode);
+      li.appendChild(msg);
+      listEl.appendChild(li);
     });
-
-    banner.appendChild(list);
   }
 
   function renderJsonEditor() {
@@ -876,12 +1175,14 @@
     if (editor && document.activeElement !== editor) {
       editor.value = state.jsonDraft;
     }
-    if (errEl) errEl.textContent = state.jsonError;
+    if (errEl) {
+      errEl.textContent = state.jsonError || '';
+    }
   }
 
-  function validateDraftOnly(src) {
-    const parsed = model.parseSettingsJson(src);
+  function validateJsonDraftLive() {
     const errEl = getElement('json-error');
+    const parsed = model.parseSettingsJson(state.jsonDraft);
     if (!parsed.ok) {
       state.jsonError = parsed.diagnostics.map(d => d.message).join('; ');
     } else {
@@ -899,7 +1200,23 @@
       setStatus('status.cannotApply', 'err');
       return;
     }
-    setDocumentFromObject(result.value, 'status.jsonApplied');
+    const validation = model.validateSettingsDocument(result.value);
+    if (!validation.ok) {
+      state.jsonError = validation.diagnostics.map(d => d.message).join('; ');
+      renderJsonEditor();
+      setStatus('status.cannotApply', 'err');
+      return;
+    }
+
+    state.document = model.clone(result.value);
+    state.jsonError = '';
+    state.isDirty = !model.deepEqual(state.document, state.baseline);
+    state.history = state.history.slice(0, state.historyIdx + 1);
+    state.history.push(model.clone(state.document));
+    state.historyIdx++;
+    state.diagnostics = model.inspectSettings(state.document, state.targetScope);
+    renderAll();
+    setStatus('status.jsonApplied', 'ok');
   }
 
   function discardJsonDraft() {
@@ -933,6 +1250,9 @@
     if (!file) return;
     const reader = new FileReader();
     reader.onload = evt => {
+      state.fileHandle = null;
+      state.fileName = file.name;
+      state.isSample = false;
       setDocumentFromSource(evt.target.result, 'status.fileLoaded', { name: file.name });
     };
     reader.readAsText(file);
@@ -944,7 +1264,7 @@
     const blob = new Blob([json], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'settings.json';
+    a.download = state.fileName === 'sample.json' ? 'settings.json' : (state.fileName || 'settings.json');
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     setStatus('status.downloaded', 'ok');

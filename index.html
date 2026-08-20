@@ -46,14 +46,16 @@
   </div>
 
   <div class="header-actions">
-    <button id="btn-undo" class="btn small" data-i18n-title="actions.undoTitle" data-i18n="actions.undo" title="Undo change" disabled>Undo</button>
-    <button id="btn-redo" class="btn small" data-i18n-title="actions.redoTitle" data-i18n="actions.redo" title="Redo change" disabled>Redo</button>
-    <button id="btn-load" class="btn btn-full" data-i18n="actions.loadJson">Load JSON</button>
+    <span id="active-file-pill" class="active-file-pill" data-i18n-title="file.directDisk" title="Direct disk access active">📄 <span id="active-file-name" data-i18n="file.activeSample">sample.json (sample)</span></span>
+    <button id="btn-undo" class="btn small" data-i18n-title="actions.undoTitle" data-i18n="actions.undo" title="Undo change (Ctrl+Z)" disabled>Undo</button>
+    <button id="btn-redo" class="btn small" data-i18n-title="actions.redoTitle" data-i18n="actions.redo" title="Redo change (Ctrl+Y)" disabled>Redo</button>
+    <button id="btn-open" class="btn btn-full" data-i18n="actions.openFile" data-i18n-title="actions.openFileTitle" title="Open local JSON file (Ctrl+O)">Open File</button>
+    <button id="btn-save" class="btn primary btn-full" data-i18n="actions.save" data-i18n-title="actions.saveTitle" title="Save changes in-place (Ctrl+S)">Save</button>
+    <button id="btn-save-as" class="btn btn-full" data-i18n="actions.saveAs" data-i18n-title="actions.saveAsTitle" title="Save to new file (Ctrl+Shift+S)">Save As...</button>
     <button id="btn-sample" class="btn btn-full" data-i18n="actions.loadSample">Load Sample</button>
-    <button id="btn-download" class="btn primary btn-full" data-i18n="actions.download">Download settings.json</button>
 
-    <button id="btn-load-mobile" class="btn small" style="display:none" data-i18n="actions.loadMobile">Load</button>
-    <button id="btn-download-mobile" class="btn primary small" style="display:none" data-i18n="actions.saveMobile">Save</button>
+    <button id="btn-open-mobile" class="btn small" style="display:none" data-i18n="actions.loadMobile">Open</button>
+    <button id="btn-save-mobile" class="btn primary small" style="display:none" data-i18n="actions.saveMobile">Save</button>
     <span id="status" data-i18n="app.ready">Ready</span>
     <input type="file" id="file-input" accept=".json">
   </div>
