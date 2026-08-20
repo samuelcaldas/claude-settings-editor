@@ -1,28 +1,90 @@
 (function exposeSettingsModel(root, factory) {
-  const api = factory();
+  let catalog = null;
+  if (typeof require === 'function') {
+    try {
+      catalog = require('./settings-catalog.js');
+    } catch (_) {
+      // catalog optional in minimal tests
+    }
+  }
+  if (!catalog && root && root.SettingsCatalog) {
+    catalog = root.SettingsCatalog;
+  }
+  const api = factory(catalog);
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.SettingsModel = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function createSettingsModel() {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function createSettingsModel(catalogModule) {
+  'use strict';
+
   const UNSAFE_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
-  const SECRET_KEY_PATTERN = /(api[_-]?key|auth[_-]?token|access[_-]?token|secret|password|private[_-]?key)/i;
+  const SECRET_KEY_PATTERN = /(api[_-]?key|auth[_-]?token|access[_-]?token|secret|password|private[_-]?key|credential)/i;
+
   const KNOWN_SHAPES = [
     ['env', 'object'],
     ['permissions', 'object'],
+    ['sandbox', 'object'],
     ['worktree', 'object'],
     ['statusLine', 'object'],
     ['fallbackModel', 'array'],
     ['enabledPlugins', 'object'],
+    ['pluginConfigs', 'object'],
     ['hooks', 'object'],
-    ['extraKnownMarketplaces', 'object']
+    ['extraKnownMarketplaces', 'object'],
+    ['strictKnownMarketplaces', 'array'],
+    ['blockedMarketplaces', 'array'],
+    ['allowedMcpServers', 'array'],
+    ['deniedMcpServers', 'array'],
+    ['enabledMcpjsonServers', 'array'],
+    ['disabledMcpjsonServers', 'array'],
+    ['companyAnnouncements', 'array'],
+    ['footerLinksRegexes', 'array'],
+    ['availableModels', 'array'],
+    ['modelOverrides', 'object']
   ];
-  const ENUMS = {
-    'permissions.defaultMode': ['default', 'autoEdit', 'bypassPermissions', 'plan'],
-    theme: ['dark', 'light', 'system'],
+
+  const ENUMS = catalogModule ? catalogModule.ENUMS : {
+    'permissions.defaultMode': [
+      'default',
+      'acceptEdits',
+      'plan',
+      'auto',
+      'dontAsk',
+      'bypassPermissions',
+      'manual'
+    ],
+    theme: [
+      'auto',
+      'dark',
+      'light',
+      'dark-daltonized',
+      'light-daltonized',
+      'dark-ansi',
+      'light-ansi'
+    ],
     tui: ['fullscreen', 'default'],
     editorMode: ['normal', 'vim'],
-    effortLevel: ['low', 'medium', 'high', 'xhigh', 'max'],
-    preferredNotifChannel: ['terminal_bell', 'desktop', 'none'],
-    'worktree.baseRef': ['fresh', 'head']
+    effortLevel: ['low', 'medium', 'high', 'xhigh'],
+    preferredNotifChannel: [
+      'auto',
+      'terminal_bell',
+      'iterm2',
+      'iterm2_with_bell',
+      'kitty',
+      'ghostty',
+      'notifications_disabled'
+    ],
+    'worktree.baseRef': ['fresh', 'head'],
+    'worktree.bgIsolation': ['worktree', 'none'],
+    viewMode: ['default', 'verbose', 'focus'],
+    teammateMode: ['in-process', 'auto', 'tmux', 'iterm2'],
+    workflowSizeGuideline: ['unrestricted', 'small', 'medium', 'large'],
+    autoUpdatesChannel: ['stable', 'latest'],
+    forceLoginMethod: ['claudeai', 'console', 'gateway'],
+    parentSettingsBehavior: ['first-wins', 'merge'],
+    defaultShell: ['bash', 'powershell'],
+    crossSessionInbound: ['accept', 'hold', 'refuse'],
+    askUserQuestionTimeout: ['never', '60s', '5m', '10m'],
+    dialogExpiry: ['never', '60s', '5m', '10m']
   };
 
   function isPlainObject(value) {
@@ -76,9 +138,11 @@
     return { ok: errors.length === 0, diagnostics };
   }
 
-  function inspectSettings(value) {
+  function inspectSettings(value, targetScope) {
     if (!isPlainObject(value)) return [{ severity: 'error', path: '$', message: 'Settings root must be a JSON object' }];
     const diagnostics = [];
+
+    // Structural shapes validation
     KNOWN_SHAPES.forEach(([path, expected]) => {
       if (!(path in value)) return;
       const actual = Array.isArray(value[path]) ? 'array' : typeof value[path];
@@ -86,14 +150,44 @@
         diagnostics.push({ severity: 'error', path, message: path + ' must be a ' + expected });
       }
     });
+
+    // Enums inspection
     Object.entries(ENUMS).forEach(([path, allowed]) => {
       const current = getAtPath(value, path);
       if (current === undefined || current === null || current === '') return;
+      if (typeof current === 'string' && current.startsWith('custom:')) return; // Custom themes allowed
       if (!allowed.includes(current)) {
-        diagnostics.push({ severity: 'warning', path, message: 'Unknown value preserved: ' + String(current) });
+        diagnostics.push({ severity: 'warning', path, message: 'Non-standard value preserved: ' + String(current) });
       }
     });
+
+    // Specific constraints
+    if (value.autoCompactWindow !== undefined && value.autoCompactWindow !== null) {
+      const num = Number(value.autoCompactWindow);
+      if (!Number.isFinite(num) || num < 100000 || num > 1000000) {
+        diagnostics.push({ severity: 'warning', path: 'autoCompactWindow', message: 'autoCompactWindow should typically be between 100000 and 1000000 tokens' });
+      }
+    }
+
+    if (Array.isArray(value.fallbackModel) && value.fallbackModel.length > 3) {
+      diagnostics.push({ severity: 'warning', path: 'fallbackModel', message: 'Fallback model chains are capped at 3 models; excess models will be ignored by Claude Code.' });
+    }
+
+    if (value.cleanupPeriodDays !== undefined && value.cleanupPeriodDays !== null) {
+      const days = Number(value.cleanupPeriodDays);
+      if (!Number.isFinite(days) || days < 1) {
+        diagnostics.push({ severity: 'error', path: 'cleanupPeriodDays', message: 'cleanupPeriodDays must be an integer of at least 1' });
+      }
+    }
+
     inspectHooks(value, diagnostics);
+    inspectPermissions(value, diagnostics);
+    inspectSandbox(value, diagnostics);
+
+    if (targetScope) {
+      inspectScope(value, targetScope, diagnostics);
+    }
+
     return diagnostics;
   }
 
@@ -114,6 +208,93 @@
         }
       });
     });
+  }
+
+  function inspectPermissions(value, diagnostics) {
+    if (!('permissions' in value) || !isPlainObject(value.permissions)) return;
+    ['allow', 'ask', 'deny', 'additionalDirectories'].forEach(key => {
+      if (key in value.permissions && !Array.isArray(value.permissions[key])) {
+        diagnostics.push({ severity: 'error', path: 'permissions.' + key, message: 'permissions.' + key + ' must be an array of rule strings' });
+      }
+    });
+  }
+
+  function inspectSandbox(value, diagnostics) {
+    if (!('sandbox' in value) || !isPlainObject(value.sandbox)) return;
+    const sb = value.sandbox;
+    if (sb.filesystem && !isPlainObject(sb.filesystem)) {
+      diagnostics.push({ severity: 'error', path: 'sandbox.filesystem', message: 'sandbox.filesystem must be an object' });
+    }
+    if (sb.network && !isPlainObject(sb.network)) {
+      diagnostics.push({ severity: 'error', path: 'sandbox.network', message: 'sandbox.network must be an object' });
+    }
+  }
+
+  function inspectScope(value, targetScope, diagnostics) {
+    if (!targetScope) return;
+
+    // Scope rules
+    if (targetScope === 'project' || targetScope === 'local') {
+      if (value.claudeMd !== undefined) {
+        diagnostics.push({
+          severity: 'warning',
+          path: 'claudeMd',
+          message: 'claudeMd is only honored in Managed scope; it is ignored in Project and Local settings.'
+        });
+      }
+      if (value.pluginConfigs !== undefined) {
+        diagnostics.push({
+          severity: 'warning',
+          path: 'pluginConfigs',
+          message: 'pluginConfigs is ignored in Project and Local settings for security.'
+        });
+      }
+      if (value.askUserQuestionTimeout !== undefined) {
+        diagnostics.push({
+          severity: 'warning',
+          path: 'askUserQuestionTimeout',
+          message: 'askUserQuestionTimeout is not read from Project or Local settings.'
+        });
+      }
+      if (value.permissions && value.permissions.defaultMode === 'auto') {
+        diagnostics.push({
+          severity: 'warning',
+          path: 'permissions.defaultMode',
+          message: 'auto permission mode is ignored in Project and Local settings.'
+        });
+      }
+      if (value.permissions && value.permissions.skipDangerousModePermissionPrompt) {
+        diagnostics.push({
+          severity: 'warning',
+          path: 'permissions.skipDangerousModePermissionPrompt',
+          message: 'skipDangerousModePermissionPrompt is ignored in Project settings.'
+        });
+      }
+    }
+
+    if (targetScope !== 'managed') {
+      if (value.allowManagedPermissionRulesOnly) {
+        diagnostics.push({
+          severity: 'warning',
+          path: 'allowManagedPermissionRulesOnly',
+          message: 'allowManagedPermissionRulesOnly is a Managed-only policy setting.'
+        });
+      }
+      if (value.allowManagedHooksOnly) {
+        diagnostics.push({
+          severity: 'warning',
+          path: 'allowManagedHooksOnly',
+          message: 'allowManagedHooksOnly is a Managed-only policy setting.'
+        });
+      }
+      if (value.allowManagedMcpServersOnly) {
+        diagnostics.push({
+          severity: 'warning',
+          path: 'allowManagedMcpServersOnly',
+          message: 'allowManagedMcpServersOnly is a Managed-only policy setting.'
+        });
+      }
+    }
   }
 
   function getAtPath(root, path) {
@@ -174,12 +355,36 @@
     return result;
   }
 
+  function renameKeyAtPath(root, path, oldKey, newKey) {
+    if (!oldKey || !newKey || oldKey === newKey) return root;
+    const segments = normalizePath(path);
+    const result = clone(root);
+    const targetObj = segments.length ? getAtPath(result, segments) : result;
+    if (!isPlainObject(targetObj)) throw new Error('Target for key rename must be an object');
+    if (oldKey in targetObj) {
+      const val = targetObj[oldKey];
+      delete targetObj[oldKey];
+      targetObj[newKey] = val;
+    }
+    return result;
+  }
+
   function applyPatch(root, patch) {
     if (!patch || typeof patch !== 'object') throw new Error('Patch must be an object');
     if (patch.op === 'set') return setAtPath(root, patch.path, patch.value);
     if (patch.op === 'delete') return deleteAtPath(root, patch.path);
     if (patch.op === 'move') return moveAtPath(root, patch.path, patch.from, patch.to);
+    if (patch.op === 'renameKey') return renameKeyAtPath(root, patch.path, patch.oldKey, patch.newKey);
     throw new Error('Unsupported patch operation: ' + patch.op);
+  }
+
+  function batchPatches(root, patches) {
+    if (!Array.isArray(patches)) throw new Error('patches must be an array');
+    let current = root;
+    for (const patch of patches) {
+      current = applyPatch(current, patch);
+    }
+    return current;
   }
 
   function serializeSettings(value, spacing) {
@@ -204,7 +409,13 @@
   function redactSecrets(value) {
     if (Array.isArray(value)) return value.map(redactSecrets);
     if (!isPlainObject(value)) return value;
-    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, SECRET_KEY_PATTERN.test(key) ? '[redacted]' : redactSecrets(entry)]));
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => {
+      const isSecret = SECRET_KEY_PATTERN.test(key);
+      if (isSecret && typeof entry === 'string' && entry.trim().length > 0) {
+        return [key, '[redacted]'];
+      }
+      return [key, redactSecrets(entry)];
+    }));
   }
 
   function isArrayIndex(segment) {
@@ -212,16 +423,24 @@
   }
 
   return {
+    ENUMS,
+    KNOWN_SHAPES,
+    applyPatch,
+    batchPatches,
     clone,
     deepEqual,
     deleteAtPath,
     getAtPath,
+    inspectPermissions,
+    inspectSandbox,
+    inspectScope,
     inspectSettings,
     isPlainObject,
     moveAtPath,
     normalizePath,
     parseSettingsJson,
     redactSecrets,
+    renameKeyAtPath,
     serializeSettings,
     setAtPath,
     validateSettingsDocument

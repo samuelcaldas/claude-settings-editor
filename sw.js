@@ -1,8 +1,9 @@
-const CACHE = 'claude-settings-v2';
+const CACHE = 'claude-settings-v3';
 const SHELL = [
   './',
   './index.html',
   './css/app.css',
+  './js/settings-catalog.js',
   './js/settings-model.js',
   './js/app.js',
   './sample.json',

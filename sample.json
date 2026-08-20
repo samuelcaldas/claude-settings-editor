@@ -1,46 +1,95 @@
 {
-  "env": {
-    "ANTHROPIC_BASE_URL": "https://api.anthropic.com",
-    "ANTHROPIC_API_KEY": "sk-ant-your-key-here",
-    "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-fable-5",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001",
-    "ANTHROPIC_CUSTOM_MODEL_OPTION": "",
-    "ANTHROPIC_CUSTOM_MODEL_OPTION_NAME": "",
-    "ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION": "",
-    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5-20251001"
-  },
-  "permissions": {
-    "defaultMode": "default",
-    "skipDangerousModePermissionPrompt": false
-  },
-  "model": "fable",
+  "theme": "auto",
+  "tui": "fullscreen",
+  "editorMode": "normal",
+  "effortLevel": "high",
+  "language": "english",
+  "preferredNotifChannel": "auto",
+  "viewMode": "default",
+  "defaultShell": "bash",
+  "model": "claude-sonnet-5",
   "fallbackModel": [
-    "claude-sonnet-5",
     "claude-haiku-4-5-20251001",
     "claude-opus-5"
   ],
+  "alwaysThinkingEnabled": false,
+  "showThinkingSummaries": true,
+  "fastMode": false,
+  "autoCompactEnabled": true,
+  "autoCompactWindow": 850000,
+  "permissions": {
+    "defaultMode": "default",
+    "allow": [
+      "Bash(npm run test)",
+      "Read(./src/**)",
+      "WebFetch(https://docs.anthropic.com/*)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(npm publish)"
+    ],
+    "deny": [
+      "Read(./.env*)",
+      "Read(~/.aws/**)",
+      "Read(~/.ssh/**)"
+    ],
+    "additionalDirectories": [
+      "../shared-docs"
+    ]
+  },
+  "sandbox": {
+    "enabled": false,
+    "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": true,
+    "filesystem": {
+      "allowWrite": [
+        "/tmp/build"
+      ],
+      "denyRead": [
+        "~/.ssh",
+        "~/.aws"
+      ]
+    },
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "*.npmjs.org"
+      ]
+    },
+    "excludedCommands": [
+      "docker *"
+    ]
+  },
+  "env": {
+    "ANTHROPIC_API_KEY": "sk-ant-sample-placeholder-key",
+    "ANTHROPIC_BASE_URL": "https://api.anthropic.com",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5-20251001"
+  },
   "hooks": {
     "UserPromptSubmit": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Hook running'",
+            "command": "echo 'Prompt submitted'",
             "timeout": 30
           }
         ]
       }
     ]
   },
-  "worktree": {
-    "baseRef": "fresh"
-  },
   "statusLine": {
     "type": "command",
     "command": "input=$(cat); model=$(printf '%s' \"$input\" | jq -r '.model.display_name // .model.id'); printf 'Model: %s\\n' \"$model\"",
     "padding": 2
+  },
+  "worktree": {
+    "baseRef": "fresh",
+    "bgIsolation": "worktree",
+    "symlinkDirectories": [
+      "node_modules",
+      ".cache"
+    ]
   },
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true,
@@ -48,23 +97,18 @@
     "feature-dev@claude-plugins-official": true,
     "commit-commands@claude-plugins-official": true
   },
-  "language": "english",
-  "effortLevel": "high",
-  "autoCompactWindow": 850000,
-  "askUserQuestionTimeout": "10m",
-  "tui": "fullscreen",
-  "theme": "dark",
-  "editorMode": "normal",
-  "verbose": false,
-  "preferredNotifChannel": "terminal_bell",
-  "autoCompactEnabled": true,
-  "switchModelsOnFlag": true,
+  "extraKnownMarketplaces": {
+    "custom-tools": {
+      "source": {
+        "type": "github",
+        "repo": "example-org/claude-plugins"
+      }
+    }
+  },
+  "autoMemoryEnabled": true,
+  "cleanupPeriodDays": 30,
   "autoScrollEnabled": true,
-  "fileCheckpointingEnabled": false,
   "showTurnDuration": true,
   "terminalProgressBarEnabled": true,
-  "skipAutoPermissionPrompt": false,
-  "useAutoModeDuringPlan": true,
-  "skipWorkflowUsageWarning": false,
-  "skipDangerousModePermissionPrompt": false
+  "spinnerTipsEnabled": true
 }

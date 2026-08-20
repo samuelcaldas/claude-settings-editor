@@ -1,44 +1,39 @@
 # Claude Settings Editor — Codebase
 
-Single-file static web app. No build step. No dependencies.
+Static web app for editing Claude Code `settings.json` documents safely. No build step. Zero external dependencies.
 
 ## File Structure
 
 ```
-index.html        Main editor — all HTML, CSS, JS in one file
-sample.json       Public sample settings (placeholder values, no real keys)
-artifacts/        Gitignored — store your personal settings.json here locally
-README.md         User documentation
+index.html             Main editor shell, scope selector, navigation, and tab panels
+css/app.css            Terminal monospace styles, theme variables, and responsive layout
+js/settings-catalog.js Declarative settings catalog, enums, categories, and scope metadata
+js/settings-model.js   Pure settings model, parser, immutable path ops, validation & diagnostics
+js/app.js              DOM event bindings, scope inspection, history management, and dynamic builders
+sample.json            Public sample settings fixture with safe placeholders
+sw.js                  Service Worker for offline PWA caching
+manifest.json          PWA web app manifest
+tests/                 Automated test suite using Node.js built-in runner
+docs/settings.md       Authoritative reference documentation for Claude Code settings
 ```
 
-## Key JS Functions (index.html)
+## Architecture & Data Flow
 
-| Function | Purpose |
-|----------|---------|
-| `loadSample()` | Fetches `./sample.json`, sets `state`, re-renders |
-| `renderForm()` | Populates all form fields from `state` |
-| `formToState()` | Reads all form fields back into `state` |
-| `syncJsonEditor()` | Serializes `state` → Advanced JSON textarea |
-| `onJsonChange()` | Parses JSON textarea → `state` → re-renders form |
-| `onFormChange()` | Debounced: calls `formToState()` + `syncJsonEditor()` |
-| `downloadFile()` | Triggers `settings.json` download of current `state` |
-| `renderFallbackList()` | Rebuilds fallback models drag-reorder list |
-| `renderPluginList()` | Rebuilds plugin toggle list |
-| `renderHooks()` | Rebuilds hooks editor |
+1. **Declarative Catalog (`js/settings-catalog.js`)**: Defines canonical setting paths, value types, enums, categories, scopes (`user`, `project`, `local`, `managed`), and merge rules.
+2. **Immutable Model (`js/settings-model.js`)**: Provides `parseSettingsJson`, `validateSettingsDocument`, `inspectSettings`, `setAtPath`, `deleteAtPath`, `moveAtPath`, `renameKeyAtPath`, `applyPatch`, and `redactSecrets`.
+3. **Controller (`js/app.js`)**: Handles DOM events, target scope switching, precision path patching, undo/redo history, and safe dynamic collection rendering (zero `innerHTML`).
 
-## Extending
+### Extending Settings
 
-To add a new settings field:
-1. Add an input element in the relevant tab panel with a unique `id`
-2. Add `oninput="onFormChange()"` or `onchange="onFormChange()"`
-3. In `formToState()`: read from the element and set `state.fieldName`
-4. In `renderForm()`: call `setField('id', state.fieldName)` or `setCheck('id', state.fieldName)`
+To add or configure a setting:
+1. Register its definition in `js/settings-catalog.js` (path, type, label, category, enums, scopes).
+2. Add the corresponding input element in `index.html` with a `data-setting-path="your.path"` attribute.
+3. The controller automatically handles two-way binding, validation, unset actions, and non-destructive patching.
 
-## State Flow
+## Testing
 
-```
-loadSample() → state → renderForm() → DOM
-DOM change   → onFormChange() → formToState() → state → syncJsonEditor()
-JSON edit    → onJsonChange() → state → renderForm()
-Download     → formToState() → JSON.stringify(state)
+Run tests with Node.js built-in runner:
+
+```bash
+node --test tests/settings-model.test.cjs
 ```
