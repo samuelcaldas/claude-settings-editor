@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Claude Settings Editor</title>
+<title data-i18n="app.title">Claude Settings Editor</title>
 <meta name="description" content="Visual editor for Claude Code settings.json — safe, client-side, zero data loss, fully supporting the complete Claude Code settings reference.">
 <meta name="theme-color" content="#d19a66">
 <meta name="mobile-web-app-capable" content="yes">
@@ -13,6 +13,7 @@
 <link rel="apple-touch-icon" href="icons/icon.svg">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="css/app.css">
+<script defer src="js/i18n.js"></script>
 <script defer src="js/settings-catalog.js"></script>
 <script defer src="js/settings-model.js"></script>
 <script defer src="js/app.js"></script>
@@ -21,31 +22,39 @@
 
 <header>
   <div class="brand">
-    <h1>Claude <span>Settings Editor</span></h1>
-    <span id="dirty-badge" class="dirty-badge">UNSAVED</span>
+    <h1><span data-i18n="app.brand">Claude</span> <span data-i18n="app.brandSuffix">Settings Editor</span></h1>
+    <span id="dirty-badge" class="dirty-badge" data-i18n="app.dirtyBadge">UNSAVED</span>
   </div>
 
   <div class="scope-selector-wrap">
-    <label for="scope-select" class="scope-label">Target Scope:</label>
+    <label for="scope-select" class="scope-label" data-i18n="app.targetScope">Target Scope:</label>
     <select id="scope-select" class="scope-select">
-      <option value="user">User (~/.claude/settings.json)</option>
-      <option value="project">Project (.claude/settings.json)</option>
-      <option value="local">Local (.claude/settings.local.json)</option>
-      <option value="managed">Managed (managed-settings.json)</option>
+      <option value="user" data-i18n="scope.user">User (~/.claude/settings.json)</option>
+      <option value="project" data-i18n="scope.project">Project (.claude/settings.json)</option>
+      <option value="local" data-i18n="scope.local">Local (.claude/settings.local.json)</option>
+      <option value="managed" data-i18n="scope.managed">Managed (managed-settings.json)</option>
     </select>
     <span id="scope-info-pill" class="scope-info-pill">User Scope</span>
   </div>
 
-  <div class="header-actions">
-    <button id="btn-undo" class="btn small" title="Undo change" disabled>Undo</button>
-    <button id="btn-redo" class="btn small" title="Redo change" disabled>Redo</button>
-    <button id="btn-load" class="btn btn-full">Load JSON</button>
-    <button id="btn-sample" class="btn btn-full">Load Sample</button>
-    <button id="btn-download" class="btn primary btn-full">Download settings.json</button>
+  <div class="lang-selector-wrap">
+    <label for="lang-select" class="scope-label" data-i18n="app.languageLabel">Language:</label>
+    <select id="lang-select" class="lang-select" aria-label="Select language">
+      <option value="en">English (EN)</option>
+      <option value="pt-BR">Português (PT-BR)</option>
+    </select>
+  </div>
 
-    <button id="btn-load-mobile" class="btn small" style="display:none">Load</button>
-    <button id="btn-download-mobile" class="btn primary small" style="display:none">Save</button>
-    <span id="status">Ready</span>
+  <div class="header-actions">
+    <button id="btn-undo" class="btn small" data-i18n-title="actions.undoTitle" data-i18n="actions.undo" title="Undo change" disabled>Undo</button>
+    <button id="btn-redo" class="btn small" data-i18n-title="actions.redoTitle" data-i18n="actions.redo" title="Redo change" disabled>Redo</button>
+    <button id="btn-load" class="btn btn-full" data-i18n="actions.loadJson">Load JSON</button>
+    <button id="btn-sample" class="btn btn-full" data-i18n="actions.loadSample">Load Sample</button>
+    <button id="btn-download" class="btn primary btn-full" data-i18n="actions.download">Download settings.json</button>
+
+    <button id="btn-load-mobile" class="btn small" style="display:none" data-i18n="actions.loadMobile">Load</button>
+    <button id="btn-download-mobile" class="btn primary small" style="display:none" data-i18n="actions.saveMobile">Save</button>
+    <span id="status" data-i18n="app.ready">Ready</span>
     <input type="file" id="file-input" accept=".json">
   </div>
 </header>
@@ -53,22 +62,22 @@
 <div class="layout">
   <nav aria-label="Settings categories">
     <div role="tablist" aria-orientation="vertical">
-      <div class="nav-section">Configuration</div>
-      <button role="tab" id="tab-btn-general" data-tab="general" aria-selected="true" aria-controls="tab-general" class="active">General &amp; UI</button>
-      <button role="tab" id="tab-btn-permissions" data-tab="permissions" aria-selected="false" aria-controls="tab-permissions">Permissions</button>
-      <button role="tab" id="tab-btn-sandbox" data-tab="sandbox" aria-selected="false" aria-controls="tab-sandbox">Sandboxing</button>
-      <button role="tab" id="tab-btn-env" data-tab="env" aria-selected="false" aria-controls="tab-env">Environment</button>
-      <button role="tab" id="tab-btn-models" data-tab="models" aria-selected="false" aria-controls="tab-models">Models &amp; Workflows</button>
+      <div class="nav-section" data-i18n="nav.sections.config">Configuration</div>
+      <button role="tab" id="tab-btn-general" data-tab="general" aria-selected="true" aria-controls="tab-general" class="active" data-i18n="nav.tabs.general">General &amp; UI</button>
+      <button role="tab" id="tab-btn-permissions" data-tab="permissions" aria-selected="false" aria-controls="tab-permissions" data-i18n="nav.tabs.permissions">Permissions</button>
+      <button role="tab" id="tab-btn-sandbox" data-tab="sandbox" aria-selected="false" aria-controls="tab-sandbox" data-i18n="nav.tabs.sandbox">Sandboxing</button>
+      <button role="tab" id="tab-btn-env" data-tab="env" aria-selected="false" aria-controls="tab-env" data-i18n="nav.tabs.env">Environment</button>
+      <button role="tab" id="tab-btn-models" data-tab="models" aria-selected="false" aria-controls="tab-models" data-i18n="nav.tabs.models">Models &amp; Workflows</button>
 
-      <div class="nav-section">Components &amp; Rules</div>
-      <button role="tab" id="tab-btn-hooks" data-tab="hooks" aria-selected="false" aria-controls="tab-hooks">Hooks &amp; Status Line</button>
-      <button role="tab" id="tab-btn-mcp" data-tab="mcp" aria-selected="false" aria-controls="tab-mcp">MCP Policy</button>
-      <button role="tab" id="tab-btn-worktree" data-tab="worktree" aria-selected="false" aria-controls="tab-worktree">Worktree &amp; Memory</button>
-      <button role="tab" id="tab-btn-plugins" data-tab="plugins" aria-selected="false" aria-controls="tab-plugins">Plugins &amp; Marketplaces</button>
-      <button role="tab" id="tab-btn-advanced-policies" data-tab="advanced-policies" aria-selected="false" aria-controls="tab-advanced-policies">Managed Policies</button>
+      <div class="nav-section" data-i18n="nav.sections.components">Components &amp; Rules</div>
+      <button role="tab" id="tab-btn-hooks" data-tab="hooks" aria-selected="false" aria-controls="tab-hooks" data-i18n="nav.tabs.hooks">Hooks &amp; Status Line</button>
+      <button role="tab" id="tab-btn-mcp" data-tab="mcp" aria-selected="false" aria-controls="tab-mcp" data-i18n="nav.tabs.mcp">MCP Policy</button>
+      <button role="tab" id="tab-btn-worktree" data-tab="worktree" aria-selected="false" aria-controls="tab-worktree" data-i18n="nav.tabs.worktree">Worktree &amp; Memory</button>
+      <button role="tab" id="tab-btn-plugins" data-tab="plugins" aria-selected="false" aria-controls="tab-plugins" data-i18n="nav.tabs.plugins">Plugins &amp; Marketplaces</button>
+      <button role="tab" id="tab-btn-advanced-policies" data-tab="advanced-policies" aria-selected="false" aria-controls="tab-advanced-policies" data-i18n="nav.tabs.managedPolicies">Managed Policies</button>
 
-      <div class="nav-section">Raw Editor</div>
-      <button role="tab" id="tab-btn-advanced" data-tab="advanced" aria-selected="false" aria-controls="tab-advanced">Advanced JSON</button>
+      <div class="nav-section" data-i18n="nav.sections.raw">Raw Editor</div>
+      <button role="tab" id="tab-btn-advanced" data-tab="advanced" aria-selected="false" aria-controls="tab-advanced" data-i18n="nav.tabs.advanced">Advanced JSON</button>
     </div>
   </nav>
 
@@ -77,460 +86,460 @@
 
     <!-- TAB 1: General & UI -->
     <section id="tab-general" class="tab-panel active" role="tabpanel" aria-labelledby="tab-btn-general" aria-hidden="false">
-      <div class="section-title">General &amp; Interface Settings</div>
-      <div class="section-desc">Configure color theme, editor modes, notifications, accessibility, and terminal rendering preferences.</div>
+      <div class="section-title" data-i18n="sections.general.title">General &amp; Interface Settings</div>
+      <div class="section-desc" data-i18n="sections.general.desc">Configure color theme, editor modes, notifications, accessibility, and terminal rendering preferences.</div>
 
       <div class="grid-2">
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="theme"><code>theme</code> — Color Theme</label>
-            <button class="unset-btn" data-unset-path="theme">unset</button>
+            <label class="field-label" for="theme"><code>theme</code> — <span data-i18n="field.theme.label">Color Theme</span></label>
+            <button class="unset-btn" data-unset-path="theme" data-i18n="actions.unset">unset</button>
           </div>
           <select id="theme" data-setting-path="theme">
-            <option value="">(Default: dark)</option>
-            <option value="auto">auto — match terminal</option>
-            <option value="dark">dark</option>
-            <option value="light">light</option>
-            <option value="dark-daltonized">dark-daltonized (Colorblind)</option>
-            <option value="light-daltonized">light-daltonized (Colorblind)</option>
-            <option value="dark-ansi">dark-ansi</option>
-            <option value="light-ansi">light-ansi</option>
+            <option value="" data-i18n="field.theme.default">(Default: dark)</option>
+            <option value="auto" data-i18n="field.theme.auto">auto — match terminal</option>
+            <option value="dark" data-i18n="field.theme.dark">dark</option>
+            <option value="light" data-i18n="field.theme.light">light</option>
+            <option value="dark-daltonized" data-i18n="field.theme.darkDaltonized">dark-daltonized (Colorblind)</option>
+            <option value="light-daltonized" data-i18n="field.theme.lightDaltonized">light-daltonized (Colorblind)</option>
+            <option value="dark-ansi" data-i18n="field.theme.darkAnsi">dark-ansi</option>
+            <option value="light-ansi" data-i18n="field.theme.lightAnsi">light-ansi</option>
           </select>
-          <div class="field-hint">Supports built-in themes or custom identifiers like <code>custom:my-theme</code>.</div>
+          <div class="field-hint" data-i18n="field.theme.hint">Supports built-in themes or custom identifiers like <code>custom:my-theme</code>.</div>
         </div>
 
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="tui"><code>tui</code> — Terminal UI</label>
-            <button class="unset-btn" data-unset-path="tui">unset</button>
+            <label class="field-label" for="tui"><code>tui</code> — <span data-i18n="field.tui.label">Terminal UI</span></label>
+            <button class="unset-btn" data-unset-path="tui" data-i18n="actions.unset">unset</button>
           </div>
           <select id="tui" data-setting-path="tui">
-            <option value="">(Default: fullscreen)</option>
-            <option value="fullscreen">fullscreen — alt-screen renderer</option>
-            <option value="default">default — classic inline stream</option>
+            <option value="" data-i18n="field.tui.default">(Default: fullscreen)</option>
+            <option value="fullscreen" data-i18n="field.tui.fullscreen">fullscreen — alt-screen renderer</option>
+            <option value="default" data-i18n="field.tui.defaultInline">default — classic inline stream</option>
           </select>
         </div>
 
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="editorMode"><code>editorMode</code> — Input Keybindings</label>
-            <button class="unset-btn" data-unset-path="editorMode">unset</button>
+            <label class="field-label" for="editorMode"><code>editorMode</code> — <span data-i18n="field.editorMode.label">Input Keybindings</span></label>
+            <button class="unset-btn" data-unset-path="editorMode" data-i18n="actions.unset">unset</button>
           </div>
           <select id="editorMode" data-setting-path="editorMode">
-            <option value="">(Default: normal)</option>
-            <option value="normal">normal</option>
-            <option value="vim">vim</option>
+            <option value="" data-i18n="field.editorMode.default">(Default: normal)</option>
+            <option value="normal" data-i18n="field.editorMode.normal">normal</option>
+            <option value="vim" data-i18n="field.editorMode.vim">vim</option>
           </select>
         </div>
 
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="effortLevel"><code>effortLevel</code> — Reasoning Effort</label>
-            <button class="unset-btn" data-unset-path="effortLevel">unset</button>
+            <label class="field-label" for="effortLevel"><code>effortLevel</code> — <span data-i18n="field.effortLevel.label">Reasoning Effort</span></label>
+            <button class="unset-btn" data-unset-path="effortLevel" data-i18n="actions.unset">unset</button>
           </div>
           <select id="effortLevel" data-setting-path="effortLevel">
-            <option value="">(Default: model standard)</option>
-            <option value="low">low</option>
-            <option value="medium">medium</option>
-            <option value="high">high</option>
-            <option value="xhigh">xhigh</option>
+            <option value="" data-i18n="field.effortLevel.default">(Default: model standard)</option>
+            <option value="low" data-i18n="field.effortLevel.low">low</option>
+            <option value="medium" data-i18n="field.effortLevel.medium">medium</option>
+            <option value="high" data-i18n="field.effortLevel.high">high</option>
+            <option value="xhigh" data-i18n="field.effortLevel.xhigh">xhigh</option>
           </select>
         </div>
 
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="language"><code>language</code> — Preferred Language</label>
-            <button class="unset-btn" data-unset-path="language">unset</button>
+            <label class="field-label" for="language"><code>language</code> — <span data-i18n="field.language.label">Preferred Language</span></label>
+            <button class="unset-btn" data-unset-path="language" data-i18n="actions.unset">unset</button>
           </div>
-          <input type="text" id="language" data-setting-path="language" placeholder="e.g. english, spanish, japanese">
+          <input type="text" id="language" data-setting-path="language" placeholder="e.g. english, spanish, japanese" data-i18n-placeholder="field.language.placeholder">
         </div>
 
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="preferredNotifChannel"><code>preferredNotifChannel</code> — Notifications</label>
-            <button class="unset-btn" data-unset-path="preferredNotifChannel">unset</button>
+            <label class="field-label" for="preferredNotifChannel"><code>preferredNotifChannel</code> — <span data-i18n="field.notif.label">Notifications</span></label>
+            <button class="unset-btn" data-unset-path="preferredNotifChannel" data-i18n="actions.unset">unset</button>
           </div>
           <select id="preferredNotifChannel" data-setting-path="preferredNotifChannel">
-            <option value="">(Default: auto)</option>
-            <option value="auto">auto — desktop notification in supported terminals</option>
-            <option value="terminal_bell">terminal_bell — ring bell character</option>
-            <option value="iterm2">iterm2</option>
-            <option value="iterm2_with_bell">iterm2_with_bell</option>
-            <option value="kitty">kitty</option>
-            <option value="ghostty">ghostty</option>
-            <option value="notifications_disabled">notifications_disabled</option>
+            <option value="" data-i18n="field.notif.default">(Default: auto)</option>
+            <option value="auto" data-i18n="field.notif.auto">auto — desktop notification in supported terminals</option>
+            <option value="terminal_bell" data-i18n="field.notif.bell">terminal_bell — ring bell character</option>
+            <option value="iterm2" data-i18n="field.notif.iterm2">iterm2</option>
+            <option value="iterm2_with_bell" data-i18n="field.notif.iterm2Bell">iterm2_with_bell</option>
+            <option value="kitty" data-i18n="field.notif.kitty">kitty</option>
+            <option value="ghostty" data-i18n="field.notif.ghostty">ghostty</option>
+            <option value="notifications_disabled" data-i18n="field.notif.disabled">notifications_disabled</option>
           </select>
         </div>
 
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="viewMode"><code>viewMode</code> — Transcript View</label>
-            <button class="unset-btn" data-unset-path="viewMode">unset</button>
+            <label class="field-label" for="viewMode"><code>viewMode</code> — <span data-i18n="field.viewMode.label">Transcript View</span></label>
+            <button class="unset-btn" data-unset-path="viewMode" data-i18n="actions.unset">unset</button>
           </div>
           <select id="viewMode" data-setting-path="viewMode">
-            <option value="">(Default: default)</option>
-            <option value="default">default</option>
-            <option value="verbose">verbose</option>
-            <option value="focus">focus</option>
+            <option value="" data-i18n="field.viewMode.default">(Default: default)</option>
+            <option value="default" data-i18n="field.viewMode.defaultVal">default</option>
+            <option value="verbose" data-i18n="field.viewMode.verbose">verbose</option>
+            <option value="focus" data-i18n="field.viewMode.focus">focus</option>
           </select>
         </div>
 
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="defaultShell"><code>defaultShell</code> — ! Shell Commands</label>
-            <button class="unset-btn" data-unset-path="defaultShell">unset</button>
+            <label class="field-label" for="defaultShell"><code>defaultShell</code> — <span data-i18n="field.defaultShell.label">! Shell Commands</span></label>
+            <button class="unset-btn" data-unset-path="defaultShell" data-i18n="actions.unset">unset</button>
           </div>
           <select id="defaultShell" data-setting-path="defaultShell">
-            <option value="">(Default: bash / powershell)</option>
-            <option value="bash">bash</option>
-            <option value="powershell">powershell</option>
+            <option value="" data-i18n="field.defaultShell.default">(Default: bash / powershell)</option>
+            <option value="bash" data-i18n="field.defaultShell.bash">bash</option>
+            <option value="powershell" data-i18n="field.defaultShell.powershell">powershell</option>
           </select>
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:24px;">Accessibility &amp; UI Toggles</div>
+      <div class="section-title" style="margin-top:24px;" data-i18n="sections.general.toggles">Accessibility &amp; UI Toggles</div>
       <div class="grid-2">
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="axScreenReader" data-setting-path="axScreenReader"><label for="axScreenReader"><code>axScreenReader</code> — Screen reader accessible text</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="prefersReducedMotion" data-setting-path="prefersReducedMotion"><label for="prefersReducedMotion"><code>prefersReducedMotion</code> — Reduce animations &amp; spinners</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="promptSuggestionEnabled" data-setting-path="promptSuggestionEnabled"><label for="promptSuggestionEnabled"><code>promptSuggestionEnabled</code> — Gray prompt predictions</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="emojiCompletionEnabled" data-setting-path="emojiCompletionEnabled"><label for="emojiCompletionEnabled"><code>emojiCompletionEnabled</code> — :emoji: shortcode completion</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="syntaxHighlightingDisabled" data-setting-path="syntaxHighlightingDisabled"><label for="syntaxHighlightingDisabled"><code>syntaxHighlightingDisabled</code> — Disable code syntax highlight</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="axScreenReader" data-setting-path="axScreenReader"><label for="axScreenReader"><code>axScreenReader</code> — <span data-i18n="toggle.axScreenReader">Screen reader accessible text</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="prefersReducedMotion" data-setting-path="prefersReducedMotion"><label for="prefersReducedMotion"><code>prefersReducedMotion</code> — <span data-i18n="toggle.prefersReducedMotion">Reduce animations &amp; spinners</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="promptSuggestionEnabled" data-setting-path="promptSuggestionEnabled"><label for="promptSuggestionEnabled"><code>promptSuggestionEnabled</code> — <span data-i18n="toggle.promptSuggestionEnabled">Gray prompt predictions</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="emojiCompletionEnabled" data-setting-path="emojiCompletionEnabled"><label for="emojiCompletionEnabled"><code>emojiCompletionEnabled</code> — <span data-i18n="toggle.emojiCompletionEnabled">:emoji: shortcode completion</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="syntaxHighlightingDisabled" data-setting-path="syntaxHighlightingDisabled"><label for="syntaxHighlightingDisabled"><code>syntaxHighlightingDisabled</code> — <span data-i18n="toggle.syntaxHighlightingDisabled">Disable code syntax highlight</span></label></div>
         </div>
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="autoScrollEnabled" data-setting-path="autoScrollEnabled"><label for="autoScrollEnabled"><code>autoScrollEnabled</code> — Auto-scroll to bottom</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="showTurnDuration" data-setting-path="showTurnDuration"><label for="showTurnDuration"><code>showTurnDuration</code> — Show response turn duration</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="terminalProgressBarEnabled" data-setting-path="terminalProgressBarEnabled"><label for="terminalProgressBarEnabled"><code>terminalProgressBarEnabled</code> — Terminal progress bar</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="spinnerTipsEnabled" data-setting-path="spinnerTipsEnabled"><label for="spinnerTipsEnabled"><code>spinnerTipsEnabled</code> — Show tips in spinner</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="wheelScrollAccelerationEnabled" data-setting-path="wheelScrollAccelerationEnabled"><label for="wheelScrollAccelerationEnabled"><code>wheelScrollAccelerationEnabled</code> — Mouse wheel acceleration</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="fileCheckpointingEnabled" data-setting-path="fileCheckpointingEnabled"><label for="fileCheckpointingEnabled"><code>fileCheckpointingEnabled</code> — Snapshot files for /rewind</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="verbose" data-setting-path="verbose"><label for="verbose"><code>verbose</code> — Show full tool output</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="autoScrollEnabled" data-setting-path="autoScrollEnabled"><label for="autoScrollEnabled"><code>autoScrollEnabled</code> — <span data-i18n="toggle.autoScrollEnabled">Auto-scroll to bottom</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="showTurnDuration" data-setting-path="showTurnDuration"><label for="showTurnDuration"><code>showTurnDuration</code> — <span data-i18n="toggle.showTurnDuration">Show response turn duration</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="terminalProgressBarEnabled" data-setting-path="terminalProgressBarEnabled"><label for="terminalProgressBarEnabled"><code>terminalProgressBarEnabled</code> — <span data-i18n="toggle.terminalProgressBarEnabled">Terminal progress bar</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="spinnerTipsEnabled" data-setting-path="spinnerTipsEnabled"><label for="spinnerTipsEnabled"><code>spinnerTipsEnabled</code> — <span data-i18n="toggle.spinnerTipsEnabled">Show tips in spinner</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="wheelScrollAccelerationEnabled" data-setting-path="wheelScrollAccelerationEnabled"><label for="wheelScrollAccelerationEnabled"><code>wheelScrollAccelerationEnabled</code> — <span data-i18n="toggle.wheelScrollAccelerationEnabled">Mouse wheel acceleration</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="fileCheckpointingEnabled" data-setting-path="fileCheckpointingEnabled"><label for="fileCheckpointingEnabled"><code>fileCheckpointingEnabled</code> — <span data-i18n="toggle.fileCheckpointingEnabled">Snapshot files for /rewind</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="verbose" data-setting-path="verbose"><label for="verbose"><code>verbose</code> — <span data-i18n="toggle.verbose">Show full tool output</span></label></div>
         </div>
       </div>
     </section>
 
     <!-- TAB 2: Permissions -->
     <section id="tab-permissions" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-permissions" aria-hidden="true">
-      <div class="section-title">Permissions &amp; Security Modes</div>
-      <div class="section-desc">Control starting permission modes, tool-specific permission rules (allow, ask, deny), and permission prompt behavior. Rules evaluate in order: <strong>deny</strong> &rarr; <strong>ask</strong> &rarr; <strong>allow</strong>.</div>
+      <div class="section-title" data-i18n="sections.permissions.title">Permissions &amp; Security Modes</div>
+      <div class="section-desc" data-i18n="sections.permissions.desc">Control starting permission modes, tool-specific permission rules (allow, ask, deny), and permission prompt behavior. Rules evaluate in order: <strong>deny</strong> &rarr; <strong>ask</strong> &rarr; <strong>allow</strong>.</div>
 
       <div class="grid-2">
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="permissions_defaultMode"><code>permissions.defaultMode</code></label>
-            <button class="unset-btn" data-unset-path="permissions.defaultMode">unset</button>
+            <button class="unset-btn" data-unset-path="permissions.defaultMode" data-i18n="actions.unset">unset</button>
           </div>
           <select id="permissions_defaultMode" data-setting-path="permissions.defaultMode">
-            <option value="">(Default: default / plan-dependent)</option>
-            <option value="default">default — prompt for tool actions</option>
-            <option value="acceptEdits">acceptEdits — auto-approve file edits only</option>
-            <option value="plan">plan — plan-only mode, no execution</option>
-            <option value="auto">auto — autonomous classifier (User/Managed only)</option>
-            <option value="dontAsk">dontAsk — auto-approve commands and tools</option>
-            <option value="bypassPermissions">bypassPermissions — skip all permission checks</option>
-            <option value="manual">manual — alias for default</option>
+            <option value="" data-i18n="field.permMode.default">(Default: default / plan-dependent)</option>
+            <option value="default" data-i18n="field.permMode.defaultVal">default — prompt for tool actions</option>
+            <option value="acceptEdits" data-i18n="field.permMode.acceptEdits">acceptEdits — auto-approve file edits only</option>
+            <option value="plan" data-i18n="field.permMode.plan">plan — plan-only mode, no execution</option>
+            <option value="auto" data-i18n="field.permMode.auto">auto — autonomous classifier (User/Managed only)</option>
+            <option value="dontAsk" data-i18n="field.permMode.dontAsk">dontAsk — auto-approve commands and tools</option>
+            <option value="bypassPermissions" data-i18n="field.permMode.bypass">bypassPermissions — skip all permission checks</option>
+            <option value="manual" data-i18n="field.permMode.manual">manual — alias for default</option>
           </select>
-          <div class="field-hint">Note: <code>auto</code> mode is only honored in User or Managed scope.</div>
+          <div class="field-hint" data-i18n="field.permMode.hint">Note: <code>auto</code> mode is only honored in User or Managed scope.</div>
         </div>
 
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="permissions_disableAutoMode"><code>permissions.disableAutoMode</code></label>
-            <button class="unset-btn" data-unset-path="permissions.disableAutoMode">unset</button>
+            <button class="unset-btn" data-unset-path="permissions.disableAutoMode" data-i18n="actions.unset">unset</button>
           </div>
           <select id="permissions_disableAutoMode" data-setting-path="permissions.disableAutoMode">
-            <option value="">(Enabled / Not set)</option>
-            <option value="disable">disable — prevent auto mode entirely</option>
+            <option value="" data-i18n="field.disableAutoMode.default">(Enabled / Not set)</option>
+            <option value="disable" data-i18n="field.disableAutoMode.disable">disable — prevent auto mode entirely</option>
           </select>
         </div>
 
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="permissions_disableBypassPermissionsMode"><code>permissions.disableBypassPermissionsMode</code></label>
-            <button class="unset-btn" data-unset-path="permissions.disableBypassPermissionsMode">unset</button>
+            <button class="unset-btn" data-unset-path="permissions.disableBypassPermissionsMode" data-i18n="actions.unset">unset</button>
           </div>
           <select id="permissions_disableBypassPermissionsMode" data-setting-path="permissions.disableBypassPermissionsMode">
-            <option value="">(Enabled / Not set)</option>
-            <option value="disable">disable — block bypass permissions mode</option>
+            <option value="" data-i18n="field.disableBypass.default">(Enabled / Not set)</option>
+            <option value="disable" data-i18n="field.disableBypass.disable">disable — block bypass permissions mode</option>
           </select>
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;">Permission Flags</div>
+      <div class="section-title" style="margin-top:20px;" data-i18n="sections.permissions.flags">Permission Flags</div>
       <div class="grid-2">
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="permissions_skipDangerousModePermissionPrompt" data-setting-path="permissions.skipDangerousModePermissionPrompt"><label for="permissions_skipDangerousModePermissionPrompt"><code>permissions.skipDangerousModePermissionPrompt</code></label></div>
-          <div class="checkbox-row"><input type="checkbox" id="useAutoModeDuringPlan" data-setting-path="useAutoModeDuringPlan"><label for="useAutoModeDuringPlan"><code>useAutoModeDuringPlan</code></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="permissions_skipDangerousModePermissionPrompt" data-setting-path="permissions.skipDangerousModePermissionPrompt"><label for="permissions_skipDangerousModePermissionPrompt"><code>permissions.skipDangerousModePermissionPrompt</code> — <span data-i18n="toggle.skipDangerousModePrompt">Skip dangerous mode permission prompt</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="useAutoModeDuringPlan" data-setting-path="useAutoModeDuringPlan"><label for="useAutoModeDuringPlan"><code>useAutoModeDuringPlan</code> — <span data-i18n="toggle.useAutoModeDuringPlan">Use auto mode during plan execution</span></label></div>
         </div>
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="allowManagedPermissionRulesOnly" data-setting-path="allowManagedPermissionRulesOnly"><label for="allowManagedPermissionRulesOnly"><code>allowManagedPermissionRulesOnly</code> <span class="badge-scope badge-managed">Managed Only</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="allowManagedPermissionRulesOnly" data-setting-path="allowManagedPermissionRulesOnly"><label for="allowManagedPermissionRulesOnly"><code>allowManagedPermissionRulesOnly</code> <span class="badge-scope badge-managed" data-i18n="badge.managedOnly">Managed Only</span></label></div>
         </div>
       </div>
 
       <!-- Rule Lists -->
-      <div class="section-title" style="margin-top:24px;">Permission Rule Lists</div>
+      <div class="section-title" style="margin-top:24px;" data-i18n="sections.permissions.ruleLists">Permission Rule Lists</div>
 
       <div class="rule-box rule-deny">
         <div class="rule-box-header">
-          <span class="rule-title">Deny Rules (<code>permissions.deny</code>)</span>
-          <span class="rule-desc">Evaluated FIRST. Matches block tool execution and hide sensitive files.</span>
+          <span class="rule-title"><span data-i18n="rules.deny.title">Deny Rules</span> (<code>permissions.deny</code>)</span>
+          <span class="rule-desc" data-i18n="rules.deny.desc">Evaluated FIRST. Matches block tool execution and hide sensitive files.</span>
         </div>
         <div id="list-permissions-deny"></div>
         <div class="input-wrap" style="margin-top:8px;">
-          <input type="text" id="new-deny-rule" placeholder="e.g. Read(./.env), Bash(curl *), WebFetch">
-          <button id="btn-add-deny-rule" class="btn danger small">+ Add Deny Rule</button>
+          <input type="text" id="new-deny-rule" placeholder="e.g. Read(./.env), Bash(curl *), WebFetch" data-i18n-placeholder="rules.deny.placeholder">
+          <button id="btn-add-deny-rule" class="btn danger small" data-i18n="rules.deny.button">+ Add Deny Rule</button>
         </div>
       </div>
 
       <div class="rule-box rule-ask">
         <div class="rule-box-header">
-          <span class="rule-title">Ask Rules (<code>permissions.ask</code>)</span>
-          <span class="rule-desc">Evaluated SECOND. Matches always prompt the user for confirmation.</span>
+          <span class="rule-title"><span data-i18n="rules.ask.title">Ask Rules</span> (<code>permissions.ask</code>)</span>
+          <span class="rule-desc" data-i18n="rules.ask.desc">Evaluated SECOND. Matches always prompt the user for confirmation.</span>
         </div>
         <div id="list-permissions-ask"></div>
         <div class="input-wrap" style="margin-top:8px;">
-          <input type="text" id="new-ask-rule" placeholder="e.g. Bash(git push *), Bash(npm publish)">
-          <button id="btn-add-ask-rule" class="btn small">+ Add Ask Rule</button>
+          <input type="text" id="new-ask-rule" placeholder="e.g. Bash(git push *), Bash(npm publish)" data-i18n-placeholder="rules.ask.placeholder">
+          <button id="btn-add-ask-rule" class="btn small" data-i18n="rules.ask.button">+ Add Ask Rule</button>
         </div>
       </div>
 
       <div class="rule-box rule-allow">
         <div class="rule-box-header">
-          <span class="rule-title">Allow Rules (<code>permissions.allow</code>)</span>
-          <span class="rule-desc">Evaluated THIRD. Matches auto-execute without interactive prompt.</span>
+          <span class="rule-title"><span data-i18n="rules.allow.title">Allow Rules</span> (<code>permissions.allow</code>)</span>
+          <span class="rule-desc" data-i18n="rules.allow.desc">Evaluated THIRD. Matches auto-execute without interactive prompt.</span>
         </div>
         <div id="list-permissions-allow"></div>
         <div class="input-wrap" style="margin-top:8px;">
-          <input type="text" id="new-allow-rule" placeholder="e.g. Bash(npm run *), Read(./src/**)">
-          <button id="btn-add-allow-rule" class="btn primary small">+ Add Allow Rule</button>
+          <input type="text" id="new-allow-rule" placeholder="e.g. Bash(npm run *), Read(./src/**)" data-i18n-placeholder="rules.allow.placeholder">
+          <button id="btn-add-allow-rule" class="btn primary small" data-i18n="rules.allow.button">+ Add Allow Rule</button>
         </div>
       </div>
 
       <div class="rule-box" style="margin-top:16px;">
         <div class="rule-box-header">
-          <span class="rule-title">Additional Directories (<code>permissions.additionalDirectories</code>)</span>
-          <span class="rule-desc">Extra working directories granted for file read/edit access.</span>
+          <span class="rule-title"><span data-i18n="rules.additionalDirs.title">Additional Directories</span> (<code>permissions.additionalDirectories</code>)</span>
+          <span class="rule-desc" data-i18n="rules.additionalDirs.desc">Extra working directories granted for file read/edit access.</span>
         </div>
         <div id="list-permissions-additionalDirs"></div>
         <div class="input-wrap" style="margin-top:8px;">
-          <input type="text" id="new-add-dir" placeholder="e.g. ../docs/, ~/shared-libs/">
-          <button id="btn-add-dir" class="btn small">+ Add Directory</button>
+          <input type="text" id="new-add-dir" placeholder="e.g. ../docs/, ~/shared-libs/" data-i18n-placeholder="rules.additionalDirs.placeholder">
+          <button id="btn-add-dir" class="btn small" data-i18n="rules.additionalDirs.button">+ Add Directory</button>
         </div>
       </div>
     </section>
 
     <!-- TAB 3: Sandboxing -->
     <section id="tab-sandbox" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-sandbox" aria-hidden="true">
-      <div class="section-title">Sandbox Configuration</div>
-      <div class="section-desc">Configure process isolation for Bash commands on macOS, Linux, and WSL2. Controls filesystem access, network egress, and credential protection.</div>
+      <div class="section-title" data-i18n="sections.sandbox.title">Sandbox Configuration</div>
+      <div class="section-desc" data-i18n="sections.sandbox.desc">Configure process isolation for Bash commands on macOS, Linux, and WSL2. Controls filesystem access, network egress, and credential protection.</div>
 
       <div class="grid-2">
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="sandbox_enabled" data-setting-path="sandbox.enabled"><label for="sandbox_enabled"><code>sandbox.enabled</code> — Enable Bash Sandboxing</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="sandbox_failIfUnavailable" data-setting-path="sandbox.failIfUnavailable"><label for="sandbox_failIfUnavailable"><code>sandbox.failIfUnavailable</code> — Exit if sandbox unavailable</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="sandbox_autoAllowBashIfSandboxed" data-setting-path="sandbox.autoAllowBashIfSandboxed"><label for="sandbox_autoAllowBashIfSandboxed"><code>sandbox.autoAllowBashIfSandboxed</code> — Auto-approve sandboxed commands</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="sandbox_allowUnsandboxedCommands" data-setting-path="sandbox.allowUnsandboxedCommands"><label for="sandbox_allowUnsandboxedCommands"><code>sandbox.allowUnsandboxedCommands</code> — Allow escape hatch</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="sandbox_enabled" data-setting-path="sandbox.enabled"><label for="sandbox_enabled"><code>sandbox.enabled</code> — <span data-i18n="toggle.sandbox.enabled">Enable Bash Sandboxing</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="sandbox_failIfUnavailable" data-setting-path="sandbox.failIfUnavailable"><label for="sandbox_failIfUnavailable"><code>sandbox.failIfUnavailable</code> — <span data-i18n="toggle.sandbox.failIfUnavailable">Exit if sandbox unavailable</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="sandbox_autoAllowBashIfSandboxed" data-setting-path="sandbox.autoAllowBashIfSandboxed"><label for="sandbox_autoAllowBashIfSandboxed"><code>sandbox.autoAllowBashIfSandboxed</code> — <span data-i18n="toggle.sandbox.autoAllowBash">Auto-approve sandboxed commands</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="sandbox_allowUnsandboxedCommands" data-setting-path="sandbox.allowUnsandboxedCommands"><label for="sandbox_allowUnsandboxedCommands"><code>sandbox.allowUnsandboxedCommands</code> — <span data-i18n="toggle.sandbox.allowUnsandboxed">Allow escape hatch</span></label></div>
         </div>
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="sandbox_filesystem_disabled" data-setting-path="sandbox.filesystem.disabled"><label for="sandbox_filesystem_disabled"><code>sandbox.filesystem.disabled</code> — Skip filesystem isolation</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="sandbox_network_strictAllowlist" data-setting-path="sandbox.network.strictAllowlist"><label for="sandbox_network_strictAllowlist"><code>sandbox.network.strictAllowlist</code> — Strict network lockdown</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="sandbox_network_allowAllUnixSockets" data-setting-path="sandbox.network.allowAllUnixSockets"><label for="sandbox_network_allowAllUnixSockets"><code>sandbox.network.allowAllUnixSockets</code> — Allow all Unix sockets</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="sandbox_network_allowLocalBinding" data-setting-path="sandbox.network.allowLocalBinding"><label for="sandbox_network_allowLocalBinding"><code>sandbox.network.allowLocalBinding</code> — Allow localhost port binding</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="sandbox_filesystem_disabled" data-setting-path="sandbox.filesystem.disabled"><label for="sandbox_filesystem_disabled"><code>sandbox.filesystem.disabled</code> — <span data-i18n="toggle.sandbox.fsDisabled">Skip filesystem isolation</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="sandbox_network_strictAllowlist" data-setting-path="sandbox.network.strictAllowlist"><label for="sandbox_network_strictAllowlist"><code>sandbox.network.strictAllowlist</code> — <span data-i18n="toggle.sandbox.strictNet">Strict network lockdown</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="sandbox_network_allowAllUnixSockets" data-setting-path="sandbox.network.allowAllUnixSockets"><label for="sandbox_network_allowAllUnixSockets"><code>sandbox.network.allowAllUnixSockets</code> — <span data-i18n="toggle.sandbox.allowUnixSockets">Allow all Unix sockets</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="sandbox_network_allowLocalBinding" data-setting-path="sandbox.network.allowLocalBinding"><label for="sandbox_network_allowLocalBinding"><code>sandbox.network.allowLocalBinding</code> — <span data-i18n="toggle.sandbox.allowLocalBinding">Allow localhost port binding</span></label></div>
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:24px;">Filesystem Isolation Paths</div>
+      <div class="section-title" style="margin-top:24px;" data-i18n="sections.sandbox.filesystem">Filesystem Isolation Paths</div>
       <div class="grid-2">
         <div class="rule-box">
-          <div class="rule-box-header"><span class="rule-title">Allow Write (<code>sandbox.filesystem.allowWrite</code>)</span></div>
+          <div class="rule-box-header"><span class="rule-title"><span data-i18n="rules.sb.allowWrite.title">Allow Write</span> (<code>sandbox.filesystem.allowWrite</code>)</span></div>
           <div id="list-sb-allow-write"></div>
           <div class="input-wrap" style="margin-top:8px;">
-            <input type="text" id="new-sb-allow-write" placeholder="e.g. /tmp/build, ~/.kube">
-            <button id="btn-add-sb-allow-write" class="btn small">+ Add Path</button>
+            <input type="text" id="new-sb-allow-write" placeholder="e.g. /tmp/build, ~/.kube" data-i18n-placeholder="rules.sb.allowWrite.placeholder">
+            <button id="btn-add-sb-allow-write" class="btn small" data-i18n="rules.sb.allowWrite.button">+ Add Path</button>
           </div>
         </div>
         <div class="rule-box">
-          <div class="rule-box-header"><span class="rule-title">Deny Write (<code>sandbox.filesystem.denyWrite</code>)</span></div>
+          <div class="rule-box-header"><span class="rule-title"><span data-i18n="rules.sb.denyWrite.title">Deny Write</span> (<code>sandbox.filesystem.denyWrite</code>)</span></div>
           <div id="list-sb-deny-write"></div>
           <div class="input-wrap" style="margin-top:8px;">
-            <input type="text" id="new-sb-deny-write" placeholder="e.g. /etc, /usr/local/bin">
-            <button id="btn-add-sb-deny-write" class="btn small">+ Add Path</button>
+            <input type="text" id="new-sb-deny-write" placeholder="e.g. /etc, /usr/local/bin" data-i18n-placeholder="rules.sb.denyWrite.placeholder">
+            <button id="btn-add-sb-deny-write" class="btn small" data-i18n="rules.sb.denyWrite.button">+ Add Path</button>
           </div>
         </div>
         <div class="rule-box">
-          <div class="rule-box-header"><span class="rule-title">Deny Read (<code>sandbox.filesystem.denyRead</code>)</span></div>
+          <div class="rule-box-header"><span class="rule-title"><span data-i18n="rules.sb.denyRead.title">Deny Read</span> (<code>sandbox.filesystem.denyRead</code>)</span></div>
           <div id="list-sb-deny-read"></div>
           <div class="input-wrap" style="margin-top:8px;">
-            <input type="text" id="new-sb-deny-read" placeholder="e.g. ~/.aws/credentials, ~/.ssh">
-            <button id="btn-add-sb-deny-read" class="btn small">+ Add Path</button>
+            <input type="text" id="new-sb-deny-read" placeholder="e.g. ~/.aws/credentials, ~/.ssh" data-i18n-placeholder="rules.sb.denyRead.placeholder">
+            <button id="btn-add-sb-deny-read" class="btn small" data-i18n="rules.sb.denyRead.button">+ Add Path</button>
           </div>
         </div>
         <div class="rule-box">
-          <div class="rule-box-header"><span class="rule-title">Allow Read (<code>sandbox.filesystem.allowRead</code>)</span></div>
+          <div class="rule-box-header"><span class="rule-title"><span data-i18n="rules.sb.allowRead.title">Allow Read</span> (<code>sandbox.filesystem.allowRead</code>)</span></div>
           <div id="list-sb-allow-read"></div>
           <div class="input-wrap" style="margin-top:8px;">
-            <input type="text" id="new-sb-allow-read" placeholder="e.g. . (workspace re-allow)">
-            <button id="btn-add-sb-allow-read" class="btn small">+ Add Path</button>
+            <input type="text" id="new-sb-allow-read" placeholder="e.g. . (workspace re-allow)" data-i18n-placeholder="rules.sb.allowRead.placeholder">
+            <button id="btn-add-sb-allow-read" class="btn small" data-i18n="rules.sb.allowRead.button">+ Add Path</button>
           </div>
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:24px;">Network Isolation Domains</div>
+      <div class="section-title" style="margin-top:24px;" data-i18n="sections.sandbox.network">Network Isolation Domains</div>
       <div class="grid-2">
         <div class="rule-box">
-          <div class="rule-box-header"><span class="rule-title">Allowed Domains (<code>sandbox.network.allowedDomains</code>)</span></div>
+          <div class="rule-box-header"><span class="rule-title"><span data-i18n="rules.sb.allowDomains.title">Allowed Domains</span> (<code>sandbox.network.allowedDomains</code>)</span></div>
           <div id="list-sb-allow-domains"></div>
           <div class="input-wrap" style="margin-top:8px;">
-            <input type="text" id="new-sb-allow-domain" placeholder="e.g. github.com, *.npmjs.org">
-            <button id="btn-add-sb-allow-domain" class="btn small">+ Add Domain</button>
+            <input type="text" id="new-sb-allow-domain" placeholder="e.g. github.com, *.npmjs.org" data-i18n-placeholder="rules.sb.allowDomains.placeholder">
+            <button id="btn-add-sb-allow-domain" class="btn small" data-i18n="rules.sb.allowDomains.button">+ Add Domain</button>
           </div>
         </div>
         <div class="rule-box">
-          <div class="rule-box-header"><span class="rule-title">Denied Domains (<code>sandbox.network.deniedDomains</code>)</span></div>
+          <div class="rule-box-header"><span class="rule-title"><span data-i18n="rules.sb.denyDomains.title">Denied Domains</span> (<code>sandbox.network.deniedDomains</code>)</span></div>
           <div id="list-sb-deny-domains"></div>
           <div class="input-wrap" style="margin-top:8px;">
-            <input type="text" id="new-sb-deny-domain" placeholder="e.g. uploads.github.com, *.internal">
-            <button id="btn-add-sb-deny-domain" class="btn small">+ Add Domain</button>
+            <input type="text" id="new-sb-deny-domain" placeholder="e.g. uploads.github.com, *.internal" data-i18n-placeholder="rules.sb.denyDomains.placeholder">
+            <button id="btn-add-sb-deny-domain" class="btn small" data-i18n="rules.sb.denyDomains.button">+ Add Domain</button>
           </div>
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:24px;">Excluded Commands (<code>sandbox.excludedCommands</code>)</div>
+      <div class="section-title" style="margin-top:24px;" data-i18n="sections.sandbox.excluded">Excluded Commands (<code>sandbox.excludedCommands</code>)</div>
       <div id="list-sb-excluded-commands"></div>
       <div class="input-wrap" style="margin-top:8px;">
-        <input type="text" id="new-sb-excluded-cmd" placeholder="e.g. docker *, podman *">
-        <button id="btn-add-sb-excluded-cmd" class="btn small">+ Add Command</button>
+        <input type="text" id="new-sb-excluded-cmd" placeholder="e.g. docker *, podman *" data-i18n-placeholder="rules.sb.excludedCmds.placeholder">
+        <button id="btn-add-sb-excluded-cmd" class="btn small" data-i18n="rules.sb.excludedCmds.button">+ Add Command</button>
       </div>
     </section>
 
     <!-- TAB 4: Environment Variables -->
     <section id="tab-env" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-env" aria-hidden="true">
-      <div class="section-title">Environment Variables (<code>env</code>)</div>
-      <div class="section-desc">Environment variables set in Claude Code sessions and passed to subprocesses, tools, and hooks. Values matching credential patterns are masked by default.</div>
+      <div class="section-title"><span data-i18n="sections.env.title">Environment Variables</span> (<code>env</code>)</div>
+      <div class="section-desc" data-i18n="sections.env.desc">Environment variables set in Claude Code sessions and passed to subprocesses, tools, and hooks. Values matching credential patterns are masked by default.</div>
 
       <div class="env-presets-toolbar">
-        <span class="field-label">Quick Presets:</span>
-        <button class="btn small" id="btn-preset-anthropic">+ Anthropic API</button>
-        <button class="btn small" id="btn-preset-telemetry">+ OpenTelemetry</button>
-        <button class="btn small" id="btn-preset-models">+ Default Models</button>
+        <span class="field-label" data-i18n="sections.env.presets">Quick Presets:</span>
+        <button class="btn small" id="btn-preset-anthropic" data-i18n="env.preset.anthropic">+ Anthropic API</button>
+        <button class="btn small" id="btn-preset-telemetry" data-i18n="env.preset.telemetry">+ OpenTelemetry</button>
+        <button class="btn small" id="btn-preset-models" data-i18n="env.preset.models">+ Default Models</button>
       </div>
 
       <div id="env-var-list" style="margin-top:16px;"></div>
 
       <div class="input-wrap" style="margin-top:12px;">
-        <input type="text" id="new-env-key" placeholder="VARIABLE_NAME (e.g. ANTHROPIC_API_KEY)" style="flex:1;">
-        <input type="text" id="new-env-val" placeholder="Value (or empty to unset)" style="flex:2;">
-        <button id="btn-add-env-var" class="btn primary">+ Add Variable</button>
+        <input type="text" id="new-env-key" placeholder="VARIABLE_NAME (e.g. ANTHROPIC_API_KEY)" data-i18n-placeholder="env.keyPlaceholder" style="flex:1;">
+        <input type="text" id="new-env-val" placeholder="Value (or empty to unset)" data-i18n-placeholder="env.valPlaceholder" style="flex:2;">
+        <button id="btn-add-env-var" class="btn primary" data-i18n="env.addVar">+ Add Variable</button>
       </div>
 
-      <div class="section-title" style="margin-top:28px;">Credential &amp; Telemetry Helpers</div>
+      <div class="section-title" style="margin-top:28px;" data-i18n="sections.env.helpers">Credential &amp; Telemetry Helpers</div>
       <div class="grid-2">
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="apiKeyHelper"><code>apiKeyHelper</code></label>
-            <button class="unset-btn" data-unset-path="apiKeyHelper">unset</button>
+            <button class="unset-btn" data-unset-path="apiKeyHelper" data-i18n="actions.unset">unset</button>
           </div>
           <input type="text" id="apiKeyHelper" data-setting-path="apiKeyHelper" placeholder="/bin/generate_temp_api_key.sh">
-          <div class="field-hint">Custom command run through shell to generate dynamic auth header values.</div>
+          <div class="field-hint" data-i18n="env.apiKeyHelperHint">Custom command run through shell to generate dynamic auth header values.</div>
         </div>
 
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="otelHeadersHelper"><code>otelHeadersHelper</code></label>
-            <button class="unset-btn" data-unset-path="otelHeadersHelper">unset</button>
+            <button class="unset-btn" data-unset-path="otelHeadersHelper" data-i18n="actions.unset">unset</button>
           </div>
           <input type="text" id="otelHeadersHelper" data-setting-path="otelHeadersHelper" placeholder="/bin/generate_otel_headers.sh">
-          <div class="field-hint">Script to generate dynamic OpenTelemetry headers.</div>
+          <div class="field-hint" data-i18n="env.otelHeadersHelperHint">Script to generate dynamic OpenTelemetry headers.</div>
         </div>
       </div>
     </section>
 
     <!-- TAB 5: Models & Workflows -->
     <section id="tab-models" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-models" aria-hidden="true">
-      <div class="section-title">Models &amp; Dynamic Workflows</div>
-      <div class="section-desc">Configure primary model selection, fallback model chains, advisor tool model, extended thinking, and workflow size guidelines.</div>
+      <div class="section-title" data-i18n="sections.models.title">Models &amp; Dynamic Workflows</div>
+      <div class="section-desc" data-i18n="sections.models.desc">Configure primary model selection, fallback model chains, advisor tool model, extended thinking, and workflow size guidelines.</div>
 
       <div class="grid-2">
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="model"><code>model</code> — Primary Model</label>
-            <button class="unset-btn" data-unset-path="model">unset</button>
+            <label class="field-label" for="model"><code>model</code> — <span data-i18n="field.model.label">Primary Model</span></label>
+            <button class="unset-btn" data-unset-path="model" data-i18n="actions.unset">unset</button>
           </div>
-          <input type="text" id="model" data-setting-path="model" placeholder="e.g. claude-sonnet-5, opus">
-          <div class="field-hint">Restart required when modified. Mid-session switch via <code>/model</code>.</div>
+          <input type="text" id="model" data-setting-path="model" placeholder="e.g. claude-sonnet-5, opus" data-i18n-placeholder="field.model.placeholder">
+          <div class="field-hint" data-i18n="field.model.hint">Restart required when modified. Mid-session switch via <code>/model</code>.</div>
         </div>
 
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="advisorModel"><code>advisorModel</code> — Advisor Model</label>
-            <button class="unset-btn" data-unset-path="advisorModel">unset</button>
+            <label class="field-label" for="advisorModel"><code>advisorModel</code> — <span data-i18n="field.advisorModel.label">Advisor Model</span></label>
+            <button class="unset-btn" data-unset-path="advisorModel" data-i18n="actions.unset">unset</button>
           </div>
-          <input type="text" id="advisorModel" data-setting-path="advisorModel" placeholder="fable, opus, or sonnet">
+          <input type="text" id="advisorModel" data-setting-path="advisorModel" placeholder="fable, opus, or sonnet" data-i18n-placeholder="field.advisorModel.placeholder">
         </div>
 
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="workflowSizeGuideline"><code>workflowSizeGuideline</code></label>
-            <button class="unset-btn" data-unset-path="workflowSizeGuideline">unset</button>
+            <button class="unset-btn" data-unset-path="workflowSizeGuideline" data-i18n="actions.unset">unset</button>
           </div>
           <select id="workflowSizeGuideline" data-setting-path="workflowSizeGuideline">
-            <option value="">(Default: medium)</option>
-            <option value="unrestricted">unrestricted</option>
-            <option value="small">small</option>
-            <option value="medium">medium</option>
-            <option value="large">large</option>
+            <option value="" data-i18n="field.workflowSize.default">(Default: medium)</option>
+            <option value="unrestricted" data-i18n="field.workflowSize.unrestricted">unrestricted</option>
+            <option value="small" data-i18n="field.workflowSize.small">small</option>
+            <option value="medium" data-i18n="field.workflowSize.medium">medium</option>
+            <option value="large" data-i18n="field.workflowSize.large">large</option>
           </select>
         </div>
 
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="autoCompactWindow"><code>autoCompactWindow</code></label>
-            <button class="unset-btn" data-unset-path="autoCompactWindow">unset</button>
+            <button class="unset-btn" data-unset-path="autoCompactWindow" data-i18n="actions.unset">unset</button>
           </div>
           <input type="number" id="autoCompactWindow" data-setting-path="autoCompactWindow" placeholder="850000" min="100000" max="1000000">
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;">Model &amp; Workflow Toggles</div>
+      <div class="section-title" style="margin-top:20px;" data-i18n="sections.models.toggles">Model &amp; Workflow Toggles</div>
       <div class="grid-2">
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="alwaysThinkingEnabled" data-setting-path="alwaysThinkingEnabled"><label for="alwaysThinkingEnabled"><code>alwaysThinkingEnabled</code> — Extended thinking by default</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="showThinkingSummaries" data-setting-path="showThinkingSummaries"><label for="showThinkingSummaries"><code>showThinkingSummaries</code> — Show thinking summaries</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="fastMode" data-setting-path="fastMode"><label for="fastMode"><code>fastMode</code> — Enable Fast Mode (Opus)</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="fastModePerSessionOptIn" data-setting-path="fastModePerSessionOptIn"><label for="fastModePerSessionOptIn"><code>fastModePerSessionOptIn</code> — Require per-session /fast</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="alwaysThinkingEnabled" data-setting-path="alwaysThinkingEnabled"><label for="alwaysThinkingEnabled"><code>alwaysThinkingEnabled</code> — <span data-i18n="toggle.alwaysThinking">Extended thinking by default</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="showThinkingSummaries" data-setting-path="showThinkingSummaries"><label for="showThinkingSummaries"><code>showThinkingSummaries</code> — <span data-i18n="toggle.showThinkingSummaries">Show thinking summaries</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="fastMode" data-setting-path="fastMode"><label for="fastMode"><code>fastMode</code> — <span data-i18n="toggle.fastMode">Enable Fast Mode (Opus)</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="fastModePerSessionOptIn" data-setting-path="fastModePerSessionOptIn"><label for="fastModePerSessionOptIn"><code>fastModePerSessionOptIn</code> — <span data-i18n="toggle.fastModePerSession">Require per-session /fast</span></label></div>
         </div>
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="switchModelsOnFlag" data-setting-path="switchModelsOnFlag"><label for="switchModelsOnFlag"><code>switchModelsOnFlag</code> — Auto switch fallback on safety flag</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="autoCompactEnabled" data-setting-path="autoCompactEnabled"><label for="autoCompactEnabled"><code>autoCompactEnabled</code> — Auto-compact conversation</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="workflowKeywordTriggerEnabled" data-setting-path="workflowKeywordTriggerEnabled"><label for="workflowKeywordTriggerEnabled"><code>workflowKeywordTriggerEnabled</code> — "ultracode" prompt trigger</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="disableWorkflows" data-setting-path="disableWorkflows"><label for="disableWorkflows"><code>disableWorkflows</code> — Disable dynamic workflows</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="switchModelsOnFlag" data-setting-path="switchModelsOnFlag"><label for="switchModelsOnFlag"><code>switchModelsOnFlag</code> — <span data-i18n="toggle.switchModelsOnFlag">Auto switch fallback on safety flag</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="autoCompactEnabled" data-setting-path="autoCompactEnabled"><label for="autoCompactEnabled"><code>autoCompactEnabled</code> — <span data-i18n="toggle.autoCompact">Auto-compact conversation</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="workflowKeywordTriggerEnabled" data-setting-path="workflowKeywordTriggerEnabled"><label for="workflowKeywordTriggerEnabled"><code>workflowKeywordTriggerEnabled</code> — <span data-i18n="toggle.workflowKeywordTrigger">"ultracode" prompt trigger</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="disableWorkflows" data-setting-path="disableWorkflows"><label for="disableWorkflows"><code>disableWorkflows</code> — <span data-i18n="toggle.disableWorkflows">Disable dynamic workflows</span></label></div>
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:24px;">Fallback Models Chain (<code>fallbackModel</code>)</div>
-      <div class="section-desc">Ordered list of fallback models (capped at 3 models). Replaces entire chain across settings files.</div>
+      <div class="section-title" style="margin-top:24px;" data-i18n="sections.models.fallbackChain">Fallback Models Chain (<code>fallbackModel</code>)</div>
+      <div class="section-desc" data-i18n="sections.models.fallbackDesc">Ordered list of fallback models (capped at 3 models). Replaces entire chain across settings files.</div>
       <div id="fallback-list"></div>
       <div class="input-wrap" style="margin-top:12px;">
-        <input type="text" id="new-model-input" placeholder="Model ID (e.g. claude-sonnet-5, haiku, default)">
-        <button id="btn-add-fallback" class="btn primary">+ Add Fallback Model</button>
+        <input type="text" id="new-model-input" placeholder="Model ID (e.g. claude-sonnet-5, haiku, default)" data-i18n-placeholder="fallback.placeholder">
+        <button id="btn-add-fallback" class="btn primary" data-i18n="fallback.add">+ Add Fallback Model</button>
       </div>
     </section>
 
     <!-- TAB 6: Hooks & Status Line -->
     <section id="tab-hooks" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-hooks" aria-hidden="true">
-      <div class="section-title">Lifecycle Hooks &amp; Status Line</div>
-      <div class="section-desc">Configure custom hooks, statusline scripts, subagent status lines, and link badges attached to Claude Code lifecycle events.</div>
+      <div class="section-title" data-i18n="sections.hooks.title">Lifecycle Hooks &amp; Status Line</div>
+      <div class="section-desc" data-i18n="sections.hooks.desc">Configure custom hooks, statusline scripts, subagent status lines, and link badges attached to Claude Code lifecycle events.</div>
 
       <div class="grid-2">
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="disableAllHooks" data-setting-path="disableAllHooks"><label for="disableAllHooks"><code>disableAllHooks</code> — Disable all hooks &amp; status line</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="disableAllHooks" data-setting-path="disableAllHooks"><label for="disableAllHooks"><code>disableAllHooks</code> — <span data-i18n="toggle.disableAllHooks">Disable all hooks &amp; status line</span></label></div>
         </div>
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="allowManagedHooksOnly" data-setting-path="allowManagedHooksOnly"><label for="allowManagedHooksOnly"><code>allowManagedHooksOnly</code> <span class="badge-scope badge-managed">Managed Only</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="allowManagedHooksOnly" data-setting-path="allowManagedHooksOnly"><label for="allowManagedHooksOnly"><code>allowManagedHooksOnly</code> <span class="badge-scope badge-managed" data-i18n="badge.managedOnly">Managed Only</span></label></div>
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;">Configured Hooks</div>
+      <div class="section-title" style="margin-top:20px;" data-i18n="sections.hooks.configured">Configured Hooks</div>
       <div id="hooks-container"></div>
 
       <div class="input-wrap" style="margin-top:14px;">
@@ -548,18 +557,18 @@
           <option value="UserPromptSubmit">UserPromptSubmit</option>
           <option value="UserPromptDone">UserPromptDone</option>
         </select>
-        <button id="btn-add-hook" class="btn primary">+ Add Event Group</button>
+        <button id="btn-add-hook" class="btn primary" data-i18n="hooks.addEvent">+ Add Event Group</button>
       </div>
 
-      <div class="section-title" style="margin-top:28px;">Status Line Configuration (<code>statusLine</code>)</div>
+      <div class="section-title" style="margin-top:28px;" data-i18n="sections.hooks.statusLine">Status Line Configuration (<code>statusLine</code>)</div>
       <div class="grid-2">
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="statusLine_type"><code>statusLine.type</code></label>
-            <button class="unset-btn" data-unset-path="statusLine.type">unset</button>
+            <button class="unset-btn" data-unset-path="statusLine.type" data-i18n="actions.unset">unset</button>
           </div>
           <select id="statusLine_type" data-setting-path="statusLine.type">
-            <option value="">(Not specified)</option>
+            <option value="" data-i18n="statusLine.typeDefault">(Not specified)</option>
             <option value="command">command</option>
           </select>
         </div>
@@ -567,7 +576,7 @@
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="statusLine_padding"><code>statusLine.padding</code></label>
-            <button class="unset-btn" data-unset-path="statusLine.padding">unset</button>
+            <button class="unset-btn" data-unset-path="statusLine.padding" data-i18n="actions.unset">unset</button>
           </div>
           <input type="number" id="statusLine_padding" data-setting-path="statusLine.padding" placeholder="2">
         </div>
@@ -575,98 +584,98 @@
         <div class="field-group" style="grid-column: span 2;">
           <div class="field-header">
             <label class="field-label" for="statusLine_command"><code>statusLine.command</code></label>
-            <button class="unset-btn" data-unset-path="statusLine.command">unset</button>
+            <button class="unset-btn" data-unset-path="statusLine.command" data-i18n="actions.unset">unset</button>
           </div>
-          <textarea id="statusLine_command" data-setting-path="statusLine.command" rows="2" placeholder="~/.claude/statusline.sh"></textarea>
+          <textarea id="statusLine_command" data-setting-path="statusLine.command" rows="2" placeholder="~/.claude/statusline.sh" data-i18n-placeholder="statusLine.cmdPlaceholder"></textarea>
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;">Allowed HTTP Hook URLs (<code>allowedHttpHookUrls</code>)</div>
+      <div class="section-title" style="margin-top:20px;" data-i18n="sections.hooks.allowedUrls">Allowed HTTP Hook URLs (<code>allowedHttpHookUrls</code>)</div>
       <div id="list-hook-allowed-urls"></div>
       <div class="input-wrap" style="margin-top:8px;">
-        <input type="text" id="new-hook-url" placeholder="e.g. https://hooks.example.com/*">
-        <button id="btn-add-hook-url" class="btn small">+ Add URL Pattern</button>
+        <input type="text" id="new-hook-url" placeholder="e.g. https://hooks.example.com/*" data-i18n-placeholder="hooks.urlPatternPlaceholder">
+        <button id="btn-add-hook-url" class="btn small" data-i18n="hooks.addUrl">+ Add URL Pattern</button>
       </div>
     </section>
 
     <!-- TAB 7: MCP Policy -->
     <section id="tab-mcp" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-mcp" aria-hidden="true">
-      <div class="section-title">Model Context Protocol (MCP) Policies</div>
-      <div class="section-desc">Manage approval policies and enterprise restrictions for Model Context Protocol servers. (Server definitions live in <code>.mcp.json</code> or <code>~/.claude.json</code>).</div>
+      <div class="section-title" data-i18n="sections.mcp.title">Model Context Protocol (MCP) Policies</div>
+      <div class="section-desc" data-i18n="sections.mcp.desc">Manage approval policies and enterprise restrictions for Model Context Protocol servers. (Server definitions live in <code>.mcp.json</code> or <code>~/.claude.json</code>).</div>
 
       <div class="grid-2">
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="disableClaudeAiConnectors" data-setting-path="disableClaudeAiConnectors"><label for="disableClaudeAiConnectors"><code>disableClaudeAiConnectors</code> — Disable claude.ai connectors</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="enableAllProjectMcpServers" data-setting-path="enableAllProjectMcpServers"><label for="enableAllProjectMcpServers"><code>enableAllProjectMcpServers</code> — Auto-approve all project .mcp.json</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="disableClaudeAiConnectors" data-setting-path="disableClaudeAiConnectors"><label for="disableClaudeAiConnectors"><code>disableClaudeAiConnectors</code> — <span data-i18n="toggle.disableConnectors">Disable claude.ai connectors</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="enableAllProjectMcpServers" data-setting-path="enableAllProjectMcpServers"><label for="enableAllProjectMcpServers"><code>enableAllProjectMcpServers</code> — <span data-i18n="toggle.enableAllProjectMcp">Auto-approve all project .mcp.json</span></label></div>
         </div>
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="allowManagedMcpServersOnly" data-setting-path="allowManagedMcpServersOnly"><label for="allowManagedMcpServersOnly"><code>allowManagedMcpServersOnly</code> <span class="badge-scope badge-managed">Managed Only</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="allowManagedMcpServersOnly" data-setting-path="allowManagedMcpServersOnly"><label for="allowManagedMcpServersOnly"><code>allowManagedMcpServersOnly</code> <span class="badge-scope badge-managed" data-i18n="badge.managedOnly">Managed Only</span></label></div>
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;">Enabled .mcp.json Servers (<code>enabledMcpjsonServers</code>)</div>
+      <div class="section-title" style="margin-top:20px;" data-i18n="sections.mcp.enabledServers">Enabled .mcp.json Servers (<code>enabledMcpjsonServers</code>)</div>
       <div id="list-mcp-enabled"></div>
       <div class="input-wrap" style="margin-top:8px;">
-        <input type="text" id="new-mcp-enabled-server" placeholder="Server name (e.g. memory, github)">
-        <button id="btn-add-mcp-enabled" class="btn small">+ Approve Server</button>
+        <input type="text" id="new-mcp-enabled-server" placeholder="Server name (e.g. memory, github)" data-i18n-placeholder="mcp.enabledPlaceholder">
+        <button id="btn-add-mcp-enabled" class="btn small" data-i18n="mcp.approve">+ Approve Server</button>
       </div>
 
-      <div class="section-title" style="margin-top:20px;">Disabled .mcp.json Servers (<code>disabledMcpjsonServers</code>)</div>
+      <div class="section-title" style="margin-top:20px;" data-i18n="sections.mcp.disabledServers">Disabled .mcp.json Servers (<code>disabledMcpjsonServers</code>)</div>
       <div id="list-mcp-disabled"></div>
       <div class="input-wrap" style="margin-top:8px;">
-        <input type="text" id="new-mcp-disabled-server" placeholder="Server name (e.g. filesystem)">
-        <button id="btn-add-mcp-disabled" class="btn small">+ Reject Server</button>
+        <input type="text" id="new-mcp-disabled-server" placeholder="Server name (e.g. filesystem)" data-i18n-placeholder="mcp.disabledPlaceholder">
+        <button id="btn-add-mcp-disabled" class="btn small" data-i18n="mcp.reject">+ Reject Server</button>
       </div>
     </section>
 
     <!-- TAB 8: Worktree & Memory -->
     <section id="tab-worktree" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-worktree" aria-hidden="true">
-      <div class="section-title">Git Worktrees, Memory &amp; Sessions</div>
-      <div class="section-desc">Configure git worktree creation, background subagent isolation, auto-memory storage, and session retention.</div>
+      <div class="section-title" data-i18n="sections.worktree.title">Git Worktrees, Memory &amp; Sessions</div>
+      <div class="section-desc" data-i18n="sections.worktree.desc">Configure git worktree creation, background subagent isolation, auto-memory storage, and session retention.</div>
 
       <div class="grid-2">
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="worktree_baseRef"><code>worktree.baseRef</code></label>
-            <button class="unset-btn" data-unset-path="worktree.baseRef">unset</button>
+            <button class="unset-btn" data-unset-path="worktree.baseRef" data-i18n="actions.unset">unset</button>
           </div>
           <select id="worktree_baseRef" data-setting-path="worktree.baseRef">
-            <option value="">(Default: fresh)</option>
-            <option value="fresh">fresh — branch from origin/default</option>
-            <option value="head">head — branch from current local HEAD</option>
+            <option value="" data-i18n="field.wtBaseRef.default">(Default: fresh)</option>
+            <option value="fresh" data-i18n="field.wtBaseRef.fresh">fresh — branch from origin/default</option>
+            <option value="head" data-i18n="field.wtBaseRef.head">head — branch from current local HEAD</option>
           </select>
         </div>
 
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="worktree_bgIsolation"><code>worktree.bgIsolation</code></label>
-            <button class="unset-btn" data-unset-path="worktree.bgIsolation">unset</button>
+            <button class="unset-btn" data-unset-path="worktree.bgIsolation" data-i18n="actions.unset">unset</button>
           </div>
           <select id="worktree_bgIsolation" data-setting-path="worktree.bgIsolation">
-            <option value="">(Default: worktree)</option>
-            <option value="worktree">worktree — isolate edits in dedicated worktree</option>
-            <option value="none">none — allow background jobs to edit directly</option>
+            <option value="" data-i18n="field.wtBgIso.default">(Default: worktree)</option>
+            <option value="worktree" data-i18n="field.wtBgIso.worktree">worktree — isolate edits in dedicated worktree</option>
+            <option value="none" data-i18n="field.wtBgIso.none">none — allow background jobs to edit directly</option>
           </select>
         </div>
 
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="teammateMode"><code>teammateMode</code> — Agent Teams</label>
-            <button class="unset-btn" data-unset-path="teammateMode">unset</button>
+            <label class="field-label" for="teammateMode"><code>teammateMode</code> — <span data-i18n="field.teammateMode.label">Agent Teams</span></label>
+            <button class="unset-btn" data-unset-path="teammateMode" data-i18n="actions.unset">unset</button>
           </div>
           <select id="teammateMode" data-setting-path="teammateMode">
-            <option value="">(Default: in-process)</option>
-            <option value="in-process">in-process</option>
-            <option value="auto">auto (split panes if tmux/it2)</option>
-            <option value="tmux">tmux</option>
-            <option value="iterm2">iterm2</option>
+            <option value="" data-i18n="field.teammateMode.default">(Default: in-process)</option>
+            <option value="in-process" data-i18n="field.teammateMode.inProcess">in-process</option>
+            <option value="auto" data-i18n="field.teammateMode.auto">auto (split panes if tmux/it2)</option>
+            <option value="tmux" data-i18n="field.teammateMode.tmux">tmux</option>
+            <option value="iterm2" data-i18n="field.teammateMode.iterm2">iterm2</option>
           </select>
         </div>
 
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="cleanupPeriodDays"><code>cleanupPeriodDays</code> — Session Retention</label>
-            <button class="unset-btn" data-unset-path="cleanupPeriodDays">unset</button>
+            <label class="field-label" for="cleanupPeriodDays"><code>cleanupPeriodDays</code> — <span data-i18n="field.cleanupPeriod.label">Session Retention</span></label>
+            <button class="unset-btn" data-unset-path="cleanupPeriodDays" data-i18n="actions.unset">unset</button>
           </div>
           <input type="number" id="cleanupPeriodDays" data-setting-path="cleanupPeriodDays" placeholder="30" min="1">
         </div>
@@ -674,7 +683,7 @@
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="autoMemoryDirectory"><code>autoMemoryDirectory</code></label>
-            <button class="unset-btn" data-unset-path="autoMemoryDirectory">unset</button>
+            <button class="unset-btn" data-unset-path="autoMemoryDirectory" data-i18n="actions.unset">unset</button>
           </div>
           <input type="text" id="autoMemoryDirectory" data-setting-path="autoMemoryDirectory" placeholder="~/my-memory-dir">
         </div>
@@ -682,97 +691,97 @@
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="plansDirectory"><code>plansDirectory</code></label>
-            <button class="unset-btn" data-unset-path="plansDirectory">unset</button>
+            <button class="unset-btn" data-unset-path="plansDirectory" data-i18n="actions.unset">unset</button>
           </div>
           <input type="text" id="plansDirectory" data-setting-path="plansDirectory" placeholder="./plans">
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;">Worktree &amp; Session Toggles</div>
+      <div class="section-title" style="margin-top:20px;" data-i18n="sections.worktree.toggles">Worktree &amp; Session Toggles</div>
       <div class="grid-2">
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="autoMemoryEnabled" data-setting-path="autoMemoryEnabled"><label for="autoMemoryEnabled"><code>autoMemoryEnabled</code> — Enable auto memory</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="includeGitInstructions" data-setting-path="includeGitInstructions"><label for="includeGitInstructions"><code>includeGitInstructions</code> — Built-in git prompt instructions</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="autoMemoryEnabled" data-setting-path="autoMemoryEnabled"><label for="autoMemoryEnabled"><code>autoMemoryEnabled</code> — <span data-i18n="toggle.autoMemory">Enable auto memory</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="includeGitInstructions" data-setting-path="includeGitInstructions"><label for="includeGitInstructions"><code>includeGitInstructions</code> — <span data-i18n="toggle.gitInstructions">Built-in git prompt instructions</span></label></div>
         </div>
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="isolatePeerMachines" data-setting-path="isolatePeerMachines"><label for="isolatePeerMachines"><code>isolatePeerMachines</code> — Cross-machine message approval</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="disableAgentView" data-setting-path="disableAgentView"><label for="disableAgentView"><code>disableAgentView</code> — Disable background agent view</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="isolatePeerMachines" data-setting-path="isolatePeerMachines"><label for="isolatePeerMachines"><code>isolatePeerMachines</code> — <span data-i18n="toggle.isolatePeerMachines">Cross-machine message approval</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="disableAgentView" data-setting-path="disableAgentView"><label for="disableAgentView"><code>disableAgentView</code> — <span data-i18n="toggle.disableAgentView">Disable background agent view</span></label></div>
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:24px;">Symlink Directories (<code>worktree.symlinkDirectories</code>)</div>
+      <div class="section-title" style="margin-top:24px;" data-i18n="sections.worktree.symlinks">Symlink Directories (<code>worktree.symlinkDirectories</code>)</div>
       <div id="list-worktree-symlinks"></div>
       <div class="input-wrap" style="margin-top:8px;">
-        <input type="text" id="new-wt-symlink" placeholder="e.g. node_modules, .cache">
-        <button id="btn-add-wt-symlink" class="btn small">+ Add Symlink Dir</button>
+        <input type="text" id="new-wt-symlink" placeholder="e.g. node_modules, .cache" data-i18n-placeholder="wt.symlinks.placeholder">
+        <button id="btn-add-wt-symlink" class="btn small" data-i18n="wt.symlinks.add">+ Add Symlink Dir</button>
       </div>
 
-      <div class="section-title" style="margin-top:20px;">Sparse Paths (<code>worktree.sparsePaths</code>)</div>
+      <div class="section-title" style="margin-top:20px;" data-i18n="sections.worktree.sparse">Sparse Paths (<code>worktree.sparsePaths</code>)</div>
       <div id="list-worktree-sparse"></div>
       <div class="input-wrap" style="margin-top:8px;">
-        <input type="text" id="new-wt-sparse" placeholder="e.g. packages/my-app, shared/utils">
-        <button id="btn-add-wt-sparse" class="btn small">+ Add Sparse Path</button>
+        <input type="text" id="new-wt-sparse" placeholder="e.g. packages/my-app, shared/utils" data-i18n-placeholder="wt.sparse.placeholder">
+        <button id="btn-add-wt-sparse" class="btn small" data-i18n="wt.sparse.add">+ Add Sparse Path</button>
       </div>
     </section>
 
     <!-- TAB 9: Plugins & Marketplaces -->
     <section id="tab-plugins" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-plugins" aria-hidden="true">
-      <div class="section-title">Plugins &amp; Marketplaces</div>
-      <div class="section-desc">Manage installed plugins (<code>enabledPlugins</code>) and custom marketplace sources (<code>extraKnownMarketplaces</code>).</div>
+      <div class="section-title" data-i18n="sections.plugins.title">Plugins &amp; Marketplaces</div>
+      <div class="section-desc" data-i18n="sections.plugins.desc">Manage installed plugins (<code>enabledPlugins</code>) and custom marketplace sources (<code>extraKnownMarketplaces</code>).</div>
 
-      <div class="section-title" style="font-size:1rem;">Enabled Plugins</div>
+      <div class="section-title" style="font-size:1rem;" data-i18n="sections.plugins.enabled">Enabled Plugins</div>
       <div id="plugin-list"></div>
       <div class="input-wrap" style="margin-top:12px;">
-        <input type="text" id="new-plugin-key" placeholder="plugin-name@marketplace">
-        <button id="btn-add-plugin" class="btn primary">+ Add Plugin</button>
+        <input type="text" id="new-plugin-key" placeholder="plugin-name@marketplace" data-i18n-placeholder="plugin.placeholder">
+        <button id="btn-add-plugin" class="btn primary" data-i18n="plugin.add">+ Add Plugin</button>
       </div>
 
-      <div class="section-title" style="margin-top:28px; font-size:1rem;">Extra Known Marketplaces (<code>extraKnownMarketplaces</code>)</div>
+      <div class="section-title" style="margin-top:28px; font-size:1rem;" data-i18n="sections.plugins.marketplaces">Extra Known Marketplaces (<code>extraKnownMarketplaces</code>)</div>
       <div id="marketplace-list"></div>
       <div class="input-wrap" style="margin-top:12px;">
-        <input type="text" id="new-marketplace-name" placeholder="Marketplace Name (e.g. team-tools)">
+        <input type="text" id="new-marketplace-name" placeholder="Marketplace Name (e.g. team-tools)" data-i18n-placeholder="mkt.namePlaceholder">
         <select id="new-marketplace-type">
-          <option value="github">github (repo)</option>
-          <option value="git">git (clone URL)</option>
-          <option value="url">url (HTTP zip/tar)</option>
-          <option value="directory">directory (local path)</option>
+          <option value="github" data-i18n="mkt.typeGithub">github (repo)</option>
+          <option value="git" data-i18n="mkt.typeGit">git (clone URL)</option>
+          <option value="url" data-i18n="mkt.typeUrl">url (HTTP zip/tar)</option>
+          <option value="directory" data-i18n="mkt.typeDir">directory (local path)</option>
         </select>
-        <input type="text" id="new-marketplace-src" placeholder="Source location / repo">
-        <button id="btn-add-marketplace" class="btn primary">+ Add Marketplace</button>
+        <input type="text" id="new-marketplace-src" placeholder="Source location / repo" data-i18n-placeholder="mkt.srcPlaceholder">
+        <button id="btn-add-marketplace" class="btn primary" data-i18n="mkt.add">+ Add Marketplace</button>
       </div>
     </section>
 
     <!-- TAB 10: Managed Policies -->
     <section id="tab-advanced-policies" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-advanced-policies" aria-hidden="true">
-      <div class="section-title">Enterprise &amp; Managed Policies</div>
-      <div class="section-desc">Organization-level controls typically deployed in <code>managed-settings.json</code>, MDM configuration profiles, or system policy directories.</div>
+      <div class="section-title" data-i18n="sections.managed.title">Enterprise &amp; Managed Policies</div>
+      <div class="section-desc" data-i18n="sections.managed.desc">Organization-level controls typically deployed in <code>managed-settings.json</code>, MDM configuration profiles, or system policy directories.</div>
 
       <div class="grid-2">
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="forceLoginMethod"><code>forceLoginMethod</code> <span class="badge-scope badge-managed">Managed Only</span></label>
-            <button class="unset-btn" data-unset-path="forceLoginMethod">unset</button>
+            <label class="field-label" for="forceLoginMethod"><code>forceLoginMethod</code> <span class="badge-scope badge-managed" data-i18n="badge.managedOnly">Managed Only</span></label>
+            <button class="unset-btn" data-unset-path="forceLoginMethod" data-i18n="actions.unset">unset</button>
           </div>
           <select id="forceLoginMethod" data-setting-path="forceLoginMethod">
-            <option value="">(Not enforced)</option>
-            <option value="claudeai">claudeai — claude.ai accounts only</option>
-            <option value="console">console — Anthropic Console accounts only</option>
-            <option value="gateway">gateway — Claude apps gateway</option>
+            <option value="" data-i18n="field.forceLogin.default">(Not enforced)</option>
+            <option value="claudeai" data-i18n="field.forceLogin.claudeai">claudeai — claude.ai accounts only</option>
+            <option value="console" data-i18n="field.forceLogin.console">console — Anthropic Console accounts only</option>
+            <option value="gateway" data-i18n="field.forceLogin.gateway">gateway — Claude apps gateway</option>
           </select>
         </div>
 
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="forceLoginGatewayUrl"><code>forceLoginGatewayUrl</code> <span class="badge-scope badge-managed">Managed Only</span></label>
-            <button class="unset-btn" data-unset-path="forceLoginGatewayUrl">unset</button>
+            <label class="field-label" for="forceLoginGatewayUrl"><code>forceLoginGatewayUrl</code> <span class="badge-scope badge-managed" data-i18n="badge.managedOnly">Managed Only</span></label>
+            <button class="unset-btn" data-unset-path="forceLoginGatewayUrl" data-i18n="actions.unset">unset</button>
           </div>
           <input type="text" id="forceLoginGatewayUrl" data-setting-path="forceLoginGatewayUrl" placeholder="https://claude-gateway.example.com">
         </div>
 
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="forceLoginOrgUUID"><code>forceLoginOrgUUID</code> <span class="badge-scope badge-managed">Managed Only</span></label>
-            <button class="unset-btn" data-unset-path="forceLoginOrgUUID">unset</button>
+            <label class="field-label" for="forceLoginOrgUUID"><code>forceLoginOrgUUID</code> <span class="badge-scope badge-managed" data-i18n="badge.managedOnly">Managed Only</span></label>
+            <button class="unset-btn" data-unset-path="forceLoginOrgUUID" data-i18n="actions.unset">unset</button>
           </div>
           <input type="text" id="forceLoginOrgUUID" data-setting-path="forceLoginOrgUUID" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
         </div>
@@ -780,19 +789,19 @@
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="autoUpdatesChannel"><code>autoUpdatesChannel</code></label>
-            <button class="unset-btn" data-unset-path="autoUpdatesChannel">unset</button>
+            <button class="unset-btn" data-unset-path="autoUpdatesChannel" data-i18n="actions.unset">unset</button>
           </div>
           <select id="autoUpdatesChannel" data-setting-path="autoUpdatesChannel">
-            <option value="">(Default: latest)</option>
-            <option value="latest">latest — immediate release updates</option>
-            <option value="stable">stable — one-week baked channel</option>
+            <option value="" data-i18n="field.autoUpdates.default">(Default: latest)</option>
+            <option value="latest" data-i18n="field.autoUpdates.latest">latest — immediate release updates</option>
+            <option value="stable" data-i18n="field.autoUpdates.stable">stable — one-week baked channel</option>
           </select>
         </div>
 
         <div class="field-group">
           <div class="field-header">
-            <label class="field-label" for="requiredMinimumVersion"><code>requiredMinimumVersion</code> <span class="badge-scope badge-managed">Managed Only</span></label>
-            <button class="unset-btn" data-unset-path="requiredMinimumVersion">unset</button>
+            <label class="field-label" for="requiredMinimumVersion"><code>requiredMinimumVersion</code> <span class="badge-scope badge-managed" data-i18n="badge.managedOnly">Managed Only</span></label>
+            <button class="unset-btn" data-unset-path="requiredMinimumVersion" data-i18n="actions.unset">unset</button>
           </div>
           <input type="text" id="requiredMinimumVersion" data-setting-path="requiredMinimumVersion" placeholder="2.1.200">
         </div>
@@ -800,23 +809,23 @@
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="outputStyle"><code>outputStyle</code></label>
-            <button class="unset-btn" data-unset-path="outputStyle">unset</button>
+            <button class="unset-btn" data-unset-path="outputStyle" data-i18n="actions.unset">unset</button>
           </div>
           <input type="text" id="outputStyle" data-setting-path="outputStyle" placeholder="e.g. Explanatory">
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;">Policy Toggles</div>
+      <div class="section-title" style="margin-top:20px;" data-i18n="sections.managed.toggles">Policy Toggles</div>
       <div class="grid-2">
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="forceRemoteSettingsRefresh" data-setting-path="forceRemoteSettingsRefresh"><label for="forceRemoteSettingsRefresh"><code>forceRemoteSettingsRefresh</code> <span class="badge-scope badge-managed">Managed</span></label></div>
-          <div class="checkbox-row"><input type="checkbox" id="disableCommandPluginSources" data-setting-path="disableCommandPluginSources"><label for="disableCommandPluginSources"><code>disableCommandPluginSources</code> <span class="badge-scope badge-managed">Managed</span></label></div>
-          <div class="checkbox-row"><input type="checkbox" id="disableSideloadFlags" data-setting-path="disableSideloadFlags"><label for="disableSideloadFlags"><code>disableSideloadFlags</code> <span class="badge-scope badge-managed">Managed</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="forceRemoteSettingsRefresh" data-setting-path="forceRemoteSettingsRefresh"><label for="forceRemoteSettingsRefresh"><code>forceRemoteSettingsRefresh</code> <span class="badge-scope badge-managed" data-i18n="badge.managed">Managed</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="disableCommandPluginSources" data-setting-path="disableCommandPluginSources"><label for="disableCommandPluginSources"><code>disableCommandPluginSources</code> <span class="badge-scope badge-managed" data-i18n="badge.managed">Managed</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="disableSideloadFlags" data-setting-path="disableSideloadFlags"><label for="disableSideloadFlags"><code>disableSideloadFlags</code> <span class="badge-scope badge-managed" data-i18n="badge.managed">Managed</span></label></div>
         </div>
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="disableArtifact" data-setting-path="disableArtifact"><label for="disableArtifact"><code>disableArtifact</code> — Disable Artifact publishing</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="disableBundledSkills" data-setting-path="disableBundledSkills"><label for="disableBundledSkills"><code>disableBundledSkills</code> — Disable bundled skills</label></div>
-          <div class="checkbox-row"><input type="checkbox" id="disableSkillShellExecution" data-setting-path="disableSkillShellExecution"><label for="disableSkillShellExecution"><code>disableSkillShellExecution</code> — Block ! inline shell</label></div>
+          <div class="checkbox-row"><input type="checkbox" id="disableArtifact" data-setting-path="disableArtifact"><label for="disableArtifact"><code>disableArtifact</code> — <span data-i18n="toggle.disableArtifact">Disable Artifact publishing</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="disableBundledSkills" data-setting-path="disableBundledSkills"><label for="disableBundledSkills"><code>disableBundledSkills</code> — <span data-i18n="toggle.disableBundledSkills">Disable bundled skills</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="disableSkillShellExecution" data-setting-path="disableSkillShellExecution"><label for="disableSkillShellExecution"><code>disableSkillShellExecution</code> — <span data-i18n="toggle.disableSkillShell">Block ! inline shell</span></label></div>
         </div>
       </div>
     </section>
@@ -824,12 +833,12 @@
     <!-- TAB 11: Advanced Raw JSON -->
     <section id="tab-advanced" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-advanced" aria-hidden="true">
       <div class="json-toolbar">
-        <span class="status-hint">Raw JSON draft — apply or discard explicit changes</span>
-        <button id="btn-apply-json" class="btn primary">Apply JSON</button>
-        <button id="btn-discard-json" class="btn">Discard Draft</button>
-        <button id="btn-format-json" class="btn">Format</button>
-        <button id="btn-copy-json" class="btn">Copy</button>
-        <button id="btn-reset-json" class="btn danger">Reset to Sample</button>
+        <span class="status-hint" data-i18n="json.hint">Raw JSON draft — apply or discard explicit changes</span>
+        <button id="btn-apply-json" class="btn primary" data-i18n="json.apply">Apply JSON</button>
+        <button id="btn-discard-json" class="btn" data-i18n="json.discard">Discard Draft</button>
+        <button id="btn-format-json" class="btn" data-i18n="json.format">Format</button>
+        <button id="btn-copy-json" class="btn" data-i18n="json.copy">Copy</button>
+        <button id="btn-reset-json" class="btn danger" data-i18n="json.reset">Reset to Sample</button>
       </div>
       <textarea id="json-editor" spellcheck="false" aria-label="Raw settings JSON editor"></textarea>
       <div id="json-error"></div>

@@ -124,6 +124,28 @@ header {
   white-space: nowrap;
 }
 
+/* Language Selector in Header */
+.lang-selector-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-elevated);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.lang-select {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  font-weight: 600;
+  font-size: 11px;
+  padding: 3px 16px 3px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
 /* Header Actions */
 .header-actions {
   display: flex;

@@ -1,6 +1,7 @@
 (function initApp() {
   const model = window.SettingsModel;
   const catalog = window.SettingsCatalog;
+  const i18n = window.I18n;
   if (!model) throw new Error('SettingsModel script not loaded');
 
   // Application document state
@@ -19,10 +20,26 @@
   };
 
   document.addEventListener('DOMContentLoaded', () => {
+    initLocale();
     bindEvents();
     registerServiceWorker();
     loadDefaultSample();
   });
+
+  function initLocale() {
+    if (!i18n) return;
+    const detected = i18n.detectLocale();
+    i18n.setLocale(detected, false);
+
+    const langSelect = getElement('lang-select');
+    if (langSelect) {
+      langSelect.value = i18n.getLocale();
+      langSelect.addEventListener('change', e => {
+        i18n.setLocale(e.target.value);
+        renderAll();
+      });
+    }
+  }
 
   function registerServiceWorker() {
     if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
@@ -38,14 +55,14 @@
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.text();
       })
-      .then(source => setDocumentFromSource(source, 'Sample loaded'))
+      .then(source => setDocumentFromSource(source, 'status.sampleLoaded'))
       .catch(err => {
-        setDocumentFromObject({}, 'Initialized empty settings');
-        setStatus('Could not load sample: ' + err.message, 'err');
+        setDocumentFromObject({}, 'status.initEmpty');
+        setStatus('status.loadSampleErr', 'err', { error: err.message });
       });
   }
 
-  function setDocumentFromSource(source, statusMsg) {
+  function setDocumentFromSource(source, statusMsgKey, statusParams) {
     const result = model.parseSettingsJson(source);
     state.jsonDraft = source;
     if (!result.ok) {
@@ -53,15 +70,15 @@
       state.diagnostics = result.diagnostics;
       renderDiagnostics();
       renderJsonEditor();
-      setStatus('Invalid JSON source', 'err');
+      setStatus('status.invalidSource', 'err');
       return;
     }
     state.jsonError = '';
     state.diagnostics = model.inspectSettings(result.value, state.targetScope);
-    setDocumentFromObject(result.value, statusMsg);
+    setDocumentFromObject(result.value, statusMsgKey, statusParams);
   }
 
-  function setDocumentFromObject(obj, statusMsg) {
+  function setDocumentFromObject(obj, statusMsgKey, statusParams) {
     state.document = model.clone(obj);
     state.baseline = model.clone(obj);
     state.jsonDraft = model.serializeSettings(state.document);
@@ -72,7 +89,7 @@
     state.diagnostics = model.inspectSettings(state.document, state.targetScope);
 
     renderAll();
-    if (statusMsg) setStatus(statusMsg, 'ok');
+    if (statusMsgKey) setStatus(statusMsgKey, 'ok', statusParams);
   }
 
   function applyPatch(patch) {
@@ -80,7 +97,7 @@
       const next = model.applyPatch(state.document, patch);
       const validation = model.validateSettingsDocument(next);
       if (!validation.ok) {
-        setStatus('Invalid change: ' + validation.diagnostics.map(d => d.message).join('; '), 'err');
+        setStatus('status.invalidChange', 'err', { message: validation.diagnostics.map(d => d.message).join('; ') });
         return;
       }
       state.document = next;
@@ -92,7 +109,7 @@
       pushHistory(state.document);
       renderAll();
     } catch (err) {
-      setStatus('Edit failed: ' + err.message, 'err');
+      setStatus('status.editFailed', 'err', { error: err.message });
     }
   }
 
@@ -113,7 +130,7 @@
     state.diagnostics = model.inspectSettings(state.document, state.targetScope);
     state.isDirty = !model.deepEqual(state.document, state.baseline);
     renderAll();
-    setStatus('Undo', 'ok');
+    setStatus('status.undo', 'ok');
   }
 
   function redo() {
@@ -124,7 +141,7 @@
     state.diagnostics = model.inspectSettings(state.document, state.targetScope);
     state.isDirty = !model.deepEqual(state.document, state.baseline);
     renderAll();
-    setStatus('Redo', 'ok');
+    setStatus('status.redo', 'ok');
   }
 
   function bindEvents() {
@@ -167,8 +184,6 @@
         if (input.type === 'checkbox') {
           val = input.checked;
           if (val === false) {
-            // Note: in Claude Code settings, setting boolean false vs deleting:
-            // Checkboxes modify boolean directly
             applyPatch({ op: 'set', path, value: false });
             return;
           }
@@ -335,8 +350,11 @@
     const pill = getElement('scope-info-pill');
     if (!pill) return;
     const scopeDef = catalog ? catalog.getScopeDefinition(state.targetScope) : null;
-    if (scopeDef) {
-      pill.textContent = scopeDef.name + ' (' + scopeDef.path + ')';
+    const localizedScope = i18n ? i18n.t('scope.info.' + state.targetScope) : '';
+    if (localizedScope && localizedScope !== 'scope.info.' + state.targetScope) {
+      pill.textContent = localizedScope;
+    } else if (scopeDef) {
+      pill.textContent = scopeDef.label + ' (' + scopeDef.path + ')';
     } else {
       pill.textContent = state.targetScope.toUpperCase() + ' Scope';
     }
@@ -391,7 +409,7 @@
       if (items.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'field-hint';
-        empty.textContent = 'None configured.';
+        empty.textContent = i18n ? i18n.t('empty.none') : 'None configured.';
         container.appendChild(empty);
         return;
       }
@@ -407,7 +425,7 @@
         const del = document.createElement('button');
         del.className = 'del-btn';
         del.textContent = '×';
-        del.title = 'Remove';
+        del.title = i18n ? i18n.t('actions.remove') : 'Remove';
         del.addEventListener('click', () => {
           applyPatch({ op: 'delete', path: [...path.split('.'), idx] });
         });
@@ -427,7 +445,7 @@
     if (!model.isPlainObject(env)) {
       const err = document.createElement('div');
       err.className = 'field-hint';
-      err.textContent = 'env is not an object; edit in Advanced JSON.';
+      err.textContent = i18n ? i18n.t('env.notObject') : 'env is not an object; edit in Advanced JSON.';
       container.appendChild(err);
       return;
     }
@@ -436,7 +454,7 @@
     if (!entries.length) {
       const empty = document.createElement('div');
       empty.className = 'field-hint';
-      empty.textContent = 'No environment variables set in settings.';
+      empty.textContent = i18n ? i18n.t('env.empty') : 'No environment variables set in settings.';
       container.appendChild(empty);
       return;
     }
@@ -449,7 +467,6 @@
       keyInp.type = 'text';
       keyInp.value = key;
       keyInp.style.flex = '1';
-      keyInp.title = 'Variable name';
       keyInp.addEventListener('change', () => {
         const newKey = keyInp.value.trim();
         if (newKey && newKey !== key) {
@@ -461,7 +478,6 @@
       valInp.type = 'text';
       valInp.value = String(val);
       valInp.style.flex = '2';
-      valInp.title = 'Variable value';
       valInp.addEventListener('change', () => {
         applyPatch({ op: 'set', path: ['env', key], value: valInp.value });
       });
@@ -469,7 +485,7 @@
       const del = document.createElement('button');
       del.className = 'del-btn';
       del.textContent = '×';
-      del.title = 'Delete variable';
+      del.title = i18n ? i18n.t('actions.remove') : 'Delete variable';
       del.addEventListener('click', () => {
         applyPatch({ op: 'delete', path: ['env', key] });
       });
@@ -499,7 +515,7 @@
     if (!Array.isArray(list)) {
       const err = document.createElement('div');
       err.className = 'field-hint';
-      err.textContent = 'fallbackModel is not an array; edit in Advanced JSON.';
+      err.textContent = i18n ? i18n.t('fallback.notArray') : 'fallbackModel is not an array; edit in Advanced JSON.';
       container.appendChild(err);
       return;
     }
@@ -526,21 +542,21 @@
       const up = document.createElement('button');
       up.className = 'btn small';
       up.textContent = '▲';
-      up.title = 'Move up';
+      up.title = i18n ? i18n.t('actions.moveUp') : 'Move up';
       up.disabled = idx === 0;
       up.addEventListener('click', () => applyPatch({ op: 'move', path: 'fallbackModel', from: idx, to: idx - 1 }));
 
       const down = document.createElement('button');
       down.className = 'btn small';
       down.textContent = '▼';
-      down.title = 'Move down';
+      down.title = i18n ? i18n.t('actions.moveDown') : 'Move down';
       down.disabled = idx === list.length - 1;
       down.addEventListener('click', () => applyPatch({ op: 'move', path: 'fallbackModel', from: idx, to: idx + 1 }));
 
       const del = document.createElement('button');
       del.className = 'del-btn';
       del.textContent = '×';
-      del.title = 'Remove';
+      del.title = i18n ? i18n.t('actions.remove') : 'Remove';
       del.addEventListener('click', () => applyPatch({ op: 'delete', path: ['fallbackModel', idx] }));
 
       item.append(num, input, up, down, del);
@@ -567,7 +583,7 @@
     if (!model.isPlainObject(plugins)) {
       const err = document.createElement('div');
       err.className = 'field-hint';
-      err.textContent = 'enabledPlugins is not an object; edit in Advanced JSON.';
+      err.textContent = i18n ? i18n.t('plugin.notObject') : 'enabledPlugins is not an object; edit in Advanced JSON.';
       container.appendChild(err);
       return;
     }
@@ -576,7 +592,7 @@
     if (!entries.length) {
       const empty = document.createElement('div');
       empty.className = 'field-hint';
-      empty.textContent = 'No plugins registered in settings.';
+      empty.textContent = i18n ? i18n.t('plugin.empty') : 'No plugins registered in settings.';
       container.appendChild(empty);
       return;
     }
@@ -599,7 +615,7 @@
       const del = document.createElement('button');
       del.className = 'del-btn';
       del.textContent = '×';
-      del.title = 'Remove plugin';
+      del.title = i18n ? i18n.t('actions.remove') : 'Remove plugin';
       del.addEventListener('click', () => {
         applyPatch({ op: 'delete', path: ['enabledPlugins', key] });
       });
@@ -626,7 +642,7 @@
     if (!Object.keys(mkts).length) {
       const empty = document.createElement('div');
       empty.className = 'field-hint';
-      empty.textContent = 'No extra marketplaces configured.';
+      empty.textContent = i18n ? i18n.t('mkt.empty') : 'No extra marketplaces configured.';
       container.appendChild(empty);
       return;
     }
@@ -653,7 +669,7 @@
       const del = document.createElement('button');
       del.className = 'del-btn';
       del.textContent = '×';
-      del.title = 'Remove marketplace';
+      del.title = i18n ? i18n.t('actions.remove') : 'Remove marketplace';
       del.addEventListener('click', () => {
         applyPatch({ op: 'delete', path: ['extraKnownMarketplaces', name] });
       });
@@ -691,7 +707,7 @@
     if (!model.isPlainObject(hooks)) {
       const err = document.createElement('div');
       err.className = 'field-hint';
-      err.textContent = 'hooks is not an object; edit in Advanced JSON.';
+      err.textContent = i18n ? i18n.t('hooks.notObject') : 'hooks is not an object; edit in Advanced JSON.';
       container.appendChild(err);
       return;
     }
@@ -700,7 +716,7 @@
     if (!events.length) {
       const empty = document.createElement('div');
       empty.className = 'field-hint';
-      empty.textContent = 'No hooks configured.';
+      empty.textContent = i18n ? i18n.t('hooks.empty') : 'No hooks configured.';
       container.appendChild(empty);
       return;
     }
@@ -719,7 +735,7 @@
       const delEvt = document.createElement('button');
       delEvt.className = 'del-btn';
       delEvt.textContent = '×';
-      delEvt.title = 'Delete event';
+      delEvt.title = i18n ? i18n.t('hooks.deleteEvent') : 'Delete event';
       delEvt.addEventListener('click', () => applyPatch({ op: 'delete', path: ['hooks', eventName] }));
 
       head.append(title, delEvt);
@@ -734,7 +750,11 @@
           groupHead.className = 'hook-group-header';
 
           const matchLabel = document.createElement('span');
-          matchLabel.textContent = 'Group ' + (gIdx + 1) + (group?.matcher ? ' (matcher: ' + group.matcher + ')' : '');
+          if (group?.matcher) {
+            matchLabel.textContent = i18n ? i18n.t('hooks.groupWithMatcher', { number: gIdx + 1, matcher: group.matcher }) : ('Group ' + (gIdx + 1) + ' (matcher: ' + group.matcher + ')');
+          } else {
+            matchLabel.textContent = i18n ? i18n.t('hooks.group', { number: gIdx + 1 }) : ('Group ' + (gIdx + 1));
+          }
           matchLabel.className = 'field-hint';
 
           groupHead.appendChild(matchLabel);
@@ -759,7 +779,7 @@
 
             const valInp = document.createElement('input');
             valInp.type = 'text';
-            valInp.placeholder = hookItem.type === 'http' ? 'URL (https://...)' : 'Command / prompt text';
+            valInp.placeholder = hookItem.type === 'http' ? (i18n ? i18n.t('hooks.urlPlaceholder') : 'URL (https://...)') : (i18n ? i18n.t('hooks.cmdPlaceholder') : 'Command / prompt text');
             valInp.value = String(hookItem.command || hookItem.url || hookItem.prompt || '');
             valInp.style.flex = '1';
             valInp.addEventListener('change', () => {
@@ -781,7 +801,7 @@
           const addHandlerBtn = document.createElement('button');
           addHandlerBtn.className = 'btn small';
           addHandlerBtn.style.marginTop = '6px';
-          addHandlerBtn.textContent = '+ Add handler';
+          addHandlerBtn.textContent = i18n ? i18n.t('hooks.addHandler') : '+ Add handler';
           addHandlerBtn.addEventListener('click', () => {
             const currentHandlers = group?.hooks || [];
             const nextHandlers = [...currentHandlers, { type: 'command', command: '', timeout: 30 }];
@@ -821,7 +841,8 @@
 
     const title = document.createElement('div');
     title.className = 'diag-title';
-    title.textContent = 'Diagnostics (' + state.diagnostics.length + ' item' + (state.diagnostics.length > 1 ? 's' : '') + ' for ' + state.targetScope.toUpperCase() + ' scope):';
+    const titleKey = state.diagnostics.length === 1 ? 'diag.title.one' : 'diag.title.other';
+    title.textContent = i18n ? i18n.t(titleKey, { count: state.diagnostics.length, scope: state.targetScope.toUpperCase() }) : ('Diagnostics (' + state.diagnostics.length + ' item' + (state.diagnostics.length > 1 ? 's' : '') + ' for ' + state.targetScope.toUpperCase() + ' scope):');
     banner.appendChild(title);
 
     const list = document.createElement('ul');
@@ -833,7 +854,8 @@
 
       const badge = document.createElement('span');
       badge.className = 'diag-badge';
-      badge.textContent = diag.severity.toUpperCase();
+      const severityKey = 'diag.severity.' + diag.severity.toLowerCase();
+      badge.textContent = i18n ? i18n.t(severityKey) : diag.severity.toUpperCase();
 
       const pathCode = document.createElement('code');
       pathCode.textContent = diag.path + ': ';
@@ -874,17 +896,17 @@
     if (!result.ok) {
       state.jsonError = result.diagnostics.map(d => d.message).join('; ');
       renderJsonEditor();
-      setStatus('Cannot apply invalid JSON', 'err');
+      setStatus('status.cannotApply', 'err');
       return;
     }
-    setDocumentFromObject(result.value, 'JSON applied');
+    setDocumentFromObject(result.value, 'status.jsonApplied');
   }
 
   function discardJsonDraft() {
     state.jsonDraft = model.serializeSettings(state.document);
     state.jsonError = '';
     renderJsonEditor();
-    setStatus('Draft discarded', 'ok');
+    setStatus('status.draftDiscarded', 'ok');
   }
 
   function formatJsonDraft() {
@@ -894,6 +916,7 @@
       state.jsonError = '';
       renderJsonEditor();
     } catch (err) {
+      setStatus('status.formatErr', 'err', { error: err.message });
       state.jsonError = 'Format error: ' + err.message;
       renderJsonEditor();
     }
@@ -901,8 +924,8 @@
 
   function copyJsonDraft() {
     navigator.clipboard.writeText(state.jsonDraft)
-      .then(() => setStatus('Copied to clipboard', 'ok'))
-      .catch(err => setStatus('Copy failed: ' + err.message, 'err'));
+      .then(() => setStatus('status.copied', 'ok'))
+      .catch(err => setStatus('status.copyFailed', 'err', { error: err.message }));
   }
 
   function onFileSelected(e) {
@@ -910,7 +933,7 @@
     if (!file) return;
     const reader = new FileReader();
     reader.onload = evt => {
-      setDocumentFromSource(evt.target.result, 'Loaded ' + file.name);
+      setDocumentFromSource(evt.target.result, 'status.fileLoaded', { name: file.name });
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -924,16 +947,19 @@
     a.download = 'settings.json';
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    setStatus('Downloaded settings.json', 'ok');
+    setStatus('status.downloaded', 'ok');
   }
 
-  function setStatus(msg, type) {
+  function setStatus(msgKeyOrText, type, params) {
     const el = getElement('status');
     if (!el) return;
-    el.textContent = msg;
+    const text = i18n && msgKeyOrText.startsWith('status.') ? i18n.t(msgKeyOrText, params) : msgKeyOrText;
+    el.textContent = text;
     el.className = type || '';
     setTimeout(() => {
-      el.textContent = state.isDirty ? 'Unsaved edits' : 'Ready';
+      const readyMsg = i18n ? i18n.t('app.ready') : 'Ready';
+      const unsavedMsg = i18n ? i18n.t('app.unsaved') : 'Unsaved edits';
+      el.textContent = state.isDirty ? unsavedMsg : readyMsg;
       el.className = state.isDirty ? 'err' : '';
     }, 3000);
   }
