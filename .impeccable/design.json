@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-20T12:00:00.000Z",
+  "title": "Design System: Claude Settings Editor",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Base Canvas Ground",
+        "canonical": "#141619",
+        "tonalRamp": ["#0b0c0d", "#141619", "#1c2024", "#282c34", "#3e4451", "#5c6370", "#828997", "#abb2bf"]
+      },
+      "bg-surface": {
+        "role": "neutral",
+        "displayName": "Panel Surface",
+        "canonical": "#1e2227",
+        "tonalRamp": ["#0f1114", "#16191c", "#1e2227", "#282c34", "#3b4048", "#535965", "#78808d", "#abb2bf"]
+      },
+      "bg-elevated": {
+        "role": "neutral",
+        "displayName": "Elevated Control Surface",
+        "canonical": "#282c34",
+        "tonalRamp": ["#16181d", "#1e2127", "#282c34", "#353b45", "#4b5263", "#636d83", "#828997", "#abb2bf"]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Structural Border",
+        "canonical": "#353b45",
+        "tonalRamp": ["#1e2127", "#282c34", "#353b45", "#444b58", "#5c6370", "#78808d", "#abb2bf", "#eceff4"]
+      },
+      "border-focus": {
+        "role": "functional",
+        "displayName": "Focus Border",
+        "canonical": "#e06c75",
+        "tonalRamp": ["#521e23", "#842f37", "#b84751", "#e06c75", "#ea9399", "#f2b7bc", "#f9dbde", "#fdf1f2"]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Standard Text",
+        "canonical": "#abb2bf",
+        "tonalRamp": ["#282c34", "#3e4451", "#5c6370", "#828997", "#abb2bf", "#c8ccd4", "#dfe2e8", "#eceff4"]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Muted Text",
+        "canonical": "#636d83",
+        "tonalRamp": ["#1e2127", "#2e3440", "#434c5e", "#636d83", "#7d889b", "#9ba4b4", "#bcc3cd", "#eceff4"]
+      },
+      "text-bright": {
+        "role": "neutral",
+        "displayName": "Bright Text",
+        "canonical": "#eceff4",
+        "tonalRamp": ["#4c566a", "#78808d", "#9ba4b4", "#abb2bf", "#c8ccd4", "#dfe2e8", "#eceff4", "#ffffff"]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Warm Amber Accent",
+        "canonical": "#d19a66",
+        "tonalRamp": ["#4a3018", "#784b22", "#a6682f", "#d19a66", "#e0b084", "#ecc5a3", "#f5dbc3", "#fdf0e4"]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Amber Hover Glow",
+        "canonical": "#e5c07b",
+        "tonalRamp": ["#54421d", "#87692e", "#ba9240", "#e5c07b", "#ecd09a", "#f3dfb9", "#faeed8", "#fff9ed"]
+      },
+      "green": {
+        "role": "functional",
+        "displayName": "Terminal Green (Allow/Success)",
+        "canonical": "#98c379",
+        "tonalRamp": ["#2c441c", "#476c2d", "#6f9e49", "#98c379", "#b2d499", "#cbe4b9", "#e4f3da", "#f4faf0"]
+      },
+      "red": {
+        "role": "functional",
+        "displayName": "Terminal Red (Deny/Error)",
+        "canonical": "#e06c75",
+        "tonalRamp": ["#521e23", "#842f37", "#b84751", "#e06c75", "#ea9399", "#f2b7bc", "#f9dbde", "#fdf1f2"]
+      },
+      "yellow": {
+        "role": "functional",
+        "displayName": "Terminal Yellow (Ask/Warning)",
+        "canonical": "#e5c07b",
+        "tonalRamp": ["#54421d", "#87692e", "#ba9240", "#e5c07b", "#ecd09a", "#f3dfb9", "#faeed8", "#fff9ed"]
+      },
+      "blue": {
+        "role": "functional",
+        "displayName": "Terminal Blue (Info/Code)",
+        "canonical": "#61afef",
+        "tonalRamp": ["#16375c", "#24558e", "#3e7dc4", "#61afef", "#8dc5f4", "#b5dbf8", "#dbeffc", "#f3f9fe"]
+      },
+      "purple": {
+        "role": "functional",
+        "displayName": "Terminal Purple (Managed Scope)",
+        "canonical": "#c678dd",
+        "tonalRamp": ["#421a4f", "#6b2c7e", "#9e48b8", "#c678dd", "#d79de7", "#e7c1f1", "#f4e2f9", "#fbf4fd"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Header branding and main application titles." },
+      "body": { "displayName": "Body Monospace", "purpose": "Default UI text, code identifiers, and values." },
+      "label": { "displayName": "Form Label", "purpose": "Field labels, scope badges, and navigation tags." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "transition-standard", "value": "0.15s ease", "purpose": "Standard interactive hover/focus transition." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "768px" },
+      { "name": "tablet", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary action button with warm amber background and high-contrast dark text.",
+      "html": "<button class=\"ds-btn-primary\">Download settings.json</button>",
+      "css": ".ds-btn-primary { background: var(--accent, #d19a66); color: var(--bg, #141619); border: 1px solid var(--accent, #d19a66); font-family: var(--font-mono, monospace); font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: var(--radius, 4px); cursor: pointer; min-height: 30px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.15s, border-color 0.15s, transform 0.05s; } .ds-btn-primary:hover { background: var(--accent-hover, #e5c07b); border-color: var(--accent-hover, #e5c07b); } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #d19a66); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Elevated neutral button for secondary toolbar and modal actions.",
+      "html": "<button class=\"ds-btn-secondary\">Load Sample</button>",
+      "css": ".ds-btn-secondary { background: var(--bg-elevated, #282c34); color: var(--text-bright, #eceff4); border: 1px solid var(--border, #353b45); font-family: var(--font-mono, monospace); font-size: 12px; font-weight: 400; padding: 6px 12px; border-radius: var(--radius, 4px); cursor: pointer; min-height: 30px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: border-color 0.15s, color 0.15s, transform 0.05s; } .ds-btn-secondary:hover { border-color: var(--accent, #d19a66); color: var(--accent, #d19a66); } .ds-btn-secondary:active { transform: translateY(1px); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--accent, #d19a66); outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Outlined red button for destructive operations.",
+      "html": "<button class=\"ds-btn-danger\">Discard Edits</button>",
+      "css": ".ds-btn-danger { background: transparent; color: var(--red, #e06c75); border: 1px solid var(--red, #e06c75); font-family: var(--font-mono, monospace); font-size: 12px; font-weight: 400; padding: 6px 12px; border-radius: var(--radius, 4px); cursor: pointer; min-height: 30px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.15s, color 0.15s, transform 0.05s; } .ds-btn-danger:hover { background: var(--red, #e06c75); color: var(--bg, #141619); } .ds-btn-danger:active { transform: translateY(1px); } .ds-btn-danger:focus-visible { outline: 2px solid var(--red, #e06c75); outline-offset: 2px; }"
+    },
+    {
+      "name": "Navigation Tab Item",
+      "kind": "nav",
+      "refersTo": "nav-tab",
+      "description": "Sidebar navigation tab with 2px left active accent indicator.",
+      "html": "<button class=\"ds-nav-tab\" aria-selected=\"true\">Permissions</button>",
+      "css": ".ds-nav-tab { width: 100%; display: flex; align-items: center; justify-content: space-between; text-align: left; background: none; border: none; border-left: 2px solid transparent; color: var(--text, #abb2bf); font-weight: 400; padding: 8px 16px; cursor: pointer; font-family: var(--font-mono, monospace); font-size: 12px; min-height: 34px; transition: color 0.15s, background 0.15s; } .ds-nav-tab:hover { color: var(--text-bright, #eceff4); background: var(--bg-elevated, #282c34); } .ds-nav-tab[aria-selected=\"true\"] { color: var(--accent, #d19a66); background: var(--bg-elevated, #282c34); border-left-color: var(--accent, #d19a66); font-weight: 600; } .ds-nav-tab:focus-visible { outline: 2px solid var(--accent, #d19a66); outline-offset: -2px; }"
+    },
+    {
+      "name": "Text Input Field",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "Monospace input field on elevated dark surface with 1px border and amber focus state.",
+      "html": "<input class=\"ds-input\" type=\"text\" value=\"claude-sonnet-5\" placeholder=\"Enter model identifier\" />",
+      "css": ".ds-input { width: 100%; background: var(--bg-elevated, #282c34); border: 1px solid var(--border, #353b45); color: var(--text-bright, #eceff4); padding: 7px 9px; border-radius: var(--radius, 4px); font-family: var(--font-mono, monospace); font-size: 12px; outline: none; transition: border-color 0.15s; } .ds-input:hover { border-color: var(--text-muted, #636d83); } .ds-input:focus { border-color: var(--accent, #d19a66); }"
+    },
+    {
+      "name": "Deny Rule Card",
+      "kind": "card",
+      "refersTo": "card-rule",
+      "description": "Container box with 3px red semantic accent border for security denial policies.",
+      "html": "<div class=\"ds-rule-box\"><div class=\"ds-rule-title\">Deny Rules (<code>permissions.deny</code>)</div><div class=\"ds-rule-desc\">Operations matching these patterns are blocked unconditionally.</div></div>",
+      "css": ".ds-rule-box { background: var(--bg-surface, #1e2227); border: 1px solid var(--border, #353b45); border-left: 3px solid var(--red, #e06c75); border-radius: var(--radius, 4px); padding: 10px; font-family: var(--font-mono, monospace); } .ds-rule-title { font-size: 12px; font-weight: 600; color: var(--text-bright, #eceff4); margin-bottom: 4px; } .ds-rule-title code { color: var(--accent, #d19a66); } .ds-rule-desc { font-size: 11px; color: var(--text-muted, #636d83); font-family: var(--font-sans, sans-serif); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Console Workbench",
+    "overview": "The Claude Settings Editor embodies the tactile, disciplined precision of a professional developer terminal console. Built for engineers and team leads tuning their Claude Code environments, the interface rejects decorative excess in favor of uncompromising monospace legibility, high-contrast syntax highlighting (inspired by the classic One Dark palette), and purposeful tactile controls.\n\nEvery surface is engineered for dense technical scanning. Form elements, scope badges, navigation tabs, and dynamic rule lists operate with mechanical responsiveness. Borders, tonal transitions, and amber/copper accents provide clear visual affordances without distraction.",
+    "keyCharacteristics": [
+      "Monospace-first typographic hierarchy with sans-serif prose accents for descriptions.",
+      "Rich 3-tier dark surface system (`#141619` base canvas, `#1e2227` panels, `#282c34` interactive elements).",
+      "Tactile, mechanical feedback on interactive states and buttons.",
+      "Functional syntax color-coding for status indicators, validation diagnostics, and scope badges."
+    ],
+    "rules": [
+      {
+        "name": "The Single Accent Rule",
+        "body": "Warm amber (`#d19a66`) is reserved for primary focus and active navigation. Functional state colors (`#98c379`, `#e06c75`, `#e5c07b`, `#61afef`, `#c678dd`) are applied strictly for semantic classification.",
+        "section": "colors"
+      },
+      {
+        "name": "The Code-Is-Identity Rule",
+        "body": "Setting paths, JSON keys, and values must always be rendered in monospace `<code>` typography and styled with distinct semantic color highlights.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tonal Layering Rule",
+        "body": "Depth is communicated through contrast between surface tiers rather than heavy drop shadows, preserving crisp terminal boundaries.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use monospace typography (`var(--font-mono)`) for all configuration keys, paths, and values.",
+      "Do maintain the 3-tier surface hierarchy (`#141619` -> `#1e2227` -> `#282c34`) when adding new containers.",
+      "Do keep form controls compact (30px standard button/input height) for efficient technical workflow density.",
+      "Do provide instant feedback on hover and focus states using the 150ms transition curve.",
+      "Do use semantic colors (`#98c379`, `#e06c75`, `#e5c07b`, `#61afef`, `#c678dd`) consistently according to their defined role."
+    ],
+    "donts": [
+      "Don't use decorative drop shadows, gradients, or rounded corners larger than 4px.",
+      "Don't override the monospace font on code identifiers or JSON syntax elements.",
+      "Don't hide setting paths or obscure canonical `settings.json` keys behind vague marketing labels.",
+      "Don't introduce light-mode styles that break contrast with the terminal color tokens."
+    ]
+  }
+}
