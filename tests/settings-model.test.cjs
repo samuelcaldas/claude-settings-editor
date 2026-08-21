@@ -113,6 +113,9 @@ test('buildOpenAiModelsUrl resolves endpoint URL correctly across permutations',
   assert.equal(model.buildOpenAiModelsUrl('   https://gateway.com/v1   '), 'https://gateway.com/v1/models');
   assert.equal(model.buildOpenAiModelsUrl(''), '');
   assert.equal(model.buildOpenAiModelsUrl(null), '');
+  assert.equal(model.buildOpenAiModelsUrl('javascript:alert(1)'), '');
+  assert.equal(model.buildOpenAiModelsUrl('file:///etc/passwd'), '');
+  assert.equal(model.buildOpenAiModelsUrl('data:text/plain,hello'), '');
 });
 
 test('parseOpenAiModelsResponse handles OpenAI, Ollama, array formats with sorting and deduplication', () => {

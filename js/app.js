@@ -134,7 +134,6 @@
 
     renderAll();
     if (statusMsgKey) setStatus(statusMsgKey, 'ok', statusParams);
-    maybeAutoFetchModels();
   }
 
   async function openFile() {
@@ -286,12 +285,6 @@
       state.diagnostics = model.inspectSettings(state.document, state.targetScope);
 
       renderAll();
-
-      if (patch && typeof patch.path === 'string' && patch.path.startsWith('env.')) {
-        if (patch.path === 'env.ANTHROPIC_BASE_URL' || patch.path === 'env.ANTHROPIC_API_KEY' || patch.path === 'env.ANTHROPIC_AUTH_TOKEN') {
-          maybeAutoFetchModels();
-        }
-      }
     } catch (err) {
       setStatus('status.editFailed', 'err', { error: err.message });
     }
@@ -515,7 +508,7 @@
 
     // Model Discovery Fetch Buttons
     document.querySelectorAll('.btn-fetch-models').forEach(btn => {
-      btn.addEventListener('click', () => fetchModelsFromEndpoint(false));
+      btn.addEventListener('click', () => fetchModelsFromEndpoint());
     });
 
     // Raw JSON toolbar
@@ -988,7 +981,7 @@
     });
   }
 
-  async function fetchModelsFromEndpoint(silent = false) {
+  async function fetchModelsFromEndpoint() {
     if (state.isFetchingModels) return;
 
     const baseUrl = model.getAtPath(state.document, 'env.ANTHROPIC_BASE_URL') ||
@@ -1002,9 +995,7 @@
 
     const resolvedUrl = model.buildOpenAiModelsUrl(baseUrl);
     if (!resolvedUrl) {
-      if (!silent) {
-        setStatus(i18n ? i18n.t('models.discovery.status.noCreds') : 'Configure API Base URL and Key to fetch models', 'err');
-      }
+      setStatus(i18n ? i18n.t('models.discovery.status.noCreds') : 'Configure API Base URL and Key to fetch models', 'err');
       return;
     }
 
@@ -1045,9 +1036,7 @@
         state.modelsSource = 'api';
         state.modelsFetchError = '';
         renderModelDiscovery();
-        if (!silent) {
-          setStatus(i18n ? i18n.t('models.discovery.status.success', { count: parsedModels.length }) : `Loaded ${parsedModels.length} models`, 'ok');
-        }
+        setStatus(i18n ? i18n.t('models.discovery.status.success', { count: parsedModels.length }) : `Loaded ${parsedModels.length} models`, 'ok');
       } else {
         throw new Error('No models found in response payload');
       }
@@ -1058,21 +1047,10 @@
         state.availableModels = model.getDefaultKnownModels ? model.getDefaultKnownModels() : [];
       }
       renderModelDiscovery();
-      if (!silent) {
-        setStatus(i18n ? i18n.t('models.discovery.status.error', { error: err.message }) : `Failed to fetch models: ${err.message}`, 'err');
-      }
+      setStatus(i18n ? i18n.t('models.discovery.status.error', { error: err.message }) : `Failed to fetch models: ${err.message}`, 'err');
     } finally {
       state.isFetchingModels = false;
       renderModelDiscovery();
-    }
-  }
-
-  function maybeAutoFetchModels() {
-    const baseUrl = model.getAtPath(state.document, 'env.ANTHROPIC_BASE_URL') ||
-                    model.getAtPath(state.document, 'env.BASE_URL') ||
-                    model.getAtPath(state.document, 'env.OPENAI_BASE_URL');
-    if (baseUrl && typeof baseUrl === 'string' && baseUrl.trim() && baseUrl.trim() !== 'https://api.anthropic.com') {
-      fetchModelsFromEndpoint(true);
     }
   }
 

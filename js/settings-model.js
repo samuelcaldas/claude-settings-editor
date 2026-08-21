@@ -462,11 +462,13 @@
 
   function buildOpenAiModelsUrl(baseUrl) {
     if (!baseUrl || typeof baseUrl !== 'string') return '';
-    const trimmed = baseUrl.trim().replace(/\/+$/, '');
-    if (!trimmed) return '';
-    if (trimmed.endsWith('/models')) return trimmed;
-    if (trimmed.endsWith('/v1')) return trimmed + '/models';
-    return trimmed + '/v1/models';
+    const trimmed = baseUrl.trim();
+    if (!/^https?:\/\//i.test(trimmed)) return '';
+    const cleaned = trimmed.replace(/\/+$/, '');
+    if (!cleaned) return '';
+    if (cleaned.endsWith('/models')) return cleaned;
+    if (cleaned.endsWith('/v1')) return cleaned + '/models';
+    return cleaned + '/v1/models';
   }
 
   function parseOpenAiModelsResponse(payload) {
