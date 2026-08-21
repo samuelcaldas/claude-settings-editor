@@ -54,9 +54,9 @@
     <button id="btn-save-as" class="btn btn-full" data-i18n="actions.saveAs" data-i18n-title="actions.saveAsTitle" title="Save to new file (Ctrl+Shift+S)">Save As...</button>
     <button id="btn-sample" class="btn btn-full" data-i18n="actions.loadSample">Load Sample</button>
 
-    <button id="btn-open-mobile" class="btn small" style="display:none" data-i18n="actions.loadMobile">Open</button>
-    <button id="btn-save-mobile" class="btn primary small" style="display:none" data-i18n="actions.saveMobile">Save</button>
-    <span id="status" data-i18n="app.ready">Ready</span>
+    <button id="btn-open-mobile" class="btn small mobile-only" data-i18n="actions.loadMobile">Open</button>
+    <button id="btn-save-mobile" class="btn primary small mobile-only" data-i18n="actions.saveMobile">Save</button>
+    <span id="status" role="status" aria-live="polite" data-i18n="app.ready">Ready</span>
     <input type="file" id="file-input" accept=".json">
   </div>
 </header>
@@ -84,7 +84,7 @@
   </nav>
 
   <main>
-    <div id="diagnostic-banner" class="diagnostic-banner" role="region" aria-label="Configuration Diagnostics"></div>
+    <div id="diagnostic-banner" class="diagnostic-banner" role="region" aria-live="polite" aria-label="Configuration Diagnostics"></div>
 
     <!-- TAB 1: General & UI -->
     <section id="tab-general" class="tab-panel active" role="tabpanel" aria-labelledby="tab-btn-general" aria-hidden="false">
@@ -223,7 +223,7 @@
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:24px;" data-i18n="sections.general.toggles">Accessibility &amp; UI Toggles</div>
+      <div class="section-title mt-xl" data-i18n="sections.general.toggles">Accessibility &amp; UI Toggles</div>
       <div class="grid-2">
         <div>
           <div class="checkbox-row"><input type="checkbox" id="axScreenReader" data-setting-path="axScreenReader"><label for="axScreenReader"><code>axScreenReader</code> — <span data-i18n="toggle.axScreenReader">Screen reader accessible text</span></label></div>
@@ -293,7 +293,7 @@
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;" data-i18n="sections.permissions.flags">Permission Flags</div>
+      <div class="section-title mt-xl" data-i18n="sections.permissions.flags">Permission Flags</div>
       <div class="grid-2">
         <div>
           <div class="checkbox-row"><input type="checkbox" id="skipDangerousModePermissionPrompt" data-setting-path="skipDangerousModePermissionPrompt"><label for="skipDangerousModePermissionPrompt"><code>skipDangerousModePermissionPrompt</code> — <span data-i18n="toggle.skipDangerousModeTop">Skip dangerous mode prompt (top-level)</span></label></div>
@@ -308,7 +308,7 @@
       </div>
 
       <!-- Rule Lists -->
-      <div class="section-title" style="margin-top:24px;" data-i18n="sections.permissions.ruleLists">Permission Rule Lists</div>
+      <div class="section-title mt-xl" data-i18n="sections.permissions.ruleLists">Permission Rule Lists</div>
 
       <div class="rule-box rule-deny">
         <div class="rule-box-header">
@@ -316,7 +316,7 @@
           <span class="rule-desc" data-i18n="rules.deny.desc">Evaluated FIRST. Matches block tool execution and hide sensitive files.</span>
         </div>
         <div id="list-permissions-deny"></div>
-        <div class="input-wrap" style="margin-top:8px;">
+        <div class="input-wrap mt-sm">
           <input type="text" id="new-deny-rule" placeholder="e.g. Read(./.env), Bash(curl *), WebFetch" data-i18n-placeholder="rules.deny.placeholder">
           <button id="btn-add-deny-rule" class="btn danger small" data-i18n="rules.deny.button">+ Add Deny Rule</button>
         </div>
@@ -328,7 +328,7 @@
           <span class="rule-desc" data-i18n="rules.ask.desc">Evaluated SECOND. Matches always prompt the user for confirmation.</span>
         </div>
         <div id="list-permissions-ask"></div>
-        <div class="input-wrap" style="margin-top:8px;">
+        <div class="input-wrap mt-sm">
           <input type="text" id="new-ask-rule" placeholder="e.g. Bash(git push *), Bash(npm publish)" data-i18n-placeholder="rules.ask.placeholder">
           <button id="btn-add-ask-rule" class="btn small" data-i18n="rules.ask.button">+ Add Ask Rule</button>
         </div>
@@ -340,19 +340,19 @@
           <span class="rule-desc" data-i18n="rules.allow.desc">Evaluated THIRD. Matches auto-execute without interactive prompt.</span>
         </div>
         <div id="list-permissions-allow"></div>
-        <div class="input-wrap" style="margin-top:8px;">
+        <div class="input-wrap mt-sm">
           <input type="text" id="new-allow-rule" placeholder="e.g. Bash(npm run *), Read(./src/**)" data-i18n-placeholder="rules.allow.placeholder">
           <button id="btn-add-allow-rule" class="btn primary small" data-i18n="rules.allow.button">+ Add Allow Rule</button>
         </div>
       </div>
 
-      <div class="rule-box" style="margin-top:16px;">
+      <div class="rule-box mt-lg">
         <div class="rule-box-header">
           <span class="rule-title"><span data-i18n="rules.additionalDirs.title">Additional Directories</span> (<code>permissions.additionalDirectories</code>)</span>
           <span class="rule-desc" data-i18n="rules.additionalDirs.desc">Extra working directories granted for file read/edit access.</span>
         </div>
         <div id="list-permissions-additionalDirs"></div>
-        <div class="input-wrap" style="margin-top:8px;">
+        <div class="input-wrap mt-sm">
           <input type="text" id="new-add-dir" placeholder="e.g. ../docs/, ~/shared-libs/" data-i18n-placeholder="rules.additionalDirs.placeholder">
           <button id="btn-add-dir" class="btn small" data-i18n="rules.additionalDirs.button">+ Add Directory</button>
         </div>
@@ -379,12 +379,12 @@
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:24px;" data-i18n="sections.sandbox.filesystem">Filesystem Isolation Paths</div>
+      <div class="section-title mt-xl" data-i18n="sections.sandbox.filesystem">Filesystem Isolation Paths</div>
       <div class="grid-2">
         <div class="rule-box">
           <div class="rule-box-header"><span class="rule-title"><span data-i18n="rules.sb.allowWrite.title">Allow Write</span> (<code>sandbox.filesystem.allowWrite</code>)</span></div>
           <div id="list-sb-allow-write"></div>
-          <div class="input-wrap" style="margin-top:8px;">
+          <div class="input-wrap mt-sm">
             <input type="text" id="new-sb-allow-write" placeholder="e.g. /tmp/build, ~/.kube" data-i18n-placeholder="rules.sb.allowWrite.placeholder">
             <button id="btn-add-sb-allow-write" class="btn small" data-i18n="rules.sb.allowWrite.button">+ Add Path</button>
           </div>
@@ -392,7 +392,7 @@
         <div class="rule-box">
           <div class="rule-box-header"><span class="rule-title"><span data-i18n="rules.sb.denyWrite.title">Deny Write</span> (<code>sandbox.filesystem.denyWrite</code>)</span></div>
           <div id="list-sb-deny-write"></div>
-          <div class="input-wrap" style="margin-top:8px;">
+          <div class="input-wrap mt-sm">
             <input type="text" id="new-sb-deny-write" placeholder="e.g. /etc, /usr/local/bin" data-i18n-placeholder="rules.sb.denyWrite.placeholder">
             <button id="btn-add-sb-deny-write" class="btn small" data-i18n="rules.sb.denyWrite.button">+ Add Path</button>
           </div>
@@ -400,7 +400,7 @@
         <div class="rule-box">
           <div class="rule-box-header"><span class="rule-title"><span data-i18n="rules.sb.denyRead.title">Deny Read</span> (<code>sandbox.filesystem.denyRead</code>)</span></div>
           <div id="list-sb-deny-read"></div>
-          <div class="input-wrap" style="margin-top:8px;">
+          <div class="input-wrap mt-sm">
             <input type="text" id="new-sb-deny-read" placeholder="e.g. ~/.aws/credentials, ~/.ssh" data-i18n-placeholder="rules.sb.denyRead.placeholder">
             <button id="btn-add-sb-deny-read" class="btn small" data-i18n="rules.sb.denyRead.button">+ Add Path</button>
           </div>
@@ -408,19 +408,19 @@
         <div class="rule-box">
           <div class="rule-box-header"><span class="rule-title"><span data-i18n="rules.sb.allowRead.title">Allow Read</span> (<code>sandbox.filesystem.allowRead</code>)</span></div>
           <div id="list-sb-allow-read"></div>
-          <div class="input-wrap" style="margin-top:8px;">
+          <div class="input-wrap mt-sm">
             <input type="text" id="new-sb-allow-read" placeholder="e.g. . (workspace re-allow)" data-i18n-placeholder="rules.sb.allowRead.placeholder">
             <button id="btn-add-sb-allow-read" class="btn small" data-i18n="rules.sb.allowRead.button">+ Add Path</button>
           </div>
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:24px;" data-i18n="sections.sandbox.network">Network Isolation Domains</div>
+      <div class="section-title mt-xl" data-i18n="sections.sandbox.network">Network Isolation Domains</div>
       <div class="grid-2">
         <div class="rule-box">
           <div class="rule-box-header"><span class="rule-title"><span data-i18n="rules.sb.allowDomains.title">Allowed Domains</span> (<code>sandbox.network.allowedDomains</code>)</span></div>
           <div id="list-sb-allow-domains"></div>
-          <div class="input-wrap" style="margin-top:8px;">
+          <div class="input-wrap mt-sm">
             <input type="text" id="new-sb-allow-domain" placeholder="e.g. github.com, *.npmjs.org" data-i18n-placeholder="rules.sb.allowDomains.placeholder">
             <button id="btn-add-sb-allow-domain" class="btn small" data-i18n="rules.sb.allowDomains.button">+ Add Domain</button>
           </div>
@@ -428,16 +428,16 @@
         <div class="rule-box">
           <div class="rule-box-header"><span class="rule-title"><span data-i18n="rules.sb.denyDomains.title">Denied Domains</span> (<code>sandbox.network.deniedDomains</code>)</span></div>
           <div id="list-sb-deny-domains"></div>
-          <div class="input-wrap" style="margin-top:8px;">
+          <div class="input-wrap mt-sm">
             <input type="text" id="new-sb-deny-domain" placeholder="e.g. uploads.github.com, *.internal" data-i18n-placeholder="rules.sb.denyDomains.placeholder">
             <button id="btn-add-sb-deny-domain" class="btn small" data-i18n="rules.sb.denyDomains.button">+ Add Domain</button>
           </div>
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:24px;" data-i18n="sections.sandbox.excluded">Excluded Commands (<code>sandbox.excludedCommands</code>)</div>
+      <div class="section-title mt-xl" data-i18n="sections.sandbox.excluded">Excluded Commands (<code>sandbox.excludedCommands</code>)</div>
       <div id="list-sb-excluded-commands"></div>
-      <div class="input-wrap" style="margin-top:8px;">
+      <div class="input-wrap mt-sm">
         <input type="text" id="new-sb-excluded-cmd" placeholder="e.g. docker *, podman *" data-i18n-placeholder="rules.sb.excludedCmds.placeholder">
         <button id="btn-add-sb-excluded-cmd" class="btn small" data-i18n="rules.sb.excludedCmds.button">+ Add Command</button>
       </div>
@@ -449,8 +449,8 @@
       <div class="section-desc" data-i18n="sections.env.desc">Configure API credentials, custom base endpoints, and environment variables passed to Claude Code sessions and subprocesses.</div>
 
       <!-- Dedicated API Credentials & Connection Section -->
-      <div class="section-title" style="margin-top:16px;" data-i18n="sections.env.apiConnection.title">API Credentials &amp; Endpoint</div>
-      <div class="rule-box" style="margin-top:8px;">
+      <div class="section-title mt-lg" data-i18n="sections.env.apiConnection.title">API Credentials &amp; Endpoint</div>
+      <div class="rule-box mt-sm">
         <div class="grid-2">
           <div class="field-group">
             <div class="field-header">
@@ -496,7 +496,7 @@
       </div>
 
       <!-- Additional Custom Environment Variables -->
-      <div class="section-title" style="margin-top:24px;" data-i18n="sections.env.additional.title">Additional Environment Variables</div>
+      <div class="section-title mt-xl" data-i18n="sections.env.additional.title">Additional Environment Variables</div>
       <div class="section-desc" data-i18n="sections.env.additional.desc">General environment variables passed to subprocesses, tools, and scripts.</div>
 
       <div class="env-presets-toolbar">
@@ -504,15 +504,15 @@
         <button class="btn small" id="btn-preset-telemetry" data-i18n="env.preset.telemetry">+ OpenTelemetry</button>
       </div>
 
-      <div id="env-var-list" style="margin-top:12px;"></div>
+      <div id="env-var-list" class="mt-md"></div>
 
-      <div class="input-wrap" style="margin-top:12px;">
-        <input type="text" id="new-env-key" placeholder="VARIABLE_NAME (e.g. OTEL_EXPORTER_OTLP_ENDPOINT)" data-i18n-placeholder="env.keyPlaceholder" style="flex:1;">
-        <input type="text" id="new-env-val" placeholder="Value (or empty to unset)" data-i18n-placeholder="env.valPlaceholder" style="flex:2;">
+      <div class="input-wrap mt-md">
+        <input type="text" id="new-env-key" class="flex-1" placeholder="VARIABLE_NAME (e.g. OTEL_EXPORTER_OTLP_ENDPOINT)" data-i18n-placeholder="env.keyPlaceholder">
+        <input type="text" id="new-env-val" class="flex-2" placeholder="Value (or empty to unset)" data-i18n-placeholder="env.valPlaceholder">
         <button id="btn-add-env-var" class="btn primary" data-i18n="env.addVar">+ Add Variable</button>
       </div>
 
-      <div class="section-title" style="margin-top:24px;" data-i18n="sections.env.helpers">Telemetry Helper Command</div>
+      <div class="section-title mt-xl" data-i18n="sections.env.helpers">Telemetry Helper Command</div>
       <div class="grid-2">
         <div class="field-group">
           <div class="field-header">
@@ -531,10 +531,10 @@
       <div class="section-desc" data-i18n="sections.models.desc">Configure primary model selection, gateway model tiers (Fable, Opus, Sonnet, Haiku), fallback chains, and workflow settings.</div>
 
       <!-- Section: Gateway Model Tiers (First-class UI) -->
-      <div class="section-title" style="margin-top:16px;" data-i18n="sections.models.tiers.title">Gateway Model Tiers &amp; Capabilities</div>
+      <div class="section-title mt-lg" data-i18n="sections.models.tiers.title">Gateway Model Tiers &amp; Capabilities</div>
       <div class="section-desc" data-i18n="sections.models.tiers.desc">Configure the model mappings, friendly display names, descriptions, and capabilities for each model tier (stored in <code>env.ANTHROPIC_DEFAULT_*</code>).</div>
 
-      <div class="grid-2" style="margin-top:12px;">
+      <div class="grid-2 mt-md">
         <!-- Fable Tier Card -->
         <div class="model-tier-card">
           <div class="model-tier-header">
@@ -739,7 +739,7 @@
       </div>
 
       <!-- Section: Session Model Selection -->
-      <div class="section-title" style="margin-top:24px;" data-i18n="sections.models.sessionSelection.title">Session &amp; Global Model Selection</div>
+      <div class="section-title mt-xl" data-i18n="sections.models.sessionSelection.title">Session &amp; Global Model Selection</div>
       <div class="grid-2">
         <div class="field-group">
           <div class="field-header">
@@ -789,7 +789,7 @@
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;" data-i18n="sections.models.toggles">Model &amp; Workflow Toggles</div>
+      <div class="section-title mt-xl" data-i18n="sections.models.toggles">Model &amp; Workflow Toggles</div>
       <div class="grid-2">
         <div>
           <div class="checkbox-row"><input type="checkbox" id="alwaysThinkingEnabled" data-setting-path="alwaysThinkingEnabled"><label for="alwaysThinkingEnabled"><code>alwaysThinkingEnabled</code> — <span data-i18n="toggle.alwaysThinking">Extended thinking by default</span></label></div>
@@ -806,10 +806,10 @@
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:24px;" data-i18n="sections.models.fallbackChain">Fallback Models Chain (<code>fallbackModel</code>)</div>
+      <div class="section-title mt-xl" data-i18n="sections.models.fallbackChain">Fallback Models Chain (<code>fallbackModel</code>)</div>
       <div class="section-desc" data-i18n="sections.models.fallbackDesc">Ordered list of fallback models (capped at 3 models). Replaces entire chain across settings files.</div>
       <div id="fallback-list"></div>
-      <div class="input-wrap" style="margin-top:12px;">
+      <div class="input-wrap mt-md">
         <input type="text" id="new-model-input" placeholder="Model ID (e.g. claude-sonnet-5, haiku, default)" data-i18n-placeholder="fallback.placeholder">
         <button id="btn-add-fallback" class="btn primary" data-i18n="fallback.add">+ Add Fallback Model</button>
       </div>
@@ -829,11 +829,11 @@
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;" data-i18n="sections.hooks.configured">Configured Hooks</div>
+      <div class="section-title mt-xl" data-i18n="sections.hooks.configured">Configured Hooks</div>
       <div id="hooks-container"></div>
 
-      <div class="input-wrap" style="margin-top:14px;">
-        <select id="new-hook-event-select" style="max-width:260px;">
+      <div class="input-wrap mt-md">
+        <select id="new-hook-event-select" class="select-hook-event">
           <option value="PreToolUse">PreToolUse</option>
           <option value="PostToolUse">PostToolUse</option>
           <option value="Notification">Notification</option>
@@ -850,7 +850,7 @@
         <button id="btn-add-hook" class="btn primary" data-i18n="hooks.addEvent">+ Add Event Group</button>
       </div>
 
-      <div class="section-title" style="margin-top:28px;" data-i18n="sections.hooks.statusLine">Status Line Configuration (<code>statusLine</code>)</div>
+      <div class="section-title mt-xxl" data-i18n="sections.hooks.statusLine">Status Line Configuration (<code>statusLine</code>)</div>
       <div class="grid-2">
         <div class="field-group">
           <div class="field-header">
@@ -879,11 +879,11 @@
           <input type="number" id="statusLine_refreshInterval" data-setting-path="statusLine.refreshInterval" placeholder="5" min="1" data-i18n-placeholder="statusLine.refreshPlaceholder">
         </div>
 
-        <div class="field-group" style="display:flex; align-items:center; margin-top:20px;">
+        <div class="field-group field-group-checkbox">
           <div class="checkbox-row"><input type="checkbox" id="statusLine_hideVimModeIndicator" data-setting-path="statusLine.hideVimModeIndicator"><label for="statusLine_hideVimModeIndicator"><code>statusLine.hideVimModeIndicator</code> — <span data-i18n="toggle.hideVimModeIndicator">Hide vim mode indicator</span></label></div>
         </div>
 
-        <div class="field-group" style="grid-column: span 2;">
+        <div class="field-group span-2">
           <div class="field-header">
             <label class="field-label" for="statusLine_command"><code>statusLine.command</code></label>
             <button class="unset-btn" data-unset-path="statusLine.command" data-i18n="actions.unset">unset</button>
@@ -892,9 +892,9 @@
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;" data-i18n="sections.hooks.allowedUrls">Allowed HTTP Hook URLs (<code>allowedHttpHookUrls</code>)</div>
+      <div class="section-title mt-xl" data-i18n="sections.hooks.allowedUrls">Allowed HTTP Hook URLs (<code>allowedHttpHookUrls</code>)</div>
       <div id="list-hook-allowed-urls"></div>
-      <div class="input-wrap" style="margin-top:8px;">
+      <div class="input-wrap mt-sm">
         <input type="text" id="new-hook-url" placeholder="e.g. https://hooks.example.com/*" data-i18n-placeholder="hooks.urlPatternPlaceholder">
         <button id="btn-add-hook-url" class="btn small" data-i18n="hooks.addUrl">+ Add URL Pattern</button>
       </div>
@@ -915,16 +915,16 @@
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;" data-i18n="sections.mcp.enabledServers">Enabled .mcp.json Servers (<code>enabledMcpjsonServers</code>)</div>
+      <div class="section-title mt-xl" data-i18n="sections.mcp.enabledServers">Enabled .mcp.json Servers (<code>enabledMcpjsonServers</code>)</div>
       <div id="list-mcp-enabled"></div>
-      <div class="input-wrap" style="margin-top:8px;">
+      <div class="input-wrap mt-sm">
         <input type="text" id="new-mcp-enabled-server" placeholder="Server name (e.g. memory, github)" data-i18n-placeholder="mcp.enabledPlaceholder">
         <button id="btn-add-mcp-enabled" class="btn small" data-i18n="mcp.approve">+ Approve Server</button>
       </div>
 
-      <div class="section-title" style="margin-top:20px;" data-i18n="sections.mcp.disabledServers">Disabled .mcp.json Servers (<code>disabledMcpjsonServers</code>)</div>
+      <div class="section-title mt-xl" data-i18n="sections.mcp.disabledServers">Disabled .mcp.json Servers (<code>disabledMcpjsonServers</code>)</div>
       <div id="list-mcp-disabled"></div>
-      <div class="input-wrap" style="margin-top:8px;">
+      <div class="input-wrap mt-sm">
         <input type="text" id="new-mcp-disabled-server" placeholder="Server name (e.g. filesystem)" data-i18n-placeholder="mcp.disabledPlaceholder">
         <button id="btn-add-mcp-disabled" class="btn small" data-i18n="mcp.reject">+ Reject Server</button>
       </div>
@@ -999,7 +999,7 @@
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;" data-i18n="sections.worktree.toggles">Worktree &amp; Session Toggles</div>
+      <div class="section-title mt-xl" data-i18n="sections.worktree.toggles">Worktree &amp; Session Toggles</div>
       <div class="grid-2">
         <div>
           <div class="checkbox-row"><input type="checkbox" id="autoMemoryEnabled" data-setting-path="autoMemoryEnabled"><label for="autoMemoryEnabled"><code>autoMemoryEnabled</code> — <span data-i18n="toggle.autoMemory">Enable auto memory</span></label></div>
@@ -1011,16 +1011,16 @@
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:24px;" data-i18n="sections.worktree.symlinks">Symlink Directories (<code>worktree.symlinkDirectories</code>)</div>
+      <div class="section-title mt-xxl" data-i18n="sections.worktree.symlinks">Symlink Directories (<code>worktree.symlinkDirectories</code>)</div>
       <div id="list-worktree-symlinks"></div>
-      <div class="input-wrap" style="margin-top:8px;">
+      <div class="input-wrap mt-sm">
         <input type="text" id="new-wt-symlink" placeholder="e.g. node_modules, .cache" data-i18n-placeholder="wt.symlinks.placeholder">
         <button id="btn-add-wt-symlink" class="btn small" data-i18n="wt.symlinks.add">+ Add Symlink Dir</button>
       </div>
 
-      <div class="section-title" style="margin-top:20px;" data-i18n="sections.worktree.sparse">Sparse Paths (<code>worktree.sparsePaths</code>)</div>
+      <div class="section-title mt-xl" data-i18n="sections.worktree.sparse">Sparse Paths (<code>worktree.sparsePaths</code>)</div>
       <div id="list-worktree-sparse"></div>
-      <div class="input-wrap" style="margin-top:8px;">
+      <div class="input-wrap mt-sm">
         <input type="text" id="new-wt-sparse" placeholder="e.g. packages/my-app, shared/utils" data-i18n-placeholder="wt.sparse.placeholder">
         <button id="btn-add-wt-sparse" class="btn small" data-i18n="wt.sparse.add">+ Add Sparse Path</button>
       </div>
@@ -1031,16 +1031,16 @@
       <div class="section-title" data-i18n="sections.plugins.title">Plugins &amp; Marketplaces</div>
       <div class="section-desc" data-i18n="sections.plugins.desc">Manage installed plugins (<code>enabledPlugins</code>) and custom marketplace sources (<code>extraKnownMarketplaces</code>).</div>
 
-      <div class="section-title" style="font-size:1rem;" data-i18n="sections.plugins.enabled">Enabled Plugins</div>
+      <div class="section-title" data-i18n="sections.plugins.enabled">Enabled Plugins</div>
       <div id="plugin-list"></div>
-      <div class="input-wrap" style="margin-top:12px;">
+      <div class="input-wrap mt-md">
         <input type="text" id="new-plugin-key" placeholder="plugin-name@marketplace" data-i18n-placeholder="plugin.placeholder">
         <button id="btn-add-plugin" class="btn primary" data-i18n="plugin.add">+ Add Plugin</button>
       </div>
 
-      <div class="section-title" style="margin-top:28px; font-size:1rem;" data-i18n="sections.plugins.marketplaces">Extra Known Marketplaces (<code>extraKnownMarketplaces</code>)</div>
+      <div class="section-title mt-xxl" data-i18n="sections.plugins.marketplaces">Extra Known Marketplaces (<code>extraKnownMarketplaces</code>)</div>
       <div id="marketplace-list"></div>
-      <div class="input-wrap" style="margin-top:12px;">
+      <div class="input-wrap mt-md">
         <input type="text" id="new-marketplace-name" placeholder="Marketplace Name (e.g. team-tools)" data-i18n-placeholder="mkt.namePlaceholder">
         <select id="new-marketplace-type">
           <option value="github" data-i18n="mkt.typeGithub">github (repo)</option>
@@ -1117,7 +1117,7 @@
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:20px;" data-i18n="sections.managed.toggles">Policy Toggles</div>
+      <div class="section-title mt-xl" data-i18n="sections.managed.toggles">Policy Toggles</div>
       <div class="grid-2">
         <div>
           <div class="checkbox-row"><input type="checkbox" id="forceRemoteSettingsRefresh" data-setting-path="forceRemoteSettingsRefresh"><label for="forceRemoteSettingsRefresh"><code>forceRemoteSettingsRefresh</code> <span class="badge-scope badge-managed" data-i18n="badge.managed">Managed</span></label></div>
