@@ -100,7 +100,7 @@
   "extraKnownMarketplaces": {
     "custom-tools": {
       "source": {
-        "type": "github",
+        "source": "github",
         "repo": "example-org/claude-plugins"
       }
     }

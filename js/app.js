@@ -204,7 +204,7 @@
         }
         const writable = await state.fileHandle.createWritable();
         const json = model.serializeSettings(state.document);
-        await writable.write(json + '\n');
+        await writable.write(json);
         await writable.close();
 
         state.baseline = model.clone(state.document);
@@ -237,7 +237,7 @@
         });
         const writable = await handle.createWritable();
         const json = model.serializeSettings(state.document);
-        await writable.write(json + '\n');
+        await writable.write(json);
         await writable.close();
 
         state.fileHandle = handle;
@@ -414,9 +414,13 @@
 
     // Permission Rule Add Buttons
     bindListAdd('btn-add-deny', 'new-deny-rule', 'permissions.deny');
+    bindListAdd('btn-add-deny-rule', 'new-deny-rule', 'permissions.deny');
     bindListAdd('btn-add-ask', 'new-ask-rule', 'permissions.ask');
+    bindListAdd('btn-add-ask-rule', 'new-ask-rule', 'permissions.ask');
     bindListAdd('btn-add-allow', 'new-allow-rule', 'permissions.allow');
+    bindListAdd('btn-add-allow-rule', 'new-allow-rule', 'permissions.allow');
     bindListAdd('btn-add-dir', 'new-dir-rule', 'permissions.additionalDirectories');
+    bindListAdd('btn-add-dir', 'new-add-dir', 'permissions.additionalDirectories');
 
     // Sandbox Rule Add Buttons
     bindListAdd('btn-add-sb-allow-write', 'new-sb-allow-write', 'sandbox.filesystem.allowWrite');
@@ -426,6 +430,7 @@
     bindListAdd('btn-add-sb-allow-domain', 'new-sb-allow-domain', 'sandbox.network.allowedDomains');
     bindListAdd('btn-add-sb-deny-domain', 'new-sb-deny-domain', 'sandbox.network.deniedDomains');
     bindListAdd('btn-add-sb-ex-cmd', 'new-sb-ex-cmd', 'sandbox.excludedCommands');
+    bindListAdd('btn-add-sb-excluded-cmd', 'new-sb-excluded-cmd', 'sandbox.excludedCommands');
 
     // Worktree Rule Add Buttons
     bindListAdd('btn-add-wt-symlink', 'new-wt-symlink', 'worktree.symlinkDirectories');
@@ -434,13 +439,45 @@
     // MCP Policy Rule Add Buttons
     bindListAdd('btn-add-mcp-approved', 'new-mcp-approved', 'mcp.approvedServers');
     bindListAdd('btn-add-mcp-rejected', 'new-mcp-rejected', 'mcp.rejectedServers');
+    bindListAdd('btn-add-mcp-enabled', 'new-mcp-enabled-server', 'enabledMcpjsonServers');
+    bindListAdd('btn-add-mcp-disabled', 'new-mcp-disabled-server', 'disabledMcpjsonServers');
 
-    // Env vars add
+    // Env vars add & presets
     getElement('btn-add-env')?.addEventListener('click', addEnvVar);
+    getElement('btn-add-env-var')?.addEventListener('click', addEnvVar);
     getElement('new-env-val')?.addEventListener('keydown', e => {
       if (e.key === 'Enter') addEnvVar();
     });
     getElement('btn-mask-env')?.addEventListener('click', toggleEnvMask);
+    getElement('btn-toggle-api-key')?.addEventListener('click', () => {
+      const input = getElement('env_ANTHROPIC_API_KEY');
+      const btn = getElement('btn-toggle-api-key');
+      if (input) {
+        const isPass = input.type === 'password';
+        input.type = isPass ? 'text' : 'password';
+        if (btn) btn.textContent = isPass ? (i18n ? i18n.t('env.apiKey.hide') : 'Hide') : (i18n ? i18n.t('env.apiKey.show') : 'Show');
+      }
+    });
+    getElement('btn-toggle-auth-token')?.addEventListener('click', () => {
+      const input = getElement('env_ANTHROPIC_AUTH_TOKEN');
+      const btn = getElement('btn-toggle-auth-token');
+      if (input) {
+        const isPass = input.type === 'password';
+        input.type = isPass ? 'text' : 'password';
+        if (btn) btn.textContent = isPass ? (i18n ? i18n.t('env.apiKey.hide') : 'Hide') : (i18n ? i18n.t('env.apiKey.show') : 'Show');
+      }
+    });
+    getElement('btn-preset-anthropic')?.addEventListener('click', () => applyPatch({ op: 'set', path: 'env.ANTHROPIC_API_KEY', value: '' }));
+    getElement('btn-preset-telemetry')?.addEventListener('click', () => applyPatch({ op: 'set', path: 'env.OTEL_EXPORTER_OTLP_ENDPOINT', value: 'http://localhost:4318' }));
+    getElement('btn-preset-models')?.addEventListener('click', () => applyPatch({ op: 'set', path: 'env.ANTHROPIC_MODEL', value: 'claude-sonnet-5' }));
+    getElement('btn-preset-gateway')?.addEventListener('click', () => {
+      batchPatches([
+        { op: 'set', path: 'env.ANTHROPIC_DEFAULT_SONNET_MODEL', value: 'claude-sonnet-5' },
+        { op: 'set', path: 'env.ANTHROPIC_DEFAULT_OPUS_MODEL', value: 'claude-opus-5' },
+        { op: 'set', path: 'env.ANTHROPIC_DEFAULT_HAIKU_MODEL', value: 'claude-haiku-4-5-20251001' },
+        { op: 'set', path: 'env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY', value: 'true' }
+      ]);
+    });
 
     // Fallback models add
     getElement('btn-add-fallback')?.addEventListener('click', addFallbackModel);
@@ -456,8 +493,10 @@
 
     // Marketplaces add
     getElement('btn-add-mkt')?.addEventListener('click', addMarketplace);
+    getElement('btn-add-marketplace')?.addEventListener('click', addMarketplace);
 
     // Hook groups & URLs
+    getElement('btn-add-hook')?.addEventListener('click', addHookGroup);
     getElement('btn-add-hook-group')?.addEventListener('click', addHookGroup);
     getElement('btn-add-hook-url')?.addEventListener('click', addHookUrl);
 
@@ -587,7 +626,7 @@
       }
 
       // Check if setting is ignored in target scope
-      const def = catalog.getDefinition(path);
+      const def = catalog.getSettingDefinition ? catalog.getSettingDefinition(path) : (catalog.getDefinition ? catalog.getDefinition(path) : null);
       const isIgnored = def && def.scopes && !def.scopes.includes(state.targetScope);
       const fieldGroup = input.closest('.field-group') || input.closest('.checkbox-row');
       if (fieldGroup) {
@@ -598,23 +637,34 @@
 
   function renderRuleLists() {
     renderStringList('list-deny', 'permissions.deny');
+    renderStringList('list-permissions-deny', 'permissions.deny');
     renderStringList('list-ask', 'permissions.ask');
+    renderStringList('list-permissions-ask', 'permissions.ask');
     renderStringList('list-allow', 'permissions.allow');
+    renderStringList('list-permissions-allow', 'permissions.allow');
     renderStringList('list-dirs', 'permissions.additionalDirectories');
+    renderStringList('list-permissions-additionalDirs', 'permissions.additionalDirectories');
 
     renderStringList('list-sb-allow-write', 'sandbox.filesystem.allowWrite');
     renderStringList('list-sb-deny-write', 'sandbox.filesystem.denyWrite');
     renderStringList('list-sb-deny-read', 'sandbox.filesystem.denyRead');
     renderStringList('list-sb-allow-read', 'sandbox.filesystem.allowRead');
     renderStringList('list-sb-allow-domain', 'sandbox.network.allowedDomains');
+    renderStringList('list-sb-allow-domains', 'sandbox.network.allowedDomains');
     renderStringList('list-sb-deny-domain', 'sandbox.network.deniedDomains');
+    renderStringList('list-sb-deny-domains', 'sandbox.network.deniedDomains');
     renderStringList('list-sb-ex-cmds', 'sandbox.excludedCommands');
+    renderStringList('list-sb-excluded-commands', 'sandbox.excludedCommands');
 
     renderStringList('list-wt-symlinks', 'worktree.symlinkDirectories');
+    renderStringList('list-worktree-symlinks', 'worktree.symlinkDirectories');
     renderStringList('list-wt-sparse', 'worktree.sparsePaths');
+    renderStringList('list-worktree-sparse', 'worktree.sparsePaths');
 
     renderStringList('list-mcp-approved', 'mcp.approvedServers');
     renderStringList('list-mcp-rejected', 'mcp.rejectedServers');
+    renderStringList('list-mcp-enabled', 'enabledMcpjsonServers');
+    renderStringList('list-mcp-disabled', 'disabledMcpjsonServers');
   }
 
   function renderStringList(containerId, basePath) {
@@ -655,7 +705,7 @@
   }
 
   function renderEnvVars() {
-    const el = getElement('list-env');
+    const el = getElement('list-env') || getElement('env-var-list');
     if (!el) return;
     el.replaceChildren();
 
@@ -670,11 +720,13 @@
       return;
     }
 
-    const keys = Object.keys(envObj);
+    const allKeys = Object.keys(envObj);
+    const keys = allKeys.filter(k => !(catalog && catalog.isDedicatedEnvKey ? catalog.isDedicatedEnvKey(k) : false));
+
     if (keys.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'field-hint';
-      empty.textContent = i18n ? i18n.t('env.empty') : 'No environment variables set in settings.';
+      empty.textContent = i18n ? i18n.t('env.empty') : 'No additional environment variables configured.';
       el.appendChild(empty);
       return;
     }
@@ -725,7 +777,8 @@
     const presets = [
       { nameKey: 'env.preset.anthropic', fallback: '+ Anthropic API', key: 'ANTHROPIC_API_KEY', val: '' },
       { nameKey: 'env.preset.telemetry', fallback: '+ OpenTelemetry', key: 'OTEL_EXPORTER_OTLP_ENDPOINT', val: 'http://localhost:4318' },
-      { nameKey: 'env.preset.models', fallback: '+ Default Models', key: 'ANTHROPIC_MODEL', val: 'claude-sonnet-5' }
+      { nameKey: 'env.preset.models', fallback: '+ Default Models', key: 'ANTHROPIC_MODEL', val: 'claude-sonnet-5' },
+      { nameKey: 'env.preset.gateway', fallback: '+ Gateway Models', key: 'ANTHROPIC_DEFAULT_SONNET_MODEL', val: 'claude-sonnet-5' }
     ];
 
     presets.forEach(p => {
@@ -759,7 +812,7 @@
   }
 
   function renderFallbackModels() {
-    const el = getElement('list-fallback-models');
+    const el = getElement('list-fallback-models') || getElement('fallback-list');
     if (!el) return;
     el.replaceChildren();
 
@@ -840,7 +893,7 @@
   }
 
   function renderPlugins() {
-    const el = getElement('list-plugins');
+    const el = getElement('list-plugins') || getElement('plugin-list');
     if (!el) return;
     el.replaceChildren();
 
@@ -904,11 +957,11 @@
   }
 
   function renderMarketplaces() {
-    const el = getElement('list-marketplaces');
+    const el = getElement('list-marketplaces') || getElement('marketplace-list');
     if (!el) return;
     el.replaceChildren();
 
-    const mkts = model.getAtPath(state.document, 'extraMarketplaces') || {};
+    const mkts = model.getAtPath(state.document, 'extraKnownMarketplaces') || model.getAtPath(state.document, 'extraMarketplaces') || {};
     const keys = Object.keys(mkts);
     if (keys.length === 0) {
       const empty = document.createElement('div');
@@ -936,7 +989,7 @@
       delBtn.title = i18n ? i18n.t('actions.remove') : 'Remove';
       delBtn.textContent = '×';
       delBtn.addEventListener('click', () => {
-        applyPatch({ op: 'delete', path: `extraMarketplaces.${key}` });
+        applyPatch({ op: 'delete', path: `extraKnownMarketplaces.${key}` });
       });
 
       hdr.appendChild(title);
@@ -946,14 +999,53 @@
       const srcRow = document.createElement('div');
       srcRow.className = 'input-wrap';
 
+      const srcObj = mkt && typeof mkt.source === 'object' && mkt.source !== null ? mkt.source : null;
+      const srcType = srcObj ? (srcObj.source || 'github') : (typeof mkt.source === 'string' ? 'url' : 'github');
+      const srcVal = srcObj ? (srcObj.repo || srcObj.url || srcObj.path || '') : (typeof mkt.source === 'string' ? mkt.source : '');
+
+      const typeSelect = document.createElement('select');
+      typeSelect.style.maxWidth = '140px';
+      const optGh = document.createElement('option');
+      optGh.value = 'github'; optGh.textContent = 'github';
+      const optGit = document.createElement('option');
+      optGit.value = 'git'; optGit.textContent = 'git';
+      const optUrl = document.createElement('option');
+      optUrl.value = 'url'; optUrl.textContent = 'url';
+      const optDir = document.createElement('option');
+      optDir.value = 'directory'; optDir.textContent = 'directory';
+      const optFile = document.createElement('option');
+      optFile.value = 'file'; optFile.textContent = 'file';
+
+      typeSelect.appendChild(optGh);
+      typeSelect.appendChild(optGit);
+      typeSelect.appendChild(optUrl);
+      typeSelect.appendChild(optDir);
+      typeSelect.appendChild(optFile);
+      typeSelect.value = srcType;
+
       const srcInp = document.createElement('input');
       srcInp.type = 'text';
-      srcInp.value = mkt.source || '';
-      srcInp.placeholder = i18n ? i18n.t('mkt.srcPlaceholder') : 'Source location';
-      srcInp.addEventListener('change', () => {
-        applyPatch({ op: 'set', path: `extraMarketplaces.${key}.source`, value: srcInp.value.trim() });
-      });
+      srcInp.value = srcVal;
+      srcInp.placeholder = i18n ? i18n.t('mkt.srcPlaceholder') : 'Source location / repo';
 
+      const updateHandler = () => {
+        const selectedType = typeSelect.value;
+        const currentVal = srcInp.value.trim();
+        let formattedSource;
+        if (selectedType === 'github') {
+          formattedSource = { source: 'github', repo: currentVal };
+        } else if (selectedType === 'git' || selectedType === 'url') {
+          formattedSource = { source: selectedType, url: currentVal };
+        } else {
+          formattedSource = { source: selectedType, path: currentVal };
+        }
+        applyPatch({ op: 'set', path: `extraKnownMarketplaces.${key}`, value: { source: formattedSource } });
+      };
+
+      typeSelect.addEventListener('change', updateHandler);
+      srcInp.addEventListener('change', updateHandler);
+
+      srcRow.appendChild(typeSelect);
       srcRow.appendChild(srcInp);
       card.appendChild(srcRow);
       el.appendChild(card);
@@ -961,18 +1053,29 @@
   }
 
   function addMarketplace() {
-    const nameInp = getElement('new-mkt-name');
-    const typeSel = getElement('new-mkt-type');
-    const srcInp = getElement('new-mkt-source');
+    const nameInp = getElement('new-mkt-name') || getElement('new-marketplace-name');
+    const typeSel = getElement('new-mkt-type') || getElement('new-marketplace-type');
+    const srcInp = getElement('new-mkt-source') || getElement('new-marketplace-src');
     if (!nameInp || !typeSel || !srcInp) return;
     const name = nameInp.value.trim();
     if (!name) return;
 
+    const selectedType = typeSel.value;
+    const currentVal = srcInp.value.trim();
+    let formattedSource;
+    if (selectedType === 'github') {
+      formattedSource = { source: 'github', repo: currentVal };
+    } else if (selectedType === 'git' || selectedType === 'url') {
+      formattedSource = { source: selectedType, url: currentVal };
+    } else {
+      formattedSource = { source: selectedType, path: currentVal };
+    }
+
     applyPatch({
       op: 'set',
-      path: `extraMarketplaces.${name}`,
+      path: `extraKnownMarketplaces.${name}`,
       value: {
-        source: srcInp.value.trim()
+        source: formattedSource
       }
     });
 

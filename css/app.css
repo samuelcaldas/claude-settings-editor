@@ -557,12 +557,61 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
   flex-wrap: wrap;
 }
 
-.model-item input[type=text] {
+.model-tier-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.model-tier-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+}
+
+.model-tier-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.secret-input-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+}
+
+.secret-input-wrap input {
   flex: 1;
-  min-width: 140px;
-  background: transparent;
-  border: none;
-  padding: 2px 4px;
+}
+
+.toggle-visibility-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.toggle-visibility-btn:hover {
+  background: var(--bg-surface);
+  border-color: var(--accent);
 }
 
 .model-item input[type=text]:focus {

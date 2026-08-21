@@ -270,10 +270,12 @@
       <div class="section-title" style="margin-top:20px;" data-i18n="sections.permissions.flags">Permission Flags</div>
       <div class="grid-2">
         <div>
-          <div class="checkbox-row"><input type="checkbox" id="permissions_skipDangerousModePermissionPrompt" data-setting-path="permissions.skipDangerousModePermissionPrompt"><label for="permissions_skipDangerousModePermissionPrompt"><code>permissions.skipDangerousModePermissionPrompt</code> — <span data-i18n="toggle.skipDangerousModePrompt">Skip dangerous mode permission prompt</span></label></div>
-          <div class="checkbox-row"><input type="checkbox" id="useAutoModeDuringPlan" data-setting-path="useAutoModeDuringPlan"><label for="useAutoModeDuringPlan"><code>useAutoModeDuringPlan</code> — <span data-i18n="toggle.useAutoModeDuringPlan">Use auto mode during plan execution</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="skipDangerousModePermissionPrompt" data-setting-path="skipDangerousModePermissionPrompt"><label for="skipDangerousModePermissionPrompt"><code>skipDangerousModePermissionPrompt</code> — <span data-i18n="toggle.skipDangerousModeTop">Skip dangerous mode prompt (top-level)</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="permissions_skipDangerousModePermissionPrompt" data-setting-path="permissions.skipDangerousModePermissionPrompt"><label for="permissions_skipDangerousModePermissionPrompt"><code>permissions.skipDangerousModePermissionPrompt</code> — <span data-i18n="toggle.skipDangerousModePrompt">Skip dangerous mode prompt (nested)</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="skipAutoPermissionPrompt" data-setting-path="skipAutoPermissionPrompt"><label for="skipAutoPermissionPrompt"><code>skipAutoPermissionPrompt</code> — <span data-i18n="toggle.skipAutoPermissionPrompt">Skip auto permission prompt</span></label></div>
         </div>
         <div>
+          <div class="checkbox-row"><input type="checkbox" id="useAutoModeDuringPlan" data-setting-path="useAutoModeDuringPlan"><label for="useAutoModeDuringPlan"><code>useAutoModeDuringPlan</code> — <span data-i18n="toggle.useAutoModeDuringPlan">Use auto mode during plan execution</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="allowManagedPermissionRulesOnly" data-setting-path="allowManagedPermissionRulesOnly"><label for="allowManagedPermissionRulesOnly"><code>allowManagedPermissionRulesOnly</code> <span class="badge-scope badge-managed" data-i18n="badge.managedOnly">Managed Only</span></label></div>
         </div>
       </div>
@@ -416,35 +418,75 @@
 
     <!-- TAB 4: Environment Variables -->
     <section id="tab-env" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-env" aria-hidden="true">
-      <div class="section-title"><span data-i18n="sections.env.title">Environment Variables</span> (<code>env</code>)</div>
-      <div class="section-desc" data-i18n="sections.env.desc">Environment variables set in Claude Code sessions and passed to subprocesses, tools, and hooks. Values matching credential patterns are masked by default.</div>
+      <div class="section-title"><span data-i18n="sections.env.title">API &amp; Environment Variables</span> (<code>env</code>)</div>
+      <div class="section-desc" data-i18n="sections.env.desc">Configure API credentials, custom base endpoints, and environment variables passed to Claude Code sessions and subprocesses.</div>
+
+      <!-- Dedicated API Credentials & Connection Section -->
+      <div class="section-title" style="margin-top:16px;" data-i18n="sections.env.apiConnection.title">API Credentials &amp; Endpoint</div>
+      <div class="rule-box" style="margin-top:8px;">
+        <div class="grid-2">
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_API_KEY"><code>env.ANTHROPIC_API_KEY</code> — <span data-i18n="env.apiKey.label">Anthropic API Key</span></label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_API_KEY" data-i18n="actions.unset">unset</button>
+            </div>
+            <div class="secret-input-wrap">
+              <input type="password" id="env_ANTHROPIC_API_KEY" data-setting-path="env.ANTHROPIC_API_KEY" placeholder="sk-ant-..." data-i18n-placeholder="env.apiKey.placeholder">
+              <button type="button" class="toggle-visibility-btn" id="btn-toggle-api-key" data-i18n="env.apiKey.show">Show</button>
+            </div>
+            <div class="field-hint" data-i18n="env.apiKey.hint">Primary API key for Anthropic or compatible gateway service.</div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_BASE_URL"><code>env.ANTHROPIC_BASE_URL</code> — <span data-i18n="env.baseUrl.label">API Base URL</span></label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_BASE_URL" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_BASE_URL" data-setting-path="env.ANTHROPIC_BASE_URL" placeholder="https://api.anthropic.com" data-i18n-placeholder="env.baseUrl.placeholder">
+            <div class="field-hint" data-i18n="env.baseUrl.hint">Custom API gateway endpoint or reverse proxy (e.g. https://api.alanwo.com.br).</div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_AUTH_TOKEN"><code>env.ANTHROPIC_AUTH_TOKEN</code> — <span data-i18n="env.authToken.label">Authorization Token</span></label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_AUTH_TOKEN" data-i18n="actions.unset">unset</button>
+            </div>
+            <div class="secret-input-wrap">
+              <input type="password" id="env_ANTHROPIC_AUTH_TOKEN" data-setting-path="env.ANTHROPIC_AUTH_TOKEN" placeholder="Bearer token (optional)">
+              <button type="button" class="toggle-visibility-btn" id="btn-toggle-auth-token" data-i18n="env.apiKey.show">Show</button>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="apiKeyHelper"><code>apiKeyHelper</code> — <span data-i18n="env.apiKeyHelper.label">API Key Helper Command</span></label>
+              <button class="unset-btn" data-unset-path="apiKeyHelper" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="apiKeyHelper" data-setting-path="apiKeyHelper" placeholder="/bin/generate_temp_api_key.sh">
+            <div class="field-hint" data-i18n="env.apiKeyHelperHint">Custom command run through shell to generate dynamic auth header values.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Custom Environment Variables -->
+      <div class="section-title" style="margin-top:24px;" data-i18n="sections.env.additional.title">Additional Environment Variables</div>
+      <div class="section-desc" data-i18n="sections.env.additional.desc">General environment variables passed to subprocesses, tools, and scripts.</div>
 
       <div class="env-presets-toolbar">
         <span class="field-label" data-i18n="sections.env.presets">Quick Presets:</span>
-        <button class="btn small" id="btn-preset-anthropic" data-i18n="env.preset.anthropic">+ Anthropic API</button>
         <button class="btn small" id="btn-preset-telemetry" data-i18n="env.preset.telemetry">+ OpenTelemetry</button>
-        <button class="btn small" id="btn-preset-models" data-i18n="env.preset.models">+ Default Models</button>
       </div>
 
-      <div id="env-var-list" style="margin-top:16px;"></div>
+      <div id="env-var-list" style="margin-top:12px;"></div>
 
       <div class="input-wrap" style="margin-top:12px;">
-        <input type="text" id="new-env-key" placeholder="VARIABLE_NAME (e.g. ANTHROPIC_API_KEY)" data-i18n-placeholder="env.keyPlaceholder" style="flex:1;">
+        <input type="text" id="new-env-key" placeholder="VARIABLE_NAME (e.g. OTEL_EXPORTER_OTLP_ENDPOINT)" data-i18n-placeholder="env.keyPlaceholder" style="flex:1;">
         <input type="text" id="new-env-val" placeholder="Value (or empty to unset)" data-i18n-placeholder="env.valPlaceholder" style="flex:2;">
         <button id="btn-add-env-var" class="btn primary" data-i18n="env.addVar">+ Add Variable</button>
       </div>
 
-      <div class="section-title" style="margin-top:28px;" data-i18n="sections.env.helpers">Credential &amp; Telemetry Helpers</div>
+      <div class="section-title" style="margin-top:24px;" data-i18n="sections.env.helpers">Telemetry Helper Command</div>
       <div class="grid-2">
-        <div class="field-group">
-          <div class="field-header">
-            <label class="field-label" for="apiKeyHelper"><code>apiKeyHelper</code></label>
-            <button class="unset-btn" data-unset-path="apiKeyHelper" data-i18n="actions.unset">unset</button>
-          </div>
-          <input type="text" id="apiKeyHelper" data-setting-path="apiKeyHelper" placeholder="/bin/generate_temp_api_key.sh">
-          <div class="field-hint" data-i18n="env.apiKeyHelperHint">Custom command run through shell to generate dynamic auth header values.</div>
-        </div>
-
         <div class="field-group">
           <div class="field-header">
             <label class="field-label" for="otelHeadersHelper"><code>otelHeadersHelper</code></label>
@@ -459,8 +501,218 @@
     <!-- TAB 5: Models & Workflows -->
     <section id="tab-models" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-models" aria-hidden="true">
       <div class="section-title" data-i18n="sections.models.title">Models &amp; Dynamic Workflows</div>
-      <div class="section-desc" data-i18n="sections.models.desc">Configure primary model selection, fallback model chains, advisor tool model, extended thinking, and workflow size guidelines.</div>
+      <div class="section-desc" data-i18n="sections.models.desc">Configure primary model selection, gateway model tiers (Fable, Opus, Sonnet, Haiku), fallback chains, and workflow settings.</div>
 
+      <!-- Section: Gateway Model Tiers (First-class UI) -->
+      <div class="section-title" style="margin-top:16px;" data-i18n="sections.models.tiers.title">Gateway Model Tiers &amp; Capabilities</div>
+      <div class="section-desc" data-i18n="sections.models.tiers.desc">Configure the model mappings, friendly display names, descriptions, and capabilities for each model tier (stored in <code>env.ANTHROPIC_DEFAULT_*</code>).</div>
+
+      <div class="grid-2" style="margin-top:12px;">
+        <!-- Fable Tier Card -->
+        <div class="model-tier-card">
+          <div class="model-tier-header">
+            <span class="rule-title"><span data-i18n="models.tier.fable">Fable Tier</span> (<code>fable</code>)</span>
+            <span class="model-tier-badge">Default Fable</span>
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_FABLE_MODEL" data-i18n="models.field.modelId">Model ID / Mapping</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_FABLE_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL" placeholder="e.g. claude-sonnet-4-6[1m]">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_FABLE_MODEL_NAME" data-i18n="models.field.name">Display Name</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL_NAME" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_FABLE_MODEL_NAME" data-setting-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL_NAME" placeholder="e.g. Claude Sonnet 4.6 (1M)">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION" data-i18n="models.field.desc">Description</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION" data-setting-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION" placeholder="e.g. Highly capable model via gateway">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES" data-i18n="models.field.capabilities">Capabilities</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES" data-setting-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES" placeholder="effort,xhigh_effort,max_effort">
+          </div>
+        </div>
+
+        <!-- Opus Tier Card -->
+        <div class="model-tier-card">
+          <div class="model-tier-header">
+            <span class="rule-title"><span data-i18n="models.tier.opus">Opus Tier</span> (<code>opus</code>)</span>
+            <span class="model-tier-badge">Default Opus</span>
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_OPUS_MODEL" data-i18n="models.field.modelId">Model ID / Mapping</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_OPUS_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL" placeholder="e.g. gemini-3.7-flash-high[1m]">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_OPUS_MODEL_NAME" data-i18n="models.field.name">Display Name</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL_NAME" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_OPUS_MODEL_NAME" data-setting-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL_NAME" placeholder="e.g. Gemini 3.7 Flash (High, 1M)">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION" data-i18n="models.field.desc">Description</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION" data-setting-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION" placeholder="e.g. High-reasoning gateway variant">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES" data-i18n="models.field.capabilities">Capabilities</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES" data-setting-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES" placeholder="effort,xhigh_effort,max_effort">
+          </div>
+        </div>
+
+        <!-- Sonnet Tier Card -->
+        <div class="model-tier-card">
+          <div class="model-tier-header">
+            <span class="rule-title"><span data-i18n="models.tier.sonnet">Sonnet Tier</span> (<code>sonnet</code>)</span>
+            <span class="model-tier-badge">Default Sonnet</span>
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_SONNET_MODEL" data-i18n="models.field.modelId">Model ID / Mapping</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_SONNET_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL" placeholder="e.g. gemini-3.7-flash-medium[1m]">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_SONNET_MODEL_NAME" data-i18n="models.field.name">Display Name</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL_NAME" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_SONNET_MODEL_NAME" data-setting-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL_NAME" placeholder="e.g. Gemini 3.7 Flash (Medium, 1M)">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION" data-i18n="models.field.desc">Description</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION" data-setting-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION" placeholder="e.g. Balanced model via gateway">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES" data-i18n="models.field.capabilities">Capabilities</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES" data-setting-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES" placeholder="effort,xhigh_effort,max_effort">
+          </div>
+        </div>
+
+        <!-- Haiku Tier Card -->
+        <div class="model-tier-card">
+          <div class="model-tier-header">
+            <span class="rule-title"><span data-i18n="models.tier.haiku">Haiku Tier</span> (<code>haiku</code>)</span>
+            <span class="model-tier-badge">Default Haiku</span>
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_HAIKU_MODEL" data-i18n="models.field.modelId">Model ID / Mapping</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_HAIKU_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL" placeholder="e.g. gemini-3.7-flash-low[1m]">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME" data-i18n="models.field.name">Display Name</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME" data-setting-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME" placeholder="e.g. Gemini 3.7 Flash (Low, 1M)">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION" data-i18n="models.field.desc">Description</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION" data-setting-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION" placeholder="e.g. Low-latency gateway variant">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES" data-i18n="models.field.capabilities">Capabilities</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES" data-setting-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES" placeholder="effort,xhigh_effort,max_effort">
+          </div>
+        </div>
+
+        <!-- Custom Model Option Card -->
+        <div class="model-tier-card">
+          <div class="model-tier-header">
+            <span class="rule-title"><span data-i18n="models.tier.custom">Custom Model Option</span> (<code>custom-option</code>)</span>
+            <span class="model-tier-badge">Custom Option</span>
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_CUSTOM_MODEL_OPTION" data-i18n="models.field.modelId">Model ID / Mapping</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION" data-setting-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION" placeholder="e.g. gemini-3.7-flash-high[1m]">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_CUSTOM_MODEL_OPTION_NAME" data-i18n="models.field.name">Display Name</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION_NAME" data-setting-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME" placeholder="e.g. Gemini 3.7 Flash (High, 1M)">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" data-i18n="models.field.desc">Description</label>
+              <button class="unset-btn" data-unset-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" data-setting-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" placeholder="e.g. High-reasoning gateway variant">
+          </div>
+        </div>
+
+        <!-- Subagent & Gateway Options Card -->
+        <div class="model-tier-card">
+          <div class="model-tier-header">
+            <span class="rule-title"><span data-i18n="models.tier.subagent">Subagent &amp; Gateway Options</span></span>
+            <span class="model-tier-badge">Subagents</span>
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_CLAUDE_CODE_SUBAGENT_MODEL" data-i18n="models.field.subagent">Subagent Model Override</label>
+              <button class="unset-btn" data-unset-path="env.CLAUDE_CODE_SUBAGENT_MODEL" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_CLAUDE_CODE_SUBAGENT_MODEL" data-setting-path="env.CLAUDE_CODE_SUBAGENT_MODEL" placeholder="e.g. gpt-5.6-sol[1m]">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-i18n="models.field.discovery">Gateway Model Discovery (1/0)</label>
+              <button class="unset-btn" data-unset-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" placeholder="1">
+          </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_CLAUDE_CODE_ENABLE_EXPERIMENTAL_ADVISOR_TOOL" data-i18n="models.field.advisorTool">Enable Experimental Advisor Tool (1/0)</label>
+              <button class="unset-btn" data-unset-path="env.CLAUDE_CODE_ENABLE_EXPERIMENTAL_ADVISOR_TOOL" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_CLAUDE_CODE_ENABLE_EXPERIMENTAL_ADVISOR_TOOL" data-setting-path="env.CLAUDE_CODE_ENABLE_EXPERIMENTAL_ADVISOR_TOOL" placeholder="1">
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Session Model Selection -->
+      <div class="section-title" style="margin-top:24px;" data-i18n="sections.models.sessionSelection.title">Session &amp; Global Model Selection</div>
       <div class="grid-2">
         <div class="field-group">
           <div class="field-header">
@@ -500,6 +752,14 @@
           </div>
           <input type="number" id="autoCompactWindow" data-setting-path="autoCompactWindow" placeholder="850000" min="100000" max="1000000">
         </div>
+
+        <div class="field-group">
+          <div class="field-header">
+            <label class="field-label" for="autoCompactThreshold"><code>autoCompactThreshold</code></label>
+            <button class="unset-btn" data-unset-path="autoCompactThreshold" data-i18n="actions.unset">unset</button>
+          </div>
+          <input type="number" id="autoCompactThreshold" data-setting-path="autoCompactThreshold" placeholder="0.9" step="0.05" min="0" max="1">
+        </div>
       </div>
 
       <div class="section-title" style="margin-top:20px;" data-i18n="sections.models.toggles">Model &amp; Workflow Toggles</div>
@@ -514,6 +774,7 @@
           <div class="checkbox-row"><input type="checkbox" id="switchModelsOnFlag" data-setting-path="switchModelsOnFlag"><label for="switchModelsOnFlag"><code>switchModelsOnFlag</code> — <span data-i18n="toggle.switchModelsOnFlag">Auto switch fallback on safety flag</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="autoCompactEnabled" data-setting-path="autoCompactEnabled"><label for="autoCompactEnabled"><code>autoCompactEnabled</code> — <span data-i18n="toggle.autoCompact">Auto-compact conversation</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="workflowKeywordTriggerEnabled" data-setting-path="workflowKeywordTriggerEnabled"><label for="workflowKeywordTriggerEnabled"><code>workflowKeywordTriggerEnabled</code> — <span data-i18n="toggle.workflowKeywordTrigger">"ultracode" prompt trigger</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="skipWorkflowUsageWarning" data-setting-path="skipWorkflowUsageWarning"><label for="skipWorkflowUsageWarning"><code>skipWorkflowUsageWarning</code> — <span data-i18n="toggle.skipWorkflowUsageWarning">Skip dynamic workflow warning</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="disableWorkflows" data-setting-path="disableWorkflows"><label for="disableWorkflows"><code>disableWorkflows</code> — <span data-i18n="toggle.disableWorkflows">Disable dynamic workflows</span></label></div>
         </div>
       </div>
@@ -581,6 +842,18 @@
             <button class="unset-btn" data-unset-path="statusLine.padding" data-i18n="actions.unset">unset</button>
           </div>
           <input type="number" id="statusLine_padding" data-setting-path="statusLine.padding" placeholder="2">
+        </div>
+
+        <div class="field-group">
+          <div class="field-header">
+            <label class="field-label" for="statusLine_refreshInterval"><code>statusLine.refreshInterval</code></label>
+            <button class="unset-btn" data-unset-path="statusLine.refreshInterval" data-i18n="actions.unset">unset</button>
+          </div>
+          <input type="number" id="statusLine_refreshInterval" data-setting-path="statusLine.refreshInterval" placeholder="5" min="1" data-i18n-placeholder="statusLine.refreshPlaceholder">
+        </div>
+
+        <div class="field-group" style="display:flex; align-items:center; margin-top:20px;">
+          <div class="checkbox-row"><input type="checkbox" id="statusLine_hideVimModeIndicator" data-setting-path="statusLine.hideVimModeIndicator"><label for="statusLine_hideVimModeIndicator"><code>statusLine.hideVimModeIndicator</code> — <span data-i18n="toggle.hideVimModeIndicator">Hide vim mode indicator</span></label></div>
         </div>
 
         <div class="field-group" style="grid-column: span 2;">
@@ -823,6 +1096,7 @@
           <div class="checkbox-row"><input type="checkbox" id="forceRemoteSettingsRefresh" data-setting-path="forceRemoteSettingsRefresh"><label for="forceRemoteSettingsRefresh"><code>forceRemoteSettingsRefresh</code> <span class="badge-scope badge-managed" data-i18n="badge.managed">Managed</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="disableCommandPluginSources" data-setting-path="disableCommandPluginSources"><label for="disableCommandPluginSources"><code>disableCommandPluginSources</code> <span class="badge-scope badge-managed" data-i18n="badge.managed">Managed</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="disableSideloadFlags" data-setting-path="disableSideloadFlags"><label for="disableSideloadFlags"><code>disableSideloadFlags</code> <span class="badge-scope badge-managed" data-i18n="badge.managed">Managed</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="hasCompletedOnboarding" data-setting-path="hasCompletedOnboarding"><label for="hasCompletedOnboarding"><code>hasCompletedOnboarding</code> — <span data-i18n="toggle.hasCompletedOnboarding">Completed onboarding tutorial</span></label></div>
         </div>
         <div>
           <div class="checkbox-row"><input type="checkbox" id="disableArtifact" data-setting-path="disableArtifact"><label for="disableArtifact"><code>disableArtifact</code> — <span data-i18n="toggle.disableArtifact">Disable Artifact publishing</span></label></div>

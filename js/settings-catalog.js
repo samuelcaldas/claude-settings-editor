@@ -109,6 +109,14 @@
   const CATALOG = [
     // --- General & UI ---
     {
+      path: '$schema',
+      type: 'string',
+      category: 'general',
+      label: 'JSON Schema Reference',
+      description: 'Official Claude Code settings JSON Schema URL.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
       path: 'theme',
       type: 'enum',
       enumKey: 'theme',
@@ -356,8 +364,30 @@
       path: 'permissions.skipDangerousModePermissionPrompt',
       type: 'boolean',
       category: 'permissions',
+      label: 'Skip Bypass Confirmation Prompt (Nested)',
+      description: 'Skip confirmation prompt before entering bypass permissions mode (nested under permissions).',
+      scopes: ['user', 'local', 'managed'],
+      scopeNotes: {
+        project: 'Ignored in Project settings for security.'
+      }
+    },
+    {
+      path: 'skipDangerousModePermissionPrompt',
+      type: 'boolean',
+      category: 'permissions',
       label: 'Skip Bypass Confirmation Prompt',
-      description: 'Skip confirmation prompt before entering bypass permissions mode.',
+      description: 'Skip confirmation prompt before entering bypass permissions mode (canonical top-level schema key).',
+      scopes: ['user', 'local', 'managed'],
+      scopeNotes: {
+        project: 'Ignored in Project settings for security.'
+      }
+    },
+    {
+      path: 'skipAutoPermissionPrompt',
+      type: 'boolean',
+      category: 'permissions',
+      label: 'Skip Auto Permission Prompt',
+      description: 'Skip confirmation prompt when auto mode is initiated.',
       scopes: ['user', 'local', 'managed'],
       scopeNotes: {
         project: 'Ignored in Project settings for security.'
@@ -532,7 +562,7 @@
       scopes: ['user', 'project', 'local', 'managed']
     },
 
-    // --- Environment Variables ---
+    // --- Environment & API Credentials ---
     {
       path: 'env',
       type: 'key-value-map',
@@ -540,6 +570,32 @@
       label: 'Environment Variables',
       description: 'Environment variables passed to Claude Code sessions, commands, and hooks.',
       scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_API_KEY',
+      type: 'string',
+      category: 'env',
+      label: 'Anthropic API Key',
+      description: 'API credential key for Anthropic or compatible gateway service.',
+      scopes: ['user', 'project', 'local', 'managed'],
+      secret: true
+    },
+    {
+      path: 'env.ANTHROPIC_BASE_URL',
+      type: 'string',
+      category: 'env',
+      label: 'Anthropic Base URL',
+      description: 'Custom API base endpoint URL or reverse proxy gateway.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_AUTH_TOKEN',
+      type: 'string',
+      category: 'env',
+      label: 'Anthropic Auth Token',
+      description: 'Bearer token for authorization when using gateway services.',
+      scopes: ['user', 'project', 'local', 'managed'],
+      secret: true
     },
     {
       path: 'apiKeyHelper',
@@ -558,7 +614,7 @@
       scopes: ['user', 'project', 'local', 'managed']
     },
 
-    // --- Models & Workflows ---
+    // --- Models, Gateway Tiers & Workflows ---
     {
       path: 'model',
       type: 'string',
@@ -569,21 +625,187 @@
       restartRequired: true
     },
     {
-      path: 'fallbackModel',
-      type: 'string-array',
-      category: 'models',
-      label: 'Fallback Models Chain',
-      description: 'Ordered fallback model IDs when primary is unavailable (max 3, replaces whole chain).',
-      scopes: ['user', 'project', 'local', 'managed'],
-      mergeBehavior: 'replace-whole',
-      maxItems: 3
-    },
-    {
       path: 'advisorModel',
       type: 'string',
       category: 'models',
       label: 'Advisor Tool Model',
       description: 'Model for server-side advisor tool: fable, opus, or sonnet.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_FABLE_MODEL',
+      type: 'string',
+      category: 'models',
+      label: 'Fable Tier Model ID',
+      description: 'Model ID mapping for the Fable tier (e.g. claude-sonnet-4-6[1m]).',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_FABLE_MODEL_NAME',
+      type: 'string',
+      category: 'models',
+      label: 'Fable Tier Display Name',
+      description: 'Human-readable name displayed in the model picker for Fable.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION',
+      type: 'string',
+      category: 'models',
+      label: 'Fable Tier Description',
+      description: 'Description displayed in the model picker for Fable.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES',
+      type: 'string',
+      category: 'models',
+      label: 'Fable Tier Capabilities',
+      description: 'Comma-separated capabilities (e.g. effort,xhigh_effort,max_effort).',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_OPUS_MODEL',
+      type: 'string',
+      category: 'models',
+      label: 'Opus Tier Model ID',
+      description: 'Model ID mapping for the Opus tier (e.g. gemini-3.7-flash-high[1m]).',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_OPUS_MODEL_NAME',
+      type: 'string',
+      category: 'models',
+      label: 'Opus Tier Display Name',
+      description: 'Human-readable name displayed in the model picker for Opus.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION',
+      type: 'string',
+      category: 'models',
+      label: 'Opus Tier Description',
+      description: 'Description displayed in the model picker for Opus.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES',
+      type: 'string',
+      category: 'models',
+      label: 'Opus Tier Capabilities',
+      description: 'Comma-separated capabilities for the Opus tier.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_SONNET_MODEL',
+      type: 'string',
+      category: 'models',
+      label: 'Sonnet Tier Model ID',
+      description: 'Model ID mapping for the Sonnet tier (e.g. gemini-3.7-flash-medium[1m]).',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_SONNET_MODEL_NAME',
+      type: 'string',
+      category: 'models',
+      label: 'Sonnet Tier Display Name',
+      description: 'Human-readable name displayed in the model picker for Sonnet.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION',
+      type: 'string',
+      category: 'models',
+      label: 'Sonnet Tier Description',
+      description: 'Description displayed in the model picker for Sonnet.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES',
+      type: 'string',
+      category: 'models',
+      label: 'Sonnet Tier Capabilities',
+      description: 'Comma-separated capabilities for the Sonnet tier.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_HAIKU_MODEL',
+      type: 'string',
+      category: 'models',
+      label: 'Haiku Tier Model ID',
+      description: 'Model ID mapping for the Haiku tier (e.g. gemini-3.7-flash-low[1m]).',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME',
+      type: 'string',
+      category: 'models',
+      label: 'Haiku Tier Display Name',
+      description: 'Human-readable name displayed in the model picker for Haiku.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION',
+      type: 'string',
+      category: 'models',
+      label: 'Haiku Tier Description',
+      description: 'Description displayed in the model picker for Haiku.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES',
+      type: 'string',
+      category: 'models',
+      label: 'Haiku Tier Capabilities',
+      description: 'Comma-separated capabilities for the Haiku tier.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_CUSTOM_MODEL_OPTION',
+      type: 'string',
+      category: 'models',
+      label: 'Custom Model Option ID',
+      description: 'Custom model option mapping (e.g. gemini-3.7-flash-high[1m]).',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME',
+      type: 'string',
+      category: 'models',
+      label: 'Custom Model Option Name',
+      description: 'Display name for the custom model option in the picker.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION',
+      type: 'string',
+      category: 'models',
+      label: 'Custom Model Option Description',
+      description: 'Description for the custom model option in the picker.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.CLAUDE_CODE_SUBAGENT_MODEL',
+      type: 'string',
+      category: 'models',
+      label: 'Subagent Model Override',
+      description: 'Default model ID used for background subagents (e.g. gpt-5.6-sol[1m]).',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY',
+      type: 'string',
+      category: 'models',
+      label: 'Gateway Model Discovery',
+      description: 'Enable automatic discovery of models exposed by gateway endpoint (1 or 0).',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'env.CLAUDE_CODE_ENABLE_EXPERIMENTAL_ADVISOR_TOOL',
+      type: 'string',
+      category: 'models',
+      label: 'Enable Experimental Advisor Tool',
+      description: 'Enable the advisor tool via gateway (1 or 0).',
       scopes: ['user', 'project', 'local', 'managed']
     },
     {
@@ -669,6 +891,24 @@
       max: 1000000
     },
     {
+      path: 'autoCompactThreshold',
+      type: 'number',
+      category: 'models',
+      label: 'Auto-compact Threshold Ratio',
+      description: 'Context capacity ratio (e.g. 0.9 for 90%) before auto-compaction triggers.',
+      scopes: ['user', 'project', 'local', 'managed'],
+      min: 0.1,
+      max: 1.0
+    },
+    {
+      path: 'skipWorkflowUsageWarning',
+      type: 'boolean',
+      category: 'models',
+      label: 'Skip Workflow Usage Warning',
+      description: 'Suppress confirmation warning before orchestrating dynamic subagent workflows.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
       path: 'workflowSizeGuideline',
       type: 'enum',
       enumKey: 'workflowSizeGuideline',
@@ -749,6 +989,47 @@
       category: 'hooks',
       label: 'Custom Status Line',
       description: 'Configure custom statusline command, padding, and refresh interval.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'statusLine.type',
+      type: 'string',
+      category: 'hooks',
+      label: 'Status Line Type',
+      description: 'Status line handler type (typically "command").',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'statusLine.command',
+      type: 'string',
+      category: 'hooks',
+      label: 'Status Line Command',
+      description: 'Shell command or script executed to render the terminal status line.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'statusLine.padding',
+      type: 'number',
+      category: 'hooks',
+      label: 'Status Line Padding',
+      description: 'Horizontal padding (columns) around status line output.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'statusLine.refreshInterval',
+      type: 'number',
+      category: 'hooks',
+      label: 'Status Line Refresh Interval (seconds)',
+      description: 'Periodic background rerun interval in seconds (minimum 1).',
+      scopes: ['user', 'project', 'local', 'managed'],
+      min: 1
+    },
+    {
+      path: 'statusLine.hideVimModeIndicator',
+      type: 'boolean',
+      category: 'hooks',
+      label: 'Hide Vim Mode Indicator',
+      description: 'Hide vim mode indicator when custom statusline is active.',
       scopes: ['user', 'project', 'local', 'managed']
     },
     {
@@ -1170,6 +1451,14 @@
       scopes: ['user', 'managed']
     },
     {
+      path: 'hasCompletedOnboarding',
+      type: 'boolean',
+      category: 'advanced',
+      label: 'Completed Onboarding',
+      description: 'Persistent marker indicating Claude Code onboarding tutorial completion.',
+      scopes: ['user', 'local']
+    },
+    {
       path: 'outputStyle',
       type: 'string',
       category: 'advanced',
@@ -1229,6 +1518,38 @@
 
   const CATALOG_BY_PATH = new Map(CATALOG.map(item => [item.path, item]));
 
+  const DEDICATED_ENV_KEYS = new Set([
+    'ANTHROPIC_API_KEY',
+    'ANTHROPIC_BASE_URL',
+    'ANTHROPIC_AUTH_TOKEN',
+    'ANTHROPIC_DEFAULT_FABLE_MODEL',
+    'ANTHROPIC_DEFAULT_FABLE_MODEL_NAME',
+    'ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION',
+    'ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES',
+    'ANTHROPIC_DEFAULT_OPUS_MODEL',
+    'ANTHROPIC_DEFAULT_OPUS_MODEL_NAME',
+    'ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION',
+    'ANTHROPIC_DEFAULT_OPUS_MODEL_SUPPORTED_CAPABILITIES',
+    'ANTHROPIC_DEFAULT_SONNET_MODEL',
+    'ANTHROPIC_DEFAULT_SONNET_MODEL_NAME',
+    'ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION',
+    'ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES',
+    'ANTHROPIC_DEFAULT_HAIKU_MODEL',
+    'ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME',
+    'ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION',
+    'ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES',
+    'ANTHROPIC_CUSTOM_MODEL_OPTION',
+    'ANTHROPIC_CUSTOM_MODEL_OPTION_NAME',
+    'ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION',
+    'CLAUDE_CODE_SUBAGENT_MODEL',
+    'CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY',
+    'CLAUDE_CODE_ENABLE_EXPERIMENTAL_ADVISOR_TOOL'
+  ]);
+
+  function isDedicatedEnvKey(key) {
+    return DEDICATED_ENV_KEYS.has(key);
+  }
+
   function getSettingDefinition(path) {
     return CATALOG_BY_PATH.get(path) || null;
   }
@@ -1252,11 +1573,14 @@
   return {
     CATALOG,
     CATALOG_BY_PATH,
+    DEDICATED_ENV_KEYS,
     ENUMS,
     SCOPES,
     getEnumOptions,
     getScopeDefinition,
     getSettingDefinition,
+    getDefinition: getSettingDefinition,
+    isDedicatedEnvKey,
     isSettingSupportedInScope
   };
 });

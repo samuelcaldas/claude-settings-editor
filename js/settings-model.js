@@ -263,11 +263,18 @@
           message: 'auto permission mode is ignored in Project and Local settings.'
         });
       }
-      if (value.permissions && value.permissions.skipDangerousModePermissionPrompt) {
+      if ((value.permissions && value.permissions.skipDangerousModePermissionPrompt) || value.skipDangerousModePermissionPrompt) {
         diagnostics.push({
           severity: 'warning',
-          path: 'permissions.skipDangerousModePermissionPrompt',
+          path: value.skipDangerousModePermissionPrompt ? 'skipDangerousModePermissionPrompt' : 'permissions.skipDangerousModePermissionPrompt',
           message: 'skipDangerousModePermissionPrompt is ignored in Project settings.'
+        });
+      }
+      if (value.skipAutoPermissionPrompt) {
+        diagnostics.push({
+          severity: 'warning',
+          path: 'skipAutoPermissionPrompt',
+          message: 'skipAutoPermissionPrompt is ignored in Project settings.'
         });
       }
     }
@@ -373,8 +380,16 @@
     if (!patch || typeof patch !== 'object') throw new Error('Patch must be an object');
     if (patch.op === 'set') return setAtPath(root, patch.path, patch.value);
     if (patch.op === 'delete') return deleteAtPath(root, patch.path);
-    if (patch.op === 'move') return moveAtPath(root, patch.path, patch.from, patch.to);
-    if (patch.op === 'renameKey') return renameKeyAtPath(root, patch.path, patch.oldKey, patch.newKey);
+    if (patch.op === 'move') {
+      const from = patch.from !== undefined ? patch.from : patch.fromIndex;
+      const to = patch.to !== undefined ? patch.to : patch.toIndex;
+      return moveAtPath(root, patch.path, from, to);
+    }
+    if (patch.op === 'renameKey' || patch.op === 'rename_key') {
+      const oldKey = patch.oldKey !== undefined ? patch.oldKey : patch.fromKey;
+      const newKey = patch.newKey !== undefined ? patch.newKey : patch.toKey;
+      return renameKeyAtPath(root, patch.path, oldKey, newKey);
+    }
     throw new Error('Unsupported patch operation: ' + patch.op);
   }
 

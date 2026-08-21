@@ -102,11 +102,43 @@ test('redacts secret-shaped keys without changing non-secret values', () => {
   assert.equal(redacted.passwordHint, '[redacted]');
 });
 
-test('settings catalog contains full schema paths and scope helpers', () => {
+test('settings catalog contains full schema paths, gateway tier definitions and dedicated keys helper', () => {
   assert.ok(catalog.CATALOG.length > 50);
   assert.ok(catalog.getSettingDefinition('permissions.defaultMode'));
   assert.ok(catalog.getSettingDefinition('sandbox.enabled'));
   assert.ok(catalog.getSettingDefinition('hooks'));
+  assert.ok(catalog.getSettingDefinition('$schema'));
+  assert.ok(catalog.getSettingDefinition('skipDangerousModePermissionPrompt'));
+  assert.ok(catalog.getSettingDefinition('skipWorkflowUsageWarning'));
+  assert.ok(catalog.getSettingDefinition('skipAutoPermissionPrompt'));
+  assert.ok(catalog.getSettingDefinition('autoCompactThreshold'));
+  assert.ok(catalog.getSettingDefinition('hasCompletedOnboarding'));
+  assert.ok(catalog.getSettingDefinition('env.ANTHROPIC_API_KEY'));
+  assert.ok(catalog.getSettingDefinition('env.ANTHROPIC_BASE_URL'));
+  assert.ok(catalog.getSettingDefinition('env.ANTHROPIC_DEFAULT_FABLE_MODEL'));
+  assert.ok(catalog.getSettingDefinition('env.ANTHROPIC_DEFAULT_OPUS_MODEL'));
+  assert.ok(catalog.getSettingDefinition('env.ANTHROPIC_DEFAULT_SONNET_MODEL'));
+  assert.ok(catalog.getSettingDefinition('env.ANTHROPIC_DEFAULT_HAIKU_MODEL'));
+  assert.ok(catalog.getSettingDefinition('env.ANTHROPIC_CUSTOM_MODEL_OPTION'));
+  assert.ok(catalog.getSettingDefinition('env.CLAUDE_CODE_SUBAGENT_MODEL'));
+  assert.equal(catalog.isDedicatedEnvKey('ANTHROPIC_API_KEY'), true);
+  assert.equal(catalog.isDedicatedEnvKey('ANTHROPIC_DEFAULT_SONNET_MODEL'), true);
+  assert.equal(catalog.isDedicatedEnvKey('CUSTOM_UNTRACKED_VAR'), false);
   assert.equal(catalog.isSettingSupportedInScope('allowManagedPermissionRulesOnly', 'user'), false);
   assert.equal(catalog.isSettingSupportedInScope('allowManagedPermissionRulesOnly', 'managed'), true);
+});
+
+test('real ~/.claude/settings.json parses and serializes with 100% roundtrip fidelity', () => {
+  const homeSettingsPath = path.join(process.env.HOME || '', '.claude', 'settings.json');
+  if (fs.existsSync(homeSettingsPath)) {
+    const raw = fs.readFileSync(homeSettingsPath, 'utf8');
+    const parsed = model.parseSettingsJson(raw);
+    assert.equal(parsed.ok, true, 'Parsing real settings.json failed');
+    assert.equal(parsed.diagnostics.filter(d => d.severity === 'error').length, 0);
+
+    const serialized = model.serializeSettings(parsed.value);
+    const roundTripped = JSON.parse(serialized);
+    const expected = JSON.parse(raw);
+    assert.deepEqual(roundTripped, expected);
+  }
 });
