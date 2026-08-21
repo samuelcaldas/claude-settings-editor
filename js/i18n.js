@@ -189,10 +189,19 @@
       'field.defaultShell.bash': 'bash',
       'field.defaultShell.powershell': 'powershell',
 
+      'field.feedbackSurveyRate.label': 'Survey Rate',
+      'field.feedbackSurveyRate.placeholder': '0.05',
+      'field.skillBudget.label': 'Skill Budget Fraction',
+      'field.skillBudget.placeholder': '0.01',
+      'field.skillMaxChars.label': 'Skill Max Desc Chars',
+      'field.skillMaxChars.placeholder': '1536',
+
       // General Toggles
       'toggle.axScreenReader': 'Screen reader accessible text',
       'toggle.prefersReducedMotion': 'Reduce animations & spinners',
       'toggle.promptSuggestionEnabled': 'Gray prompt predictions',
+      'toggle.showClearContextOnPlanAccept': 'Clear context on plan accept',
+      'toggle.awaySummaryEnabled': 'Show summary when returning from away',
       'toggle.emojiCompletionEnabled': ':emoji: shortcode completion',
       'toggle.syntaxHighlightingDisabled': 'Disable code syntax highlight',
       'toggle.autoScrollEnabled': 'Auto-scroll to bottom',
@@ -221,6 +230,7 @@
 
       'toggle.skipDangerousModePrompt': 'Skip dangerous mode permission prompt',
       'toggle.useAutoModeDuringPlan': 'Use auto mode during plan execution',
+      'toggle.classifyAllShell': 'Classify all shell commands in auto mode',
       'toggle.allowManagedRulesOnly': 'Allow managed permission rules only',
 
       // Rule Lists
@@ -656,10 +666,19 @@
       'field.defaultShell.bash': 'bash',
       'field.defaultShell.powershell': 'powershell',
 
+      'field.feedbackSurveyRate.label': 'Taxa de Pesquisa',
+      'field.feedbackSurveyRate.placeholder': '0.05',
+      'field.skillBudget.label': 'Orçamento para Skills',
+      'field.skillBudget.placeholder': '0.01',
+      'field.skillMaxChars.label': 'Máx. Caracteres por Skill',
+      'field.skillMaxChars.placeholder': '1536',
+
       // General Toggles
       'toggle.axScreenReader': 'Texto acessível para leitores de tela',
       'toggle.prefersReducedMotion': 'Reduzir animações e indicadores de carregamento',
       'toggle.promptSuggestionEnabled': 'Previsões de comandos em cinza',
+      'toggle.showClearContextOnPlanAccept': 'Limpar contexto ao aceitar plano',
+      'toggle.awaySummaryEnabled': 'Exibir resumo ao retornar de ausência',
       'toggle.emojiCompletionEnabled': 'Preenchimento de shortcodes :emoji:',
       'toggle.syntaxHighlightingDisabled': 'Desativar destaque de sintaxe de código',
       'toggle.autoScrollEnabled': 'Rolar automaticamente para o fim',
@@ -688,6 +707,7 @@
 
       'toggle.skipDangerousModePrompt': 'Pular confirmação do modo de permissão perigoso',
       'toggle.useAutoModeDuringPlan': 'Usar modo auto durante a execução do plano',
+      'toggle.classifyAllShell': 'Classificar todos os comandos de shell no modo auto',
       'toggle.allowManagedRulesOnly': 'Permitir apenas regras de permissão gerenciadas',
 
       // Rule Lists

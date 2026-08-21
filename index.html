@@ -197,6 +197,30 @@
             <option value="powershell" data-i18n="field.defaultShell.powershell">powershell</option>
           </select>
         </div>
+
+        <div class="field-group">
+          <div class="field-header">
+            <label class="field-label" for="feedbackSurveyRate"><code>feedbackSurveyRate</code> — <span data-i18n="field.feedbackSurveyRate.label">Survey Rate</span></label>
+            <button class="unset-btn" data-unset-path="feedbackSurveyRate" data-i18n="actions.unset">unset</button>
+          </div>
+          <input type="number" id="feedbackSurveyRate" data-setting-path="feedbackSurveyRate" step="0.01" min="0" max="1" placeholder="0.05" data-i18n-placeholder="field.feedbackSurveyRate.placeholder">
+        </div>
+
+        <div class="field-group">
+          <div class="field-header">
+            <label class="field-label" for="skillListingBudgetFraction"><code>skillListingBudgetFraction</code> — <span data-i18n="field.skillBudget.label">Skill Budget Fraction</span></label>
+            <button class="unset-btn" data-unset-path="skillListingBudgetFraction" data-i18n="actions.unset">unset</button>
+          </div>
+          <input type="number" id="skillListingBudgetFraction" data-setting-path="skillListingBudgetFraction" step="0.001" min="0" max="1" placeholder="0.01" data-i18n-placeholder="field.skillBudget.placeholder">
+        </div>
+
+        <div class="field-group">
+          <div class="field-header">
+            <label class="field-label" for="skillListingMaxDescChars"><code>skillListingMaxDescChars</code> — <span data-i18n="field.skillMaxChars.label">Skill Max Desc Chars</span></label>
+            <button class="unset-btn" data-unset-path="skillListingMaxDescChars" data-i18n="actions.unset">unset</button>
+          </div>
+          <input type="number" id="skillListingMaxDescChars" data-setting-path="skillListingMaxDescChars" step="64" min="64" max="8192" placeholder="1536" data-i18n-placeholder="field.skillMaxChars.placeholder">
+        </div>
       </div>
 
       <div class="section-title" style="margin-top:24px;" data-i18n="sections.general.toggles">Accessibility &amp; UI Toggles</div>
@@ -205,6 +229,8 @@
           <div class="checkbox-row"><input type="checkbox" id="axScreenReader" data-setting-path="axScreenReader"><label for="axScreenReader"><code>axScreenReader</code> — <span data-i18n="toggle.axScreenReader">Screen reader accessible text</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="prefersReducedMotion" data-setting-path="prefersReducedMotion"><label for="prefersReducedMotion"><code>prefersReducedMotion</code> — <span data-i18n="toggle.prefersReducedMotion">Reduce animations &amp; spinners</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="promptSuggestionEnabled" data-setting-path="promptSuggestionEnabled"><label for="promptSuggestionEnabled"><code>promptSuggestionEnabled</code> — <span data-i18n="toggle.promptSuggestionEnabled">Gray prompt predictions</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="showClearContextOnPlanAccept" data-setting-path="showClearContextOnPlanAccept"><label for="showClearContextOnPlanAccept"><code>showClearContextOnPlanAccept</code> — <span data-i18n="toggle.showClearContextOnPlanAccept">Clear context on plan accept</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="awaySummaryEnabled" data-setting-path="awaySummaryEnabled"><label for="awaySummaryEnabled"><code>awaySummaryEnabled</code> — <span data-i18n="toggle.awaySummaryEnabled">Show summary when returning from away</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="emojiCompletionEnabled" data-setting-path="emojiCompletionEnabled"><label for="emojiCompletionEnabled"><code>emojiCompletionEnabled</code> — <span data-i18n="toggle.emojiCompletionEnabled">:emoji: shortcode completion</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="syntaxHighlightingDisabled" data-setting-path="syntaxHighlightingDisabled"><label for="syntaxHighlightingDisabled"><code>syntaxHighlightingDisabled</code> — <span data-i18n="toggle.syntaxHighlightingDisabled">Disable code syntax highlight</span></label></div>
         </div>
@@ -276,6 +302,7 @@
         </div>
         <div>
           <div class="checkbox-row"><input type="checkbox" id="useAutoModeDuringPlan" data-setting-path="useAutoModeDuringPlan"><label for="useAutoModeDuringPlan"><code>useAutoModeDuringPlan</code> — <span data-i18n="toggle.useAutoModeDuringPlan">Use auto mode during plan execution</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="autoMode_classifyAllShell" data-setting-path="autoMode.classifyAllShell"><label for="autoMode_classifyAllShell"><code>autoMode.classifyAllShell</code> — <span data-i18n="toggle.classifyAllShell">Classify all shell commands in auto mode</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="allowManagedPermissionRulesOnly" data-setting-path="allowManagedPermissionRulesOnly"><label for="allowManagedPermissionRulesOnly"><code>allowManagedPermissionRulesOnly</code> <span class="badge-scope badge-managed" data-i18n="badge.managedOnly">Managed Only</span></label></div>
         </div>
       </div>

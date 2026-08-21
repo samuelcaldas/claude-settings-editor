@@ -121,6 +121,17 @@ test('settings catalog contains full schema paths, gateway tier definitions and 
   assert.ok(catalog.getSettingDefinition('env.ANTHROPIC_DEFAULT_HAIKU_MODEL'));
   assert.ok(catalog.getSettingDefinition('env.ANTHROPIC_CUSTOM_MODEL_OPTION'));
   assert.ok(catalog.getSettingDefinition('env.CLAUDE_CODE_SUBAGENT_MODEL'));
+  assert.ok(catalog.getSettingDefinition('showClearContextOnPlanAccept'));
+  assert.ok(catalog.getSettingDefinition('awaySummaryEnabled'));
+  assert.ok(catalog.getSettingDefinition('autoMode.classifyAllShell'));
+  assert.ok(catalog.getSettingDefinition('feedbackSurveyRate'));
+  assert.ok(catalog.getSettingDefinition('skillListingBudgetFraction'));
+  assert.ok(catalog.getSettingDefinition('skillListingMaxDescChars'));
+  assert.ok(catalog.getSettingDefinition('vimInsertModeRemaps'));
+  assert.ok(catalog.getSettingDefinition('spinnerVerbs'));
+  assert.ok(catalog.getSettingDefinition('spinnerTipsOverride'));
+  assert.equal(catalog.getSettingDefinition('showClearContextOnPlanAccept').type, 'boolean');
+  assert.equal(catalog.getSettingDefinition('showClearContextOnPlanAccept').default, false);
   assert.equal(catalog.isDedicatedEnvKey('ANTHROPIC_API_KEY'), true);
   assert.equal(catalog.isDedicatedEnvKey('ANTHROPIC_DEFAULT_SONNET_MODEL'), true);
   assert.equal(catalog.isDedicatedEnvKey('CUSTOM_UNTRACKED_VAR'), false);

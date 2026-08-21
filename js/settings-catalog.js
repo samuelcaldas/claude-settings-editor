@@ -83,6 +83,7 @@
     crossSessionInbound: ['accept', 'hold', 'refuse'],
     askUserQuestionTimeout: ['never', '60s', '5m', '10m'],
     dialogExpiry: ['never', '60s', '5m', '10m'],
+    spinnerVerbsMode: ['append', 'replace'],
     hookEvent: [
       'PreToolUse',
       'PostToolUse',
@@ -248,6 +249,81 @@
       scopes: ['user', 'project', 'local', 'managed']
     },
     {
+      path: 'showClearContextOnPlanAccept',
+      type: 'boolean',
+      default: false,
+      category: 'general',
+      label: 'Show Clear Context on Plan Accept',
+      description: 'Show prompt to clear conversation context when accepting a plan in exit plan mode.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'awaySummaryEnabled',
+      type: 'boolean',
+      default: true,
+      category: 'general',
+      label: 'Away Summary Enabled',
+      description: 'Show a one-line summary of session activity when returning to terminal after idle time.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'feedbackSurveyRate',
+      type: 'number',
+      default: 0.05,
+      category: 'general',
+      label: 'Feedback Survey Rate',
+      description: 'Probability rate (0.0 to 1.0) of session quality surveys appearing.',
+      scopes: ['user', 'project'],
+      min: 0.0,
+      max: 1.0
+    },
+    {
+      path: 'skillListingBudgetFraction',
+      type: 'number',
+      default: 0.01,
+      category: 'general',
+      label: 'Skill Listing Budget Fraction',
+      description: 'Fraction of context window token budget allocated to skill listings (e.g. 0.01 for 1%).',
+      scopes: ['user', 'project', 'local', 'managed'],
+      min: 0.0,
+      max: 1.0
+    },
+    {
+      path: 'skillListingMaxDescChars',
+      type: 'number',
+      default: 1536,
+      category: 'general',
+      label: 'Skill Listing Max Description Characters',
+      description: 'Character truncation limit for each skill description in prompt context.',
+      scopes: ['user', 'project', 'local', 'managed'],
+      min: 64,
+      max: 8192
+    },
+    {
+      path: 'vimInsertModeRemaps',
+      type: 'custom',
+      category: 'general',
+      label: 'Vim INSERT Mode Key Remaps',
+      description: 'Custom key mappings (e.g. {"jj": "<Esc>"}) to exit INSERT mode in Vim editor mode.',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'spinnerVerbs',
+      type: 'custom',
+      category: 'general',
+      label: 'Custom Spinner Verbs',
+      description: 'Custom animated action verbs displayed during tool execution ({ mode: "replace"|"append", verbs: string[] }).',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
+      path: 'spinnerTipsOverride',
+      type: 'custom',
+      category: 'general',
+      label: 'Custom Spinner Tips Override',
+      description: 'Custom tips shown in execution spinner ({ excludeDefault: boolean, tips: string[] }).',
+      scopes: ['user', 'project', 'local', 'managed']
+    },
+    {
       path: 'emojiCompletionEnabled',
       type: 'boolean',
       default: true,
@@ -359,6 +435,15 @@
       label: 'Disable Bypass Permissions Mode',
       description: 'Set to "disable" to prevent --dangerously-skip-permissions and bypass mode.',
       scopes: ['user', 'managed']
+    },
+    {
+      path: 'autoMode.classifyAllShell',
+      type: 'boolean',
+      default: false,
+      category: 'permissions',
+      label: 'Classify All Shell Commands in Auto Mode',
+      description: 'Force all bash/shell commands through safety classifier in auto mode, suspending allowlist rules.',
+      scopes: ['user', 'project', 'local', 'managed']
     },
     {
       path: 'permissions.skipDangerousModePermissionPrompt',
