@@ -20,11 +20,17 @@
     history: [],
     historyIdx: -1,
     envMasked: true,
-    isSaving: false
+    isSaving: false,
+    availableModels: model.getDefaultKnownModels ? model.getDefaultKnownModels() : [],
+    modelsSource: 'defaults',
+    isFetchingModels: false,
+    modelsFetchError: ''
   };
 
   document.addEventListener('DOMContentLoaded', () => {
     initLocale();
+    populateModelsDatalist(state.availableModels);
+    renderModelDiscovery();
     bindEvents();
     registerLaunchQueue();
     registerServiceWorker();
@@ -36,13 +42,13 @@
     if (!i18n) return;
     const detected = i18n.detectLocale();
     i18n.setLocale(detected, false);
+    i18n.subscribe(renderAll);
 
     const langSelect = getElement('lang-select');
     if (langSelect) {
       langSelect.value = i18n.getLocale();
       langSelect.addEventListener('change', e => {
         i18n.setLocale(e.target.value);
-        renderAll();
       });
     }
   }
@@ -128,6 +134,7 @@
 
     renderAll();
     if (statusMsgKey) setStatus(statusMsgKey, 'ok', statusParams);
+    maybeAutoFetchModels();
   }
 
   async function openFile() {
@@ -279,6 +286,12 @@
       state.diagnostics = model.inspectSettings(state.document, state.targetScope);
 
       renderAll();
+
+      if (patch && typeof patch.path === 'string' && patch.path.startsWith('env.')) {
+        if (patch.path === 'env.ANTHROPIC_BASE_URL' || patch.path === 'env.ANTHROPIC_API_KEY' || patch.path === 'env.ANTHROPIC_AUTH_TOKEN') {
+          maybeAutoFetchModels();
+        }
+      }
     } catch (err) {
       setStatus('status.editFailed', 'err', { error: err.message });
     }
@@ -500,6 +513,11 @@
     getElement('btn-add-hook-group')?.addEventListener('click', addHookGroup);
     getElement('btn-add-hook-url')?.addEventListener('click', addHookUrl);
 
+    // Model Discovery Fetch Buttons
+    document.querySelectorAll('.btn-fetch-models').forEach(btn => {
+      btn.addEventListener('click', () => fetchModelsFromEndpoint(false));
+    });
+
     // Raw JSON toolbar
     getElement('btn-apply-json')?.addEventListener('click', applyJsonDraft);
     getElement('btn-discard-json')?.addEventListener('click', discardJsonDraft);
@@ -566,6 +584,7 @@
     renderPlugins();
     renderMarketplaces();
     renderHooks();
+    renderModelDiscovery();
     renderDiagnostics();
     renderJsonEditor();
   }
@@ -836,6 +855,7 @@
       const inp = document.createElement('input');
       inp.type = 'text';
       inp.value = String(m);
+      inp.setAttribute('list', 'available-models-datalist');
       inp.addEventListener('change', () => {
         applyPatch({ op: 'set', path: `fallbackModel.${idx}`, value: inp.value.trim() });
       });
@@ -890,6 +910,170 @@
       applyPatch({ op: 'set', path: 'fallbackModel', value: [val] });
     }
     inp.value = '';
+  }
+
+  function populateModelsDatalist(modelsList) {
+    const datalist = getElement('available-models-datalist');
+    if (!datalist) return;
+    datalist.replaceChildren();
+    const list = Array.isArray(modelsList) && modelsList.length > 0
+      ? modelsList
+      : (model.getDefaultKnownModels ? model.getDefaultKnownModels() : []);
+    list.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      datalist.appendChild(opt);
+    });
+  }
+
+  function renderModelDiscovery() {
+    populateModelsDatalist(state.availableModels);
+
+    const pills = document.querySelectorAll('.models-status-pill');
+    const counts = document.querySelectorAll('.models-status-count');
+    const texts = document.querySelectorAll('.models-status-text');
+    const fetchBtns = document.querySelectorAll('.btn-fetch-models');
+
+    fetchBtns.forEach(btn => {
+      btn.disabled = state.isFetchingModels;
+      if (state.isFetchingModels) {
+        btn.textContent = i18n ? i18n.t('models.discovery.fetching') : 'Fetching models...';
+      } else {
+        btn.textContent = i18n ? i18n.t('models.discovery.fetchBtn') : '⚡ Fetch Models from API';
+      }
+    });
+
+    pills.forEach(pill => {
+      if (state.isFetchingModels) {
+        pill.setAttribute('data-state', 'fetching');
+      } else if (state.modelsSource === 'api') {
+        pill.setAttribute('data-state', 'loaded');
+      } else if (state.modelsSource === 'error') {
+        pill.setAttribute('data-state', 'error');
+      } else {
+        pill.setAttribute('data-state', 'defaults');
+      }
+    });
+
+    counts.forEach(cnt => {
+      if (state.isFetchingModels) {
+        cnt.textContent = i18n ? i18n.t('models.discovery.fetching') : 'Fetching...';
+      } else if (state.modelsSource === 'api') {
+        cnt.textContent = i18n
+          ? i18n.t('models.discovery.badge.loaded', { count: state.availableModels.length })
+          : `${state.availableModels.length} models`;
+      } else {
+        cnt.textContent = i18n
+          ? i18n.t('models.discovery.badge.defaults', { count: state.availableModels.length })
+          : `${state.availableModels.length} defaults`;
+      }
+    });
+
+    texts.forEach(txt => {
+      if (state.isFetchingModels) {
+        txt.textContent = i18n ? i18n.t('models.discovery.fetching') : 'Fetching models...';
+      } else if (state.modelsSource === 'api') {
+        txt.textContent = i18n
+          ? i18n.t('models.discovery.status.success', { count: state.availableModels.length })
+          : `Loaded ${state.availableModels.length} models from endpoint`;
+      } else if (state.modelsSource === 'error') {
+        txt.textContent = i18n
+          ? i18n.t('models.discovery.status.error', { error: state.modelsFetchError })
+          : `Failed to fetch models: ${state.modelsFetchError}`;
+      } else {
+        txt.textContent = i18n
+          ? i18n.t('models.discovery.hint')
+          : 'Queries the OpenAI-compatible /v1/models endpoint to populate model dropdowns.';
+      }
+    });
+  }
+
+  async function fetchModelsFromEndpoint(silent = false) {
+    if (state.isFetchingModels) return;
+
+    const baseUrl = model.getAtPath(state.document, 'env.ANTHROPIC_BASE_URL') ||
+                    model.getAtPath(state.document, 'env.BASE_URL') ||
+                    model.getAtPath(state.document, 'env.OPENAI_BASE_URL') ||
+                    '';
+    const apiKey = model.getAtPath(state.document, 'env.ANTHROPIC_API_KEY') ||
+                   model.getAtPath(state.document, 'env.OPENAI_API_KEY') ||
+                   '';
+    const authToken = model.getAtPath(state.document, 'env.ANTHROPIC_AUTH_TOKEN') || '';
+
+    const resolvedUrl = model.buildOpenAiModelsUrl(baseUrl);
+    if (!resolvedUrl) {
+      if (!silent) {
+        setStatus(i18n ? i18n.t('models.discovery.status.noCreds') : 'Configure API Base URL and Key to fetch models', 'err');
+      }
+      return;
+    }
+
+    state.isFetchingModels = true;
+    renderModelDiscovery();
+
+    try {
+      const headers = {
+        'Accept': 'application/json'
+      };
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+        headers['x-api-key'] = apiKey;
+      } else if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
+      let signal;
+      if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+        signal = AbortSignal.timeout(8000);
+      }
+
+      const response = await fetch(resolvedUrl, {
+        method: 'GET',
+        headers,
+        signal
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const parsedModels = model.parseOpenAiModelsResponse(data);
+
+      if (parsedModels && parsedModels.length > 0) {
+        state.availableModels = parsedModels;
+        state.modelsSource = 'api';
+        state.modelsFetchError = '';
+        renderModelDiscovery();
+        if (!silent) {
+          setStatus(i18n ? i18n.t('models.discovery.status.success', { count: parsedModels.length }) : `Loaded ${parsedModels.length} models`, 'ok');
+        }
+      } else {
+        throw new Error('No models found in response payload');
+      }
+    } catch (err) {
+      state.modelsSource = 'error';
+      state.modelsFetchError = err.message || 'Fetch failed';
+      if (!state.availableModels || state.availableModels.length === 0) {
+        state.availableModels = model.getDefaultKnownModels ? model.getDefaultKnownModels() : [];
+      }
+      renderModelDiscovery();
+      if (!silent) {
+        setStatus(i18n ? i18n.t('models.discovery.status.error', { error: err.message }) : `Failed to fetch models: ${err.message}`, 'err');
+      }
+    } finally {
+      state.isFetchingModels = false;
+      renderModelDiscovery();
+    }
+  }
+
+  function maybeAutoFetchModels() {
+    const baseUrl = model.getAtPath(state.document, 'env.ANTHROPIC_BASE_URL') ||
+                    model.getAtPath(state.document, 'env.BASE_URL') ||
+                    model.getAtPath(state.document, 'env.OPENAI_BASE_URL');
+    if (baseUrl && typeof baseUrl === 'string' && baseUrl.trim() && baseUrl.trim() !== 'https://api.anthropic.com') {
+      fetchModelsFromEndpoint(true);
+    }
   }
 
   function renderPlugins() {

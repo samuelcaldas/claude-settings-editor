@@ -642,6 +642,67 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
   border-color: var(--accent);
 }
 
+/* Model Discovery Toolbar & Dropdown Status */
+.model-discovery-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.models-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+}
+
+.models-status-pill .pill-dot {
+  font-size: 8px;
+  line-height: 1;
+}
+
+.models-status-pill[data-state="defaults"] .pill-dot {
+  color: var(--blue);
+}
+
+.models-status-pill[data-state="loaded"] {
+  border-color: var(--green);
+}
+.models-status-pill[data-state="loaded"] .pill-dot {
+  color: var(--green);
+}
+
+.models-status-pill[data-state="fetching"] {
+  border-color: var(--yellow);
+}
+.models-status-pill[data-state="fetching"] .pill-dot {
+  color: var(--yellow);
+}
+
+.models-status-pill[data-state="error"] {
+  border-color: var(--red);
+}
+.models-status-pill[data-state="error"] .pill-dot {
+  color: var(--red);
+}
+
+.models-status-text {
+  flex: 1;
+  min-width: 180px;
+  margin: 0;
+}
+
 .model-item input[type=text]:focus {
   border-bottom: 1px solid var(--accent);
 }

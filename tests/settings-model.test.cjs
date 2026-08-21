@@ -102,6 +102,77 @@ test('redacts secret-shaped keys without changing non-secret values', () => {
   assert.equal(redacted.passwordHint, '[redacted]');
 });
 
+test('buildOpenAiModelsUrl resolves endpoint URL correctly across permutations', () => {
+  assert.equal(model.buildOpenAiModelsUrl('https://api.openai.com'), 'https://api.openai.com/v1/models');
+  assert.equal(model.buildOpenAiModelsUrl('https://api.openai.com/'), 'https://api.openai.com/v1/models');
+  assert.equal(model.buildOpenAiModelsUrl('https://api.openai.com/v1'), 'https://api.openai.com/v1/models');
+  assert.equal(model.buildOpenAiModelsUrl('https://api.openai.com/v1/'), 'https://api.openai.com/v1/models');
+  assert.equal(model.buildOpenAiModelsUrl('http://localhost:11434'), 'http://localhost:11434/v1/models');
+  assert.equal(model.buildOpenAiModelsUrl('http://localhost:11434/v1/models'), 'http://localhost:11434/v1/models');
+  assert.equal(model.buildOpenAiModelsUrl('https://custom.gateway.internal/models'), 'https://custom.gateway.internal/models');
+  assert.equal(model.buildOpenAiModelsUrl('   https://gateway.com/v1   '), 'https://gateway.com/v1/models');
+  assert.equal(model.buildOpenAiModelsUrl(''), '');
+  assert.equal(model.buildOpenAiModelsUrl(null), '');
+});
+
+test('parseOpenAiModelsResponse handles OpenAI, Ollama, array formats with sorting and deduplication', () => {
+  // Standard OpenAI format
+  const openAiPayload = {
+    object: 'list',
+    data: [
+      { id: 'gpt-4o', object: 'model' },
+      { id: 'claude-3-7-sonnet', object: 'model' },
+      { id: 'gpt-4o-mini', object: 'model' }
+    ]
+  };
+  assert.deepEqual(model.parseOpenAiModelsResponse(openAiPayload), [
+    'claude-3-7-sonnet',
+    'gpt-4o',
+    'gpt-4o-mini'
+  ]);
+
+  // Ollama / LiteLLM format with models array and name
+  const ollamaPayload = {
+    models: [
+      { name: 'llama3:latest' },
+      { name: 'mistral:7b' },
+      { name: 'llama3:latest' } // duplicate
+    ]
+  };
+  assert.deepEqual(model.parseOpenAiModelsResponse(ollamaPayload), [
+    'llama3:latest',
+    'mistral:7b'
+  ]);
+
+  // Plain JSON string with mixed objects and string entries
+  const jsonStr = JSON.stringify({
+    data: [{ id: 'model-b' }, { model: 'model-a' }, { id: '' }]
+  });
+  assert.deepEqual(model.parseOpenAiModelsResponse(jsonStr), [
+    'model-a',
+    'model-b'
+  ]);
+
+  // Edge cases
+  assert.deepEqual(model.parseOpenAiModelsResponse(null), []);
+  assert.deepEqual(model.parseOpenAiModelsResponse('invalid json'), []);
+  assert.deepEqual(model.parseOpenAiModelsResponse({}), []);
+});
+
+test('getDefaultKnownModels returns curated default models list', () => {
+  const defaults = model.getDefaultKnownModels();
+  assert.ok(Array.isArray(defaults));
+  assert.ok(defaults.length >= 10);
+  assert.ok(defaults.includes('claude-3-7-sonnet-20250219'));
+  assert.ok(defaults.includes('claude-sonnet-5'));
+  assert.ok(defaults.includes('gpt-4o'));
+});
+
+test('renameKeyAtPath rejects prototype pollution keys', () => {
+  assert.throws(() => model.renameKeyAtPath({ env: { KEY: 'val' } }, 'env', 'KEY', '__proto__'), /Unsafe key name/);
+  assert.throws(() => model.renameKeyAtPath({ env: { KEY: 'val' } }, 'env', 'KEY', 'constructor'), /Unsafe key name/);
+});
+
 test('settings catalog contains full schema paths, gateway tier definitions and dedicated keys helper', () => {
   assert.ok(catalog.CATALOG.length > 50);
   assert.ok(catalog.getSettingDefinition('permissions.defaultMode'));

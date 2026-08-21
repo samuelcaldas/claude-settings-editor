@@ -364,6 +364,9 @@
 
   function renameKeyAtPath(root, path, oldKey, newKey) {
     if (!oldKey || !newKey || oldKey === newKey) return root;
+    if (UNSAFE_SEGMENTS.has(newKey) || UNSAFE_SEGMENTS.has(oldKey)) {
+      throw new Error('Unsafe key name: ' + (UNSAFE_SEGMENTS.has(newKey) ? newKey : oldKey));
+    }
     const segments = normalizePath(path);
     const result = clone(root);
     const targetObj = segments.length ? getAtPath(result, segments) : result;
@@ -433,6 +436,77 @@
     }));
   }
 
+  const DEFAULT_KNOWN_MODELS = [
+    'claude-3-7-sonnet-20250219',
+    'claude-3-5-sonnet-20241022',
+    'claude-3-5-haiku-20241022',
+    'claude-3-opus-20240229',
+    'claude-sonnet-5',
+    'claude-opus-5',
+    'claude-haiku-4-5-20251001',
+    'claude-fable-5',
+    'gpt-4o',
+    'gpt-4o-mini',
+    'o1',
+    'o3-mini',
+    'gemini-2.5-pro',
+    'gemini-2.5-flash',
+    'gemini-3.7-flash-high[1m]',
+    'gemini-3.7-flash-medium[1m]',
+    'gemini-3.7-flash-low[1m]'
+  ];
+
+  function getDefaultKnownModels() {
+    return DEFAULT_KNOWN_MODELS.slice();
+  }
+
+  function buildOpenAiModelsUrl(baseUrl) {
+    if (!baseUrl || typeof baseUrl !== 'string') return '';
+    const trimmed = baseUrl.trim().replace(/\/+$/, '');
+    if (!trimmed) return '';
+    if (trimmed.endsWith('/models')) return trimmed;
+    if (trimmed.endsWith('/v1')) return trimmed + '/models';
+    return trimmed + '/v1/models';
+  }
+
+  function parseOpenAiModelsResponse(payload) {
+    if (!payload) return [];
+    let data = payload;
+    if (typeof payload === 'string') {
+      try {
+        data = JSON.parse(payload);
+      } catch (_) {
+        return [];
+      }
+    }
+    let list = [];
+    if (Array.isArray(data)) {
+      list = data;
+    } else if (data && typeof data === 'object') {
+      if (Array.isArray(data.data)) {
+        list = data.data;
+      } else if (Array.isArray(data.models)) {
+        list = data.models;
+      }
+    }
+    const extracted = [];
+    for (const item of list) {
+      if (typeof item === 'string') {
+        const id = item.trim();
+        if (id) extracted.push(id);
+      } else if (item && typeof item === 'object') {
+        const candidate = item.id || item.name || item.model;
+        if (typeof candidate === 'string') {
+          const id = candidate.trim();
+          if (id) extracted.push(id);
+        }
+      }
+    }
+    const unique = Array.from(new Set(extracted));
+    unique.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    return unique;
+  }
+
   function isArrayIndex(segment) {
     return /^(0|[1-9]\d*)$/.test(String(segment));
   }
@@ -440,12 +514,15 @@
   return {
     ENUMS,
     KNOWN_SHAPES,
+    DEFAULT_KNOWN_MODELS,
     applyPatch,
     batchPatches,
+    buildOpenAiModelsUrl,
     clone,
     deepEqual,
     deleteAtPath,
     getAtPath,
+    getDefaultKnownModels,
     inspectPermissions,
     inspectSandbox,
     inspectScope,
@@ -453,6 +530,7 @@
     isPlainObject,
     moveAtPath,
     normalizePath,
+    parseOpenAiModelsResponse,
     parseSettingsJson,
     redactSecrets,
     renameKeyAtPath,

@@ -85,6 +85,7 @@
 
   <main>
     <div id="diagnostic-banner" class="diagnostic-banner" role="region" aria-live="polite" aria-label="Configuration Diagnostics"></div>
+    <datalist id="available-models-datalist"></datalist>
 
     <!-- TAB 1: General & UI -->
     <section id="tab-general" class="tab-panel active" role="tabpanel" aria-labelledby="tab-btn-general" aria-hidden="false">
@@ -493,6 +494,12 @@
             <div class="field-hint" data-i18n="env.apiKeyHelperHint">Custom command run through shell to generate dynamic auth header values.</div>
           </div>
         </div>
+
+        <div class="model-discovery-toolbar mt-md">
+          <button type="button" class="btn small primary btn-fetch-models" data-i18n="models.discovery.fetchBtn">⚡ Fetch Models from API</button>
+          <span class="models-status-pill" data-state="defaults"><span class="pill-dot">●</span> <span class="models-status-count">17 defaults</span></span>
+          <span class="models-status-text field-hint" data-i18n="models.discovery.hint">Queries the OpenAI-compatible /v1/models endpoint to populate model dropdowns.</span>
+        </div>
       </div>
 
       <!-- Additional Custom Environment Variables -->
@@ -530,6 +537,12 @@
       <div class="section-title" data-i18n="sections.models.title">Models &amp; Dynamic Workflows</div>
       <div class="section-desc" data-i18n="sections.models.desc">Configure primary model selection, gateway model tiers (Fable, Opus, Sonnet, Haiku), fallback chains, and workflow settings.</div>
 
+      <div class="model-discovery-toolbar mt-md mb-md">
+        <button type="button" class="btn small primary btn-fetch-models" data-i18n="models.discovery.fetchBtn">⚡ Fetch Models from API</button>
+        <span class="models-status-pill" data-state="defaults"><span class="pill-dot">●</span> <span class="models-status-count">17 defaults</span></span>
+        <span class="models-status-text field-hint" data-i18n="models.discovery.hint">Queries the OpenAI-compatible /v1/models endpoint to populate model dropdowns.</span>
+      </div>
+
       <!-- Section: Gateway Model Tiers (First-class UI) -->
       <div class="section-title mt-lg" data-i18n="sections.models.tiers.title">Gateway Model Tiers &amp; Capabilities</div>
       <div class="section-desc" data-i18n="sections.models.tiers.desc">Configure the model mappings, friendly display names, descriptions, and capabilities for each model tier (stored in <code>env.ANTHROPIC_DEFAULT_*</code>).</div>
@@ -546,7 +559,7 @@
               <label class="field-label" for="env_ANTHROPIC_DEFAULT_FABLE_MODEL" data-i18n="models.field.modelId">Model ID / Mapping</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_DEFAULT_FABLE_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL" placeholder="e.g. claude-sonnet-4-6[1m]">
+            <input type="text" id="env_ANTHROPIC_DEFAULT_FABLE_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL" placeholder="e.g. claude-sonnet-4-6[1m]" list="available-models-datalist">
           </div>
           <div class="field-group">
             <div class="field-header">
@@ -582,7 +595,7 @@
               <label class="field-label" for="env_ANTHROPIC_DEFAULT_OPUS_MODEL" data-i18n="models.field.modelId">Model ID / Mapping</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_DEFAULT_OPUS_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL" placeholder="e.g. gemini-3.7-flash-high[1m]">
+            <input type="text" id="env_ANTHROPIC_DEFAULT_OPUS_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL" placeholder="e.g. gemini-3.7-flash-high[1m]" list="available-models-datalist">
           </div>
           <div class="field-group">
             <div class="field-header">
@@ -618,7 +631,7 @@
               <label class="field-label" for="env_ANTHROPIC_DEFAULT_SONNET_MODEL" data-i18n="models.field.modelId">Model ID / Mapping</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_DEFAULT_SONNET_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL" placeholder="e.g. gemini-3.7-flash-medium[1m]">
+            <input type="text" id="env_ANTHROPIC_DEFAULT_SONNET_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL" placeholder="e.g. gemini-3.7-flash-medium[1m]" list="available-models-datalist">
           </div>
           <div class="field-group">
             <div class="field-header">
@@ -654,7 +667,7 @@
               <label class="field-label" for="env_ANTHROPIC_DEFAULT_HAIKU_MODEL" data-i18n="models.field.modelId">Model ID / Mapping</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_DEFAULT_HAIKU_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL" placeholder="e.g. gemini-3.7-flash-low[1m]">
+            <input type="text" id="env_ANTHROPIC_DEFAULT_HAIKU_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL" placeholder="e.g. gemini-3.7-flash-low[1m]" list="available-models-datalist">
           </div>
           <div class="field-group">
             <div class="field-header">
@@ -690,7 +703,7 @@
               <label class="field-label" for="env_ANTHROPIC_CUSTOM_MODEL_OPTION" data-i18n="models.field.modelId">Model ID / Mapping</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION" data-setting-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION" placeholder="e.g. gemini-3.7-flash-high[1m]">
+            <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION" data-setting-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION" placeholder="e.g. gemini-3.7-flash-high[1m]" list="available-models-datalist">
           </div>
           <div class="field-group">
             <div class="field-header">
@@ -719,7 +732,7 @@
               <label class="field-label" for="env_CLAUDE_CODE_SUBAGENT_MODEL" data-i18n="models.field.subagent">Subagent Model Override</label>
               <button class="unset-btn" data-unset-path="env.CLAUDE_CODE_SUBAGENT_MODEL" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_CLAUDE_CODE_SUBAGENT_MODEL" data-setting-path="env.CLAUDE_CODE_SUBAGENT_MODEL" placeholder="e.g. gpt-5.6-sol[1m]">
+            <input type="text" id="env_CLAUDE_CODE_SUBAGENT_MODEL" data-setting-path="env.CLAUDE_CODE_SUBAGENT_MODEL" placeholder="e.g. gpt-5.6-sol[1m]" list="available-models-datalist">
           </div>
           <div class="field-group">
             <div class="field-header">
@@ -746,7 +759,7 @@
             <label class="field-label" for="model"><code>model</code> — <span data-i18n="field.model.label">Primary Model</span></label>
             <button class="unset-btn" data-unset-path="model" data-i18n="actions.unset">unset</button>
           </div>
-          <input type="text" id="model" data-setting-path="model" placeholder="e.g. claude-sonnet-5, opus" data-i18n-placeholder="field.model.placeholder">
+          <input type="text" id="model" data-setting-path="model" placeholder="e.g. claude-sonnet-5, opus" data-i18n-placeholder="field.model.placeholder" list="available-models-datalist">
           <div class="field-hint" data-i18n="field.model.hint">Restart required when modified. Mid-session switch via <code>/model</code>.</div>
         </div>
 
@@ -755,7 +768,7 @@
             <label class="field-label" for="advisorModel"><code>advisorModel</code> — <span data-i18n="field.advisorModel.label">Advisor Model</span></label>
             <button class="unset-btn" data-unset-path="advisorModel" data-i18n="actions.unset">unset</button>
           </div>
-          <input type="text" id="advisorModel" data-setting-path="advisorModel" placeholder="fable, opus, or sonnet" data-i18n-placeholder="field.advisorModel.placeholder">
+          <input type="text" id="advisorModel" data-setting-path="advisorModel" placeholder="fable, opus, or sonnet" data-i18n-placeholder="field.advisorModel.placeholder" list="available-models-datalist">
         </div>
 
         <div class="field-group">
@@ -810,7 +823,7 @@
       <div class="section-desc" data-i18n="sections.models.fallbackDesc">Ordered list of fallback models (capped at 3 models). Replaces entire chain across settings files.</div>
       <div id="fallback-list"></div>
       <div class="input-wrap mt-md">
-        <input type="text" id="new-model-input" placeholder="Model ID (e.g. claude-sonnet-5, haiku, default)" data-i18n-placeholder="fallback.placeholder">
+        <input type="text" id="new-model-input" placeholder="Model ID (e.g. claude-sonnet-5, haiku, default)" data-i18n-placeholder="fallback.placeholder" list="available-models-datalist">
         <button id="btn-add-fallback" class="btn primary" data-i18n="fallback.add">+ Add Fallback Model</button>
       </div>
     </section>

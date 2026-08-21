@@ -317,6 +317,15 @@
       'env.otelHeadersHelperHint': 'Script to generate dynamic OpenTelemetry headers.',
 
       // Models & Workflows
+      'models.discovery.fetchBtn': '⚡ Fetch Models from API',
+      'models.discovery.fetching': 'Fetching models...',
+      'models.discovery.status.defaults': 'Using {count} default model suggestions. Configure API base URL and key to fetch live models.',
+      'models.discovery.status.success': 'Loaded {count} models from endpoint.',
+      'models.discovery.status.error': 'Failed to fetch models: {error}',
+      'models.discovery.status.noCreds': 'Configure API Base URL and Key/Token to discover models.',
+      'models.discovery.badge.defaults': '{count} defaults',
+      'models.discovery.badge.loaded': '{count} models',
+      'models.discovery.hint': 'Queries the OpenAI-compatible /v1/models endpoint to populate model dropdowns.',
       'models.tier.fable': 'Fable Tier',
       'models.tier.opus': 'Opus Tier',
       'models.tier.sonnet': 'Sonnet Tier',
@@ -794,6 +803,15 @@
       'env.otelHeadersHelperHint': 'Script para gerar cabeçalhos dinâmicos do OpenTelemetry.',
 
       // Models & Workflows
+      'models.discovery.fetchBtn': '⚡ Buscar Modelos da API',
+      'models.discovery.fetching': 'Buscando modelos...',
+      'models.discovery.status.defaults': 'Usando {count} sugestões de modelos padrão. Configure a URL base e a chave de API para buscar modelos ativos.',
+      'models.discovery.status.success': '{count} modelos carregados do endpoint.',
+      'models.discovery.status.error': 'Falha ao buscar modelos: {error}',
+      'models.discovery.status.noCreds': 'Configure a URL Base e a Chave/Token de API para descobrir modelos.',
+      'models.discovery.badge.defaults': '{count} padrões',
+      'models.discovery.badge.loaded': '{count} modelos',
+      'models.discovery.hint': 'Consulta o endpoint /v1/models compatível com OpenAI para preencher os seletores de modelo.',
       'models.tier.fable': 'Nível Fable',
       'models.tier.opus': 'Nível Opus',
       'models.tier.sonnet': 'Nível Sonnet',
