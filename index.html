@@ -20,67 +20,129 @@
 </head>
 <body>
 
-<header>
+<header class="app-header">
   <div class="brand">
-    <h1><span data-i18n="app.brand">Claude</span> <span data-i18n="app.brandSuffix">Settings Editor</span></h1>
-    <span id="dirty-badge" class="dirty-badge" data-i18n="app.dirtyBadge">UNSAVED</span>
+    <h1><span class="brand-name" data-i18n="app.brand">Claude</span> <span class="brand-suffix" data-i18n="app.brandSuffix">Settings Editor</span></h1>
+    <span id="dirty-badge" class="dirty-badge" data-i18n="app.dirtyBadge" aria-live="polite">UNSAVED</span>
   </div>
 
   <div class="scope-selector-wrap">
     <label for="scope-select" class="scope-label" data-i18n="app.targetScope">Target Scope:</label>
-    <select id="scope-select" class="scope-select">
-      <option value="user" data-i18n="scope.user">User (~/.claude/settings.json)</option>
-      <option value="project" data-i18n="scope.project">Project (.claude/settings.json)</option>
-      <option value="local" data-i18n="scope.local">Local (.claude/settings.local.json)</option>
-      <option value="managed" data-i18n="scope.managed">Managed (managed-settings.json)</option>
+    <select id="scope-select" class="scope-select" aria-label="Target Scope">
+      <option value="user" data-i18n="scope.short.user">User</option>
+      <option value="project" data-i18n="scope.short.project">Project</option>
+      <option value="local" data-i18n="scope.short.local">Local</option>
+      <option value="managed" data-i18n="scope.short.managed">Managed</option>
     </select>
     <span id="scope-info-pill" class="scope-info-pill">User Scope</span>
   </div>
 
-  <div class="lang-selector-wrap">
-    <label for="lang-select" class="scope-label" data-i18n="app.languageLabel">Language:</label>
-    <select id="lang-select" class="lang-select" aria-label="Select language">
-      <option value="en">English (EN)</option>
-      <option value="pt-BR">Português (PT-BR)</option>
-    </select>
-  </div>
-
   <div class="header-actions">
-    <span id="active-file-pill" class="active-file-pill" data-i18n-title="file.directDisk" title="Direct disk access active">📄 <span id="active-file-name" data-i18n="file.activeSample">sample.json (sample)</span></span>
-    <button id="btn-undo" class="btn small" data-i18n-title="actions.undoTitle" data-i18n="actions.undo" title="Undo change (Ctrl+Z)" disabled>Undo</button>
-    <button id="btn-redo" class="btn small" data-i18n-title="actions.redoTitle" data-i18n="actions.redo" title="Redo change (Ctrl+Y)" disabled>Redo</button>
-    <button id="btn-open" class="btn btn-full" data-i18n="actions.openFile" data-i18n-title="actions.openFileTitle" title="Open local JSON file (Ctrl+O)">Open File</button>
-    <button id="btn-save" class="btn primary btn-full" data-i18n="actions.save" data-i18n-title="actions.saveTitle" title="Save changes in-place (Ctrl+S)">Save</button>
-    <button id="btn-save-as" class="btn btn-full" data-i18n="actions.saveAs" data-i18n-title="actions.saveAsTitle" title="Save to new file (Ctrl+Shift+S)">Save As...</button>
-    <button id="btn-sample" class="btn btn-full" data-i18n="actions.loadSample">Load Sample</button>
+    <button id="btn-save" class="btn primary header-save" data-i18n="actions.save" data-i18n-title="actions.saveTitle" title="Save changes in-place (Ctrl+S)">Save</button>
 
-    <button id="btn-open-mobile" class="btn small mobile-only" data-i18n="actions.loadMobile">Open</button>
-    <button id="btn-save-mobile" class="btn primary small mobile-only" data-i18n="actions.saveMobile">Save</button>
+    <button id="btn-mobile-overflow" class="icon-btn mobile-overflow-trigger" type="button" aria-expanded="false" aria-controls="mobile-overflow-panel" data-i18n-aria-label="actions.more" data-i18n-title="actions.moreTitle" title="More actions" aria-label="More actions">
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+        <circle cx="12" cy="5" r="2.2"/>
+        <circle cx="12" cy="12" r="2.2"/>
+        <circle cx="12" cy="19" r="2.2"/>
+      </svg>
+    </button>
+
+    <div id="mobile-overflow-panel" class="secondary-actions" aria-labelledby="mobile-overflow-title">
+      <div id="mobile-overflow-title" class="mobile-overflow-title" data-i18n="actions.more">More actions</div>
+
+      <div class="lang-selector-wrap">
+        <label for="lang-select" class="scope-label" data-i18n="app.languageLabel">Language:</label>
+        <select id="lang-select" class="lang-select" data-i18n-aria-label="app.languageSelectAria" aria-label="Select language">
+          <option value="en">English (EN)</option>
+          <option value="pt-BR">Português (PT-BR)</option>
+        </select>
+      </div>
+
+      <span id="active-file-pill" class="active-file-pill" data-i18n-title="file.currentTitle" title="Current settings file">
+        <span class="file-icon" aria-hidden="true">📄</span>
+        <span id="active-file-name" data-i18n="file.activeSample">sample.json (sample)</span>
+      </span>
+
+      <button id="btn-undo" class="btn small" data-i18n-title="actions.undoTitle" data-i18n="actions.undo" title="Undo change (Ctrl+Z)" disabled>Undo</button>
+      <button id="btn-redo" class="btn small" data-i18n-title="actions.redoTitle" data-i18n="actions.redo" title="Redo change (Ctrl+Y)" disabled>Redo</button>
+      <button id="btn-open" class="btn" data-i18n="actions.openFile" data-i18n-title="actions.openFileTitle" title="Open local JSON file (Ctrl+O)">Open File</button>
+      <button id="btn-save-as" class="btn" data-i18n="actions.saveAs" data-i18n-title="actions.saveAsTitle" title="Save to new file (Ctrl+Shift+S)">Save As...</button>
+      <button id="btn-sample" class="btn" data-i18n="actions.loadSample">Load Sample</button>
+    </div>
+
     <span id="status" role="status" aria-live="polite" data-i18n="app.ready">Ready</span>
     <input type="file" id="file-input" accept=".json">
   </div>
 </header>
 
 <div class="layout">
-  <nav aria-label="Settings categories">
-    <div role="tablist" aria-orientation="vertical">
-      <div class="nav-section" data-i18n="nav.sections.config">Configuration</div>
-      <button role="tab" id="tab-btn-general" data-tab="general" aria-selected="true" aria-controls="tab-general" class="active" data-i18n="nav.tabs.general">General &amp; UI</button>
-      <button role="tab" id="tab-btn-permissions" data-tab="permissions" aria-selected="false" aria-controls="tab-permissions" data-i18n="nav.tabs.permissions">Permissions</button>
-      <button role="tab" id="tab-btn-sandbox" data-tab="sandbox" aria-selected="false" aria-controls="tab-sandbox" data-i18n="nav.tabs.sandbox">Sandboxing</button>
-      <button role="tab" id="tab-btn-env" data-tab="env" aria-selected="false" aria-controls="tab-env" data-i18n="nav.tabs.env">Environment</button>
-      <button role="tab" id="tab-btn-models" data-tab="models" aria-selected="false" aria-controls="tab-models" data-i18n="nav.tabs.models">Models &amp; Workflows</button>
+  <nav class="settings-nav" aria-label="Settings categories" data-i18n-aria-label="nav.ariaLabel">
+    <button id="nav-scroll-prev" class="nav-scroll-control" type="button" aria-controls="settings-tablist" data-i18n-aria-label="nav.scrollPrevious" aria-label="Show previous categories" disabled>
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </button>
 
-      <div class="nav-section" data-i18n="nav.sections.components">Components &amp; Rules</div>
-      <button role="tab" id="tab-btn-hooks" data-tab="hooks" aria-selected="false" aria-controls="tab-hooks" data-i18n="nav.tabs.hooks">Hooks &amp; Status Line</button>
-      <button role="tab" id="tab-btn-mcp" data-tab="mcp" aria-selected="false" aria-controls="tab-mcp" data-i18n="nav.tabs.mcp">MCP Policy</button>
-      <button role="tab" id="tab-btn-worktree" data-tab="worktree" aria-selected="false" aria-controls="tab-worktree" data-i18n="nav.tabs.worktree">Worktree &amp; Memory</button>
-      <button role="tab" id="tab-btn-plugins" data-tab="plugins" aria-selected="false" aria-controls="tab-plugins" data-i18n="nav.tabs.plugins">Plugins &amp; Marketplaces</button>
-      <button role="tab" id="tab-btn-advanced-policies" data-tab="advanced-policies" aria-selected="false" aria-controls="tab-advanced-policies" data-i18n="nav.tabs.managedPolicies">Managed Policies</button>
+    <div id="nav-scroll-viewport" class="nav-scroll-viewport">
+      <div id="settings-tablist" role="tablist" aria-orientation="vertical">
+        <div class="nav-section" data-i18n="nav.sections.config">Configuration</div>
+        <button role="tab" id="tab-btn-general" data-tab="general" aria-selected="true" aria-controls="tab-general" class="active" data-i18n-aria-label="nav.tabs.general">
+          <span class="tab-label-full" data-i18n="nav.tabs.general">General &amp; UI</span>
+          <span class="tab-label-mobile" data-i18n="nav.tabsShort.general">General</span>
+        </button>
+        <button role="tab" id="tab-btn-permissions" data-tab="permissions" aria-selected="false" aria-controls="tab-permissions" data-i18n-aria-label="nav.tabs.permissions">
+          <span class="tab-label-full" data-i18n="nav.tabs.permissions">Permissions</span>
+          <span class="tab-label-mobile" data-i18n="nav.tabsShort.permissions">Permissions</span>
+        </button>
+        <button role="tab" id="tab-btn-sandbox" data-tab="sandbox" aria-selected="false" aria-controls="tab-sandbox" data-i18n-aria-label="nav.tabs.sandbox">
+          <span class="tab-label-full" data-i18n="nav.tabs.sandbox">Sandboxing</span>
+          <span class="tab-label-mobile" data-i18n="nav.tabsShort.sandbox">Sandbox</span>
+        </button>
+        <button role="tab" id="tab-btn-env" data-tab="env" aria-selected="false" aria-controls="tab-env" data-i18n-aria-label="nav.tabs.env">
+          <span class="tab-label-full" data-i18n="nav.tabs.env">Environment</span>
+          <span class="tab-label-mobile" data-i18n="nav.tabsShort.env">Environment</span>
+        </button>
+        <button role="tab" id="tab-btn-models" data-tab="models" aria-selected="false" aria-controls="tab-models" data-i18n-aria-label="nav.tabs.models">
+          <span class="tab-label-full" data-i18n="nav.tabs.models">Models &amp; Workflows</span>
+          <span class="tab-label-mobile" data-i18n="nav.tabsShort.models">Models</span>
+        </button>
 
-      <div class="nav-section" data-i18n="nav.sections.raw">Raw Editor</div>
-      <button role="tab" id="tab-btn-advanced" data-tab="advanced" aria-selected="false" aria-controls="tab-advanced" data-i18n="nav.tabs.advanced">Advanced JSON</button>
+        <div class="nav-section" data-i18n="nav.sections.components">Components &amp; Rules</div>
+        <button role="tab" id="tab-btn-hooks" data-tab="hooks" aria-selected="false" aria-controls="tab-hooks" data-i18n-aria-label="nav.tabs.hooks">
+          <span class="tab-label-full" data-i18n="nav.tabs.hooks">Hooks &amp; Status Line</span>
+          <span class="tab-label-mobile" data-i18n="nav.tabsShort.hooks">Hooks</span>
+        </button>
+        <button role="tab" id="tab-btn-mcp" data-tab="mcp" aria-selected="false" aria-controls="tab-mcp" data-i18n-aria-label="nav.tabs.mcp">
+          <span class="tab-label-full" data-i18n="nav.tabs.mcp">MCP Policy</span>
+          <span class="tab-label-mobile" data-i18n="nav.tabsShort.mcp">MCP</span>
+        </button>
+        <button role="tab" id="tab-btn-worktree" data-tab="worktree" aria-selected="false" aria-controls="tab-worktree" data-i18n-aria-label="nav.tabs.worktree">
+          <span class="tab-label-full" data-i18n="nav.tabs.worktree">Worktree &amp; Memory</span>
+          <span class="tab-label-mobile" data-i18n="nav.tabsShort.worktree">Worktree</span>
+        </button>
+        <button role="tab" id="tab-btn-plugins" data-tab="plugins" aria-selected="false" aria-controls="tab-plugins" data-i18n-aria-label="nav.tabs.plugins">
+          <span class="tab-label-full" data-i18n="nav.tabs.plugins">Plugins &amp; Marketplaces</span>
+          <span class="tab-label-mobile" data-i18n="nav.tabsShort.plugins">Plugins</span>
+        </button>
+        <button role="tab" id="tab-btn-advanced-policies" data-tab="advanced-policies" aria-selected="false" aria-controls="tab-advanced-policies" data-i18n-aria-label="nav.tabs.managedPolicies">
+          <span class="tab-label-full" data-i18n="nav.tabs.managedPolicies">Managed Policies</span>
+          <span class="tab-label-mobile" data-i18n="nav.tabsShort.managedPolicies">Managed</span>
+        </button>
+
+        <div class="nav-section" data-i18n="nav.sections.raw">Raw Editor</div>
+        <button role="tab" id="tab-btn-advanced" data-tab="advanced" aria-selected="false" aria-controls="tab-advanced" data-i18n-aria-label="nav.tabs.advanced">
+          <span class="tab-label-full" data-i18n="nav.tabs.advanced">Advanced JSON</span>
+          <span class="tab-label-mobile" data-i18n="nav.tabsShort.advanced">JSON</span>
+        </button>
+      </div>
     </div>
+
+    <button id="nav-scroll-next" class="nav-scroll-control" type="button" aria-controls="settings-tablist" data-i18n-aria-label="nav.scrollNext" aria-label="Show more categories">
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    </button>
   </nav>
 
   <main>

@@ -27,8 +27,13 @@
     modelsFetchError: ''
   };
 
+  const mobileViewport = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(max-width: 768px)') : { matches: false, addEventListener: () => {} };
+  let statusResetTimer = null;
+  let navScrollFrame = 0;
+
   document.addEventListener('DOMContentLoaded', () => {
     initLocale();
+    initResponsiveShell();
     populateModelsDatalist(state.availableModels);
     renderModelDiscovery();
     bindEvents();
@@ -42,7 +47,14 @@
     if (!i18n) return;
     const detected = i18n.detectLocale();
     i18n.setLocale(detected, false);
-    i18n.subscribe(renderAll);
+    i18n.subscribe(() => {
+      renderAll();
+      requestAnimationFrame(() => {
+        updateNavScrollControls();
+        const activeTab = document.querySelector('[role="tab"][aria-selected="true"]');
+        revealTab(activeTab, false);
+      });
+    });
 
     const langSelect = getElement('lang-select');
     if (langSelect) {
@@ -82,6 +94,138 @@
         setTimeout(() => loadDefaultSample(), 150);
       }
     } catch (_) {}
+  }
+
+  function setMobileOverflowOpen(open, restoreFocus) {
+    const trigger = getElement('btn-mobile-overflow');
+    const panel = getElement('mobile-overflow-panel');
+    if (!trigger || !panel) return;
+
+    const shouldOpen = Boolean(open && mobileViewport.matches);
+
+    panel.classList.toggle('is-open', shouldOpen);
+    trigger.setAttribute('aria-expanded', String(shouldOpen));
+
+    if (mobileViewport.matches) {
+      if (shouldOpen) {
+        panel.removeAttribute('inert');
+        panel.setAttribute('aria-hidden', 'false');
+      } else {
+        panel.setAttribute('inert', '');
+        panel.setAttribute('aria-hidden', 'true');
+      }
+    } else {
+      panel.removeAttribute('inert');
+      panel.removeAttribute('aria-hidden');
+    }
+
+    if (shouldOpen) {
+      requestAnimationFrame(() => {
+        const firstControl = panel.querySelector('button:not(:disabled), select:not(:disabled)');
+        firstControl?.focus();
+      });
+    } else if (restoreFocus && mobileViewport.matches) {
+      trigger.focus();
+    }
+  }
+
+  function runHeaderAction(action) {
+    if (mobileViewport.matches) {
+      setMobileOverflowOpen(false, true);
+    }
+    action();
+  }
+
+  function updateNavScrollControls() {
+    const viewport = getElement('nav-scroll-viewport');
+    const previous = getElement('nav-scroll-prev');
+    const next = getElement('nav-scroll-next');
+    if (!viewport || !previous || !next) return;
+
+    const maxScroll = viewport.scrollWidth - viewport.clientWidth;
+    previous.disabled = viewport.scrollLeft <= 2;
+    next.disabled = viewport.scrollLeft >= maxScroll - 2;
+  }
+
+  function scheduleNavScrollUpdate() {
+    if (navScrollFrame) return;
+    navScrollFrame = requestAnimationFrame(() => {
+      navScrollFrame = 0;
+      updateNavScrollControls();
+    });
+  }
+
+  function scrollNav(direction) {
+    const viewport = getElement('nav-scroll-viewport');
+    if (!viewport) return;
+
+    const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    viewport.scrollBy({
+      left: direction * Math.max(88, viewport.clientWidth * 0.75),
+      behavior: reducedMotion ? 'auto' : 'smooth'
+    });
+  }
+
+  function revealTab(tab, smooth = true) {
+    const viewport = getElement('nav-scroll-viewport');
+    if (!viewport || !tab || !mobileViewport.matches) return;
+
+    const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const target = tab.offsetLeft - (viewport.clientWidth - tab.offsetWidth) / 2;
+
+    viewport.scrollTo({
+      left: Math.max(0, target),
+      behavior: smooth && !reducedMotion ? 'smooth' : 'auto'
+    });
+
+    scheduleNavScrollUpdate();
+  }
+
+  function syncTabOrientation() {
+    const tablist = getElement('settings-tablist');
+    if (!tablist) return;
+    tablist.setAttribute('aria-orientation', mobileViewport.matches ? 'horizontal' : 'vertical');
+  }
+
+  function initResponsiveShell() {
+    const trigger = getElement('btn-mobile-overflow');
+    const panel = getElement('mobile-overflow-panel');
+
+    trigger?.addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+      setMobileOverflowOpen(!isOpen, false);
+    });
+
+    document.addEventListener('pointerdown', event => {
+      if (!mobileViewport.matches || !panel || !trigger) return;
+      if (!panel.classList.contains('is-open')) return;
+      if (panel.contains(event.target) || trigger.contains(event.target)) return;
+      setMobileOverflowOpen(false, false);
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && panel?.classList.contains('is-open')) {
+        event.preventDefault();
+        setMobileOverflowOpen(false, true);
+      }
+    });
+
+    if (mobileViewport.addEventListener) {
+      mobileViewport.addEventListener('change', () => {
+        setMobileOverflowOpen(false, false);
+        syncTabOrientation();
+        updateNavScrollControls();
+      });
+    }
+
+    getElement('nav-scroll-prev')?.addEventListener('click', () => scrollNav(-1));
+    getElement('nav-scroll-next')?.addEventListener('click', () => scrollNav(1));
+    getElement('nav-scroll-viewport')?.addEventListener('scroll', scheduleNavScrollUpdate, { passive: true });
+
+    setMobileOverflowOpen(false, false);
+    syncTabOrientation();
+    updateNavScrollControls();
   }
 
   function loadDefaultSample() {
@@ -314,14 +458,12 @@
 
   function bindEvents() {
     // Header actions
-    getElement('btn-open')?.addEventListener('click', () => openFile());
-    getElement('btn-open-mobile')?.addEventListener('click', () => openFile());
+    getElement('btn-open')?.addEventListener('click', () => runHeaderAction(openFile));
     getElement('btn-save')?.addEventListener('click', () => saveFile());
-    getElement('btn-save-mobile')?.addEventListener('click', () => saveFile());
-    getElement('btn-save-as')?.addEventListener('click', () => saveFileAs());
-    getElement('btn-sample')?.addEventListener('click', () => loadDefaultSample());
-    getElement('btn-undo')?.addEventListener('click', undo);
-    getElement('btn-redo')?.addEventListener('click', redo);
+    getElement('btn-save-as')?.addEventListener('click', () => runHeaderAction(saveFileAs));
+    getElement('btn-sample')?.addEventListener('click', () => runHeaderAction(loadDefaultSample));
+    getElement('btn-undo')?.addEventListener('click', () => runHeaderAction(undo));
+    getElement('btn-redo')?.addEventListener('click', () => runHeaderAction(redo));
     getElement('file-input')?.addEventListener('change', onFileSelected);
 
     // Global keyboard shortcuts
@@ -382,6 +524,41 @@
         if (tab) switchTab(tab);
       });
     });
+
+    // Tabs keyboard navigation (roving tabindex)
+    const tablist = getElement('settings-tablist');
+    if (tablist) {
+      tablist.addEventListener('keydown', e => {
+        const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+        const idx = tabs.findIndex(t => t.getAttribute('data-tab') === state.activeTab);
+        if (idx === -1) return;
+
+        let nextIdx = -1;
+        const isHorizontal = mobileViewport.matches;
+        if ((isHorizontal && e.key === 'ArrowRight') || (!isHorizontal && e.key === 'ArrowDown')) {
+          e.preventDefault();
+          nextIdx = (idx + 1) % tabs.length;
+        } else if ((isHorizontal && e.key === 'ArrowLeft') || (!isHorizontal && e.key === 'ArrowUp')) {
+          e.preventDefault();
+          nextIdx = (idx - 1 + tabs.length) % tabs.length;
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          nextIdx = 0;
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          nextIdx = tabs.length - 1;
+        }
+
+        if (nextIdx !== -1) {
+          const nextTab = tabs[nextIdx];
+          const tabId = nextTab.getAttribute('data-tab');
+          if (tabId) {
+            switchTab(tabId);
+            nextTab.focus();
+          }
+        }
+      });
+    }
 
     // Form fields two-way binding
     document.querySelectorAll('[data-setting-path]').forEach(input => {
@@ -552,19 +729,23 @@
 
   function switchTab(tabId) {
     state.activeTab = tabId;
+    let activeTabButton = null;
     document.querySelectorAll('[role="tab"]').forEach(btn => {
       const active = btn.getAttribute('data-tab') === tabId;
-      btn.setAttribute('aria-selected', active);
+      btn.setAttribute('aria-selected', String(active));
       btn.classList.toggle('active', active);
+      btn.tabIndex = active ? 0 : -1;
+      if (active) activeTabButton = btn;
     });
     document.querySelectorAll('.tab-panel').forEach(panel => {
       const active = panel.id === `tab-${tabId}`;
       panel.classList.toggle('active', active);
-      panel.setAttribute('aria-hidden', !active);
+      panel.setAttribute('aria-hidden', String(!active));
     });
     if (tabId === 'advanced') {
       renderJsonEditor();
     }
+    revealTab(activeTabButton, true);
   }
 
   function renderAll() {
@@ -1538,10 +1719,13 @@
   function setStatus(msgKeyOrText, type, params) {
     const el = getElement('status');
     if (!el) return;
+    if (statusResetTimer) clearTimeout(statusResetTimer);
+
     const text = i18n && msgKeyOrText.startsWith('status.') ? i18n.t(msgKeyOrText, params) : msgKeyOrText;
     el.textContent = text;
-    el.className = type || '';
-    setTimeout(() => {
+    el.className = (type || '') + ' status-visible';
+
+    statusResetTimer = setTimeout(() => {
       const readyMsg = i18n ? i18n.t('app.ready') : 'Ready';
       const unsavedMsg = i18n ? i18n.t('app.unsaved') : 'Unsaved edits';
       el.textContent = state.isDirty ? unsavedMsg : readyMsg;
