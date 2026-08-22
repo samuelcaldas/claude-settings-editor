@@ -513,7 +513,16 @@
       'status.copied': 'Copied to clipboard',
       'status.copyFailed': 'Copy failed: {error}',
       'status.downloaded': 'Downloaded settings.json',
-      'empty.none': 'None configured.'
+      'empty.none': 'None configured.',
+
+      // Toast Notifications & Diagnostics Region
+      'toast.regionLabel': 'Notifications',
+      'toast.dismiss': 'Dismiss notification',
+      'toast.type.success': 'SUCCESS',
+      'toast.type.error': 'ERROR',
+      'toast.type.warning': 'WARNING',
+      'toast.type.info': 'INFO',
+      'diag.regionLabel': 'Configuration Diagnostics'
     },
 
     'pt-BR': {
@@ -1021,7 +1030,16 @@
       'status.copied': 'Copiado para a área de transferência',
       'status.copyFailed': 'Falha ao copiar: {error}',
       'status.downloaded': 'settings.json baixado',
-      'empty.none': 'Nenhum configurado.'
+      'empty.none': 'Nenhum configurado.',
+
+      // Toast Notifications & Diagnostics Region
+      'toast.regionLabel': 'Notificações',
+      'toast.dismiss': 'Dispensar notificação',
+      'toast.type.success': 'SUCESSO',
+      'toast.type.error': 'ERRO',
+      'toast.type.warning': 'AVISO',
+      'toast.type.info': 'INFO',
+      'diag.regionLabel': 'Diagnósticos de Configuração'
     }
   };
 

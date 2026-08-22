@@ -2,6 +2,7 @@
   const model = window.SettingsModel;
   const catalog = window.SettingsCatalog;
   const i18n = window.I18n;
+  const Toast = window.Toast;
   if (!model) throw new Error('SettingsModel script not loaded');
 
   // Application document and persistence state
@@ -28,10 +29,11 @@
   };
 
   const mobileViewport = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(max-width: 768px)') : { matches: false, addEventListener: () => {} };
-  let statusResetTimer = null;
   let navScrollFrame = 0;
+  let toastManager = null;
 
   document.addEventListener('DOMContentLoaded', () => {
+    initToast();
     initLocale();
     initResponsiveShell();
     populateModelsDatalist(state.availableModels);
@@ -43,11 +45,24 @@
     checkUrlActions();
   });
 
+  function initToast() {
+    if (Toast && Toast.createManager) {
+      toastManager = Toast.createManager({
+        container: getElement('toast-region'),
+        translate: (key, params) => (i18n ? i18n.t(key, params) : key),
+        maxVisible: 3
+      });
+    }
+  }
+
   function initLocale() {
     if (!i18n) return;
     const detected = i18n.detectLocale();
     i18n.setLocale(detected, false);
     i18n.subscribe(() => {
+      if (toastManager) {
+        toastManager.refreshTranslations();
+      }
       renderAll();
       requestAnimationFrame(() => {
         updateNavScrollControls();
@@ -284,7 +299,7 @@
     if (state.isDirty && i18n) {
       const confirmDiscard = window.confirm(i18n.t('confirm.discardUnsaved'));
       if (!confirmDiscard) {
-        setStatus('status.openCancelled', 'ok');
+        notify('status.openCancelled', 'info');
         return;
       }
     }
@@ -301,9 +316,9 @@
         await loadFromFileHandle(handle);
       } catch (err) {
         if (err.name === 'AbortError') {
-          setStatus('status.openCancelled', 'ok');
+          notify('status.openCancelled', 'info');
         } else {
-          setStatus('status.fileSaveErr', 'err', { error: err.message });
+          notify('status.fileSaveErr', 'error', { error: err.message });
         }
       }
     } else {
@@ -396,12 +411,12 @@
         state.baseline = model.clone(state.document);
         state.isDirty = false;
         renderHeaderStatus();
-        setStatus('status.fileSavedDirect', 'ok', { name: state.fileName });
+        notify('status.fileSavedDirect', 'success', { name: state.fileName });
       } catch (err) {
         if (err.name === 'AbortError') {
-          setStatus('status.saveCancelled', 'ok');
+          notify('status.saveCancelled', 'info');
         } else {
-          setStatus('status.fileSaveErr', 'err', { error: err.message });
+          notify('status.fileSaveErr', 'error', { error: err.message });
         }
       } finally {
         state.isSaving = false;
@@ -416,7 +431,7 @@
       const next = model.applyPatch(state.document, patch);
       const validation = model.validateSettingsDocument(next);
       if (!validation.ok) {
-        setStatus('status.invalidChange', 'err', { message: validation.diagnostics.map(d => d.message).join('; ') });
+        notify('status.invalidChange', 'error', { message: validation.diagnostics.map(d => d.message).join('; ') });
         return;
       }
       state.document = next;
@@ -430,7 +445,7 @@
 
       renderAll();
     } catch (err) {
-      setStatus('status.editFailed', 'err', { error: err.message });
+      notify('status.editFailed', 'error', { error: err.message });
     }
   }
 
@@ -442,7 +457,7 @@
     state.diagnostics = model.inspectSettings(state.document, state.targetScope);
     state.isDirty = !model.deepEqual(state.document, state.baseline);
     renderAll();
-    setStatus('status.undo', 'ok');
+    notify('status.undo', 'info');
   }
 
   function redo() {
@@ -453,7 +468,7 @@
     state.diagnostics = model.inspectSettings(state.document, state.targetScope);
     state.isDirty = !model.deepEqual(state.document, state.baseline);
     renderAll();
-    setStatus('status.redo', 'ok');
+    notify('status.redo', 'info');
   }
 
   function bindEvents() {
@@ -766,6 +781,12 @@
   function renderHeaderStatus() {
     const badge = getElement('dirty-badge');
     if (badge) badge.classList.toggle('active', state.isDirty);
+
+    const statusEl = getElement('status');
+    if (statusEl) {
+      statusEl.textContent = state.isDirty ? (i18n ? i18n.t('app.unsaved') : 'Unsaved edits') : (i18n ? i18n.t('app.ready') : 'Ready');
+      statusEl.className = state.isDirty ? 'dirty' : 'clean';
+    }
 
     const activeFileName = getElement('active-file-name');
     if (activeFileName) {
@@ -1713,24 +1734,27 @@
     a.download = state.fileName === 'sample.json' ? 'settings.json' : (state.fileName || 'settings.json');
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    setStatus('status.downloaded', 'ok');
+    notify('status.downloaded', 'success');
+  }
+
+  function notify(msgKeyOrText, type, params, options) {
+    if (!toastManager) {
+      if (Toast && Toast.createManager) {
+        initToast();
+      }
+    }
+    if (toastManager) {
+      return toastManager.notify(msgKeyOrText, {
+        type,
+        params,
+        ...options
+      });
+    }
+    return null;
   }
 
   function setStatus(msgKeyOrText, type, params) {
-    const el = getElement('status');
-    if (!el) return;
-    if (statusResetTimer) clearTimeout(statusResetTimer);
-
-    const text = i18n && msgKeyOrText.startsWith('status.') ? i18n.t(msgKeyOrText, params) : msgKeyOrText;
-    el.textContent = text;
-    el.className = (type || '') + ' status-visible';
-
-    statusResetTimer = setTimeout(() => {
-      const readyMsg = i18n ? i18n.t('app.ready') : 'Ready';
-      const unsavedMsg = i18n ? i18n.t('app.unsaved') : 'Unsaved edits';
-      el.textContent = state.isDirty ? unsavedMsg : readyMsg;
-      el.className = state.isDirty ? 'err' : '';
-    }, 3000);
+    return notify(msgKeyOrText, type, params);
   }
 
   function getElement(id) { return document.getElementById(id); }
