@@ -42,6 +42,10 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
+  --wco-x: env(titlebar-area-x, 0px);
+  --wco-y: env(titlebar-area-y, 0px);
+  --wco-w: env(titlebar-area-width, 100%);
+  --wco-h: env(titlebar-area-height, 0px);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -90,12 +94,27 @@ body {
 header {
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
-  padding: calc(var(--space-sm) + var(--safe-top)) max(var(--space-lg), var(--safe-right)) var(--space-sm) max(var(--space-lg), var(--safe-left));
+  padding: max(calc(var(--space-sm) + var(--safe-top)), calc(var(--wco-h) + var(--space-sm))) max(var(--space-lg), max(var(--safe-right), calc(100% - var(--wco-w) + var(--space-lg)))) var(--space-sm) max(var(--space-lg), var(--safe-left));
   display: flex;
   align-items: center;
   gap: var(--space-md);
   flex-shrink: 0;
   flex-wrap: wrap;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+header button,
+header select,
+header input,
+header a,
+header label,
+.dirty-badge,
+.scope-info-pill,
+.active-file-pill,
+#status {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
 }
 
 .brand {
@@ -1105,6 +1124,8 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
     max-height: calc(var(--topbar-h-mobile) + var(--safe-top));
     padding: var(--safe-top) max(var(--space-sm), var(--safe-right)) 0 max(var(--space-sm), var(--safe-left));
     box-sizing: border-box;
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
   }
 
   .brand {
