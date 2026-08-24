@@ -886,11 +886,11 @@
       scopes: ['user', 'project', 'local', 'managed']
     },
     {
-      path: 'env.CLAUDE_CODE_ENABLE_EXPERIMENTAL_ADVISOR_TOOL',
+      path: 'env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL',
       type: 'string',
       category: 'models',
-      label: 'Enable Experimental Advisor Tool',
-      description: 'Enable the advisor tool via gateway (1 or 0).',
+      label: 'Disable Advisor Tool',
+      description: 'Disable the server-side advisor tool (1 or 0).',
       scopes: ['user', 'project', 'local', 'managed']
     },
     {
@@ -1628,7 +1628,7 @@
     'ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION',
     'CLAUDE_CODE_SUBAGENT_MODEL',
     'CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY',
-    'CLAUDE_CODE_ENABLE_EXPERIMENTAL_ADVISOR_TOOL'
+    'CLAUDE_CODE_DISABLE_ADVISOR_TOOL'
   ]);
 
   function isDedicatedEnvKey(key) {
