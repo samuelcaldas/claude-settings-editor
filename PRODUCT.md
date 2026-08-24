@@ -27,7 +27,7 @@ A zero-dependency, 100% private, client-side precision editor with non-destructi
 
 ## Capabilities and Constraints
 
-- **Broad Schema Coverage**: Declarative catalog based on the vendored Claude Code settings reference (`docs/settings.md`), covering General/UI, Permissions, Sandboxing, Environment Variables, Models & Workflows, Hooks & Statusline, MCP Policies, Worktree & Memory, Plugins & Marketplaces, Managed Enterprise Policies, and Raw JSON editing.
+- **Broad Schema Coverage & SchemaStore Compliance**: Declarative catalog strictly aligned with the official SchemaStore Claude Code settings specification (`https://json.schemastore.org/claude-code-settings.json`, mirrored at `docs/claude-code-settings.json`) and the authoritative reference documentation (`docs/settings.md`), covering General/UI, Permissions, Sandboxing, Environment Variables, Models & Workflows, Hooks & Statusline, MCP Policies, Worktree & Memory, Plugins & Marketplaces, Managed Enterprise Policies, and Raw JSON editing.
 - **Scope-Aware Diagnostics**: Real-time validation and diagnostics tailored to the target scope (`user`, `project`, `local`, `managed`), highlighting scope-restricted settings.
 - **Non-Destructive Semantic Patching**: Modifications target exact JSON paths, preserving unrelated keys and unmodeled properties across edits.
 - **Internationalization (i18n)**: Seamless live language switching between English (`en`) and Brazilian Portuguese (`pt-BR`) across all tabs, fields, hints, dynamic lists, and diagnostic alerts.
@@ -48,6 +48,7 @@ A zero-dependency, 100% private, client-side precision editor with non-destructi
 - `js/i18n.js`: Declarative translation module with automated key-parity verification between `en` and `pt-BR`.
 - `js/app.js`: Interactive controller, dynamic collection builders, and history manager.
 - `tests/*.test.cjs`: Automated test suite executed via Node.js built-in test runner.
+- `docs/claude-code-settings.json`: Vendored official JSON schema from SchemaStore (`https://json.schemastore.org/claude-code-settings.json`).
 - `docs/settings.md`: Vendored reference documentation for Claude Code settings.
 
 ## Product Principles

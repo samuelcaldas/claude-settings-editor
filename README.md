@@ -4,7 +4,7 @@ Visual web editor for Claude Code `settings.json` — zero dependencies, zero bu
 
 ## Features
 
-- **Complete Schema Coverage**: Covers the full Claude Code settings specification:
+- **Complete Schema Coverage & SchemaStore Compliance**: Strictly compliant with the official Claude Code JSON schema published on [SchemaStore](https://json.schemastore.org/claude-code-settings.json) (`docs/claude-code-settings.json`):
   - **General & UI**: Theme, TUI mode, input keybindings (normal/vim), effort level, language, notification channels, accessibility toggles, and view modes.
   - **Permissions & Security**: Starting permission modes (`default`, `acceptEdits`, `plan`, `auto`, `dontAsk`, `bypassPermissions`), rule lists (`deny`, `ask`, `allow`), and additional directories.
   - **Sandboxing**: Process isolation for Bash commands with filesystem path controls (allow/deny read/write), network egress domain rules, and excluded commands.
@@ -37,17 +37,28 @@ Open `http://localhost:8080` in your browser.
 ## File Structure
 
 ```
-index.html             Semantic HTML shell & categorized tab panels
-css/app.css            Terminal monospace styling & responsive mobile layout
-js/i18n.js             Declarative i18n translation dictionary & DOM binder
-js/settings-catalog.js Declarative settings metadata, enums, categories, and scopes
-js/settings-model.js   Pure settings parser, immutable path operations & validation
-js/app.js              Browser controller, scope inspection & dynamic collection builders
-sample.json            Sample configuration fixture with placeholder credentials
-tests/                 Node.js test suite for settings model, catalog, and i18n
-sw.js                  PWA service worker for offline caching
-manifest.json          PWA manifest
+index.html                     Semantic HTML shell & categorized tab panels
+css/app.css                    Terminal monospace styling & responsive mobile layout
+js/i18n.js                     Declarative i18n translation dictionary & DOM binder
+js/settings-catalog.js         Declarative settings metadata, enums, categories, and scopes
+js/settings-model.js           Pure settings parser, immutable path operations & validation
+js/app.js                      Browser controller, scope inspection & dynamic collection builders
+sample.json                    Sample configuration fixture with placeholder credentials
+tests/                         Node.js test suite for settings model, catalog, and i18n
+sw.js                          PWA service worker for offline caching
+manifest.json                  PWA manifest
+docs/claude-code-settings.json Authoritative JSON Schema from SchemaStore
+docs/settings.md               Authoritative reference documentation for Claude Code settings
 ```
+
+## Feature Development & Schema Enforcement
+
+All feature additions, new settings, enums, and data types must strictly reference and conform to the official SchemaStore JSON Schema:
+
+1. **Schema Reference**: Consult `docs/claude-code-settings.json` (mirrored from [https://json.schemastore.org/claude-code-settings.json](https://json.schemastore.org/claude-code-settings.json)) for exact property names, types, enums, and defaults.
+2. **Scope Rules**: Check `docs/settings.md` for scope applicability (`user`, `project`, `local`, `managed`).
+3. **Catalog & UI**: Register in `js/settings-catalog.js`, bind in `index.html`, and localize with 100% parity in `js/i18n.js`.
+4. **Validation**: Run the automated test suite before committing.
 
 ## Running Tests
 
