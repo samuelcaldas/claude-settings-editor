@@ -206,8 +206,13 @@ test('settings catalog contains full schema paths, gateway tier definitions and 
   assert.ok(catalog.getSettingDefinition('spinnerTipsOverride'));
   assert.equal(catalog.getSettingDefinition('showClearContextOnPlanAccept').type, 'boolean');
   assert.equal(catalog.getSettingDefinition('showClearContextOnPlanAccept').default, false);
+  assert.ok(catalog.getSettingDefinition('advisorModel'));
+  assert.equal(catalog.getSettingDefinition('advisorModel').type, 'string');
+  assert.ok(catalog.getSettingDefinition('env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL'));
   assert.equal(catalog.isDedicatedEnvKey('ANTHROPIC_API_KEY'), true);
   assert.equal(catalog.isDedicatedEnvKey('ANTHROPIC_DEFAULT_SONNET_MODEL'), true);
+  assert.equal(catalog.isDedicatedEnvKey('CLAUDE_CODE_DISABLE_ADVISOR_TOOL'), true);
+  assert.equal(catalog.isDedicatedEnvKey('CLAUDE_CODE_ENABLE_EXPERIMENTAL_ADVISOR_TOOL'), false);
   assert.equal(catalog.isDedicatedEnvKey('CUSTOM_UNTRACKED_VAR'), false);
   assert.equal(catalog.isSettingSupportedInScope('allowManagedPermissionRulesOnly', 'user'), false);
   assert.equal(catalog.isSettingSupportedInScope('allowManagedPermissionRulesOnly', 'managed'), true);
