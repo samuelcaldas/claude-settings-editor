@@ -39,7 +39,14 @@
   </div>
 
   <div class="header-actions">
-    <button id="btn-save" class="btn primary header-save" data-i18n="actions.save" data-i18n-title="actions.saveTitle" title="Save changes in-place (Ctrl+S)">Save</button>
+    <button id="btn-save" class="btn primary header-save" data-i18n-title="actions.saveTitle" title="Save changes in-place (Ctrl+S)">
+      <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+      </svg>
+      <span data-i18n="actions.save">Save</span>
+    </button>
 
     <button id="btn-mobile-overflow" class="icon-btn mobile-overflow-trigger" type="button" aria-expanded="false" aria-controls="mobile-overflow-panel" data-i18n-aria-label="actions.more" data-i18n-title="actions.moreTitle" title="More actions" aria-label="More actions">
       <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -65,11 +72,43 @@
         <span id="active-file-name" data-i18n="file.activeSample">sample.json (sample)</span>
       </span>
 
-      <button id="btn-undo" class="btn small" data-i18n-title="actions.undoTitle" data-i18n="actions.undo" title="Undo change (Ctrl+Z)" disabled>Undo</button>
-      <button id="btn-redo" class="btn small" data-i18n-title="actions.redoTitle" data-i18n="actions.redo" title="Redo change (Ctrl+Y)" disabled>Redo</button>
-      <button id="btn-open" class="btn" data-i18n="actions.openFile" data-i18n-title="actions.openFileTitle" title="Open local JSON file (Ctrl+O)">Open File</button>
-      <button id="btn-save-as" class="btn" data-i18n="actions.saveAs" data-i18n-title="actions.saveAsTitle" title="Save to new file (Ctrl+Shift+S)">Save As...</button>
-      <button id="btn-sample" class="btn" data-i18n="actions.loadSample">Load Sample</button>
+      <button id="btn-undo" class="btn small" data-i18n-title="actions.undoTitle" title="Undo change (Ctrl+Z)" disabled>
+        <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 .49-3.5"></path>
+        </svg>
+        <span data-i18n="actions.undo">Undo</span>
+      </button>
+      <button id="btn-redo" class="btn small" data-i18n-title="actions.redoTitle" title="Redo change (Ctrl+Y)" disabled>
+        <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-.49-3.5"></path>
+        </svg>
+        <span data-i18n="actions.redo">Redo</span>
+      </button>
+      <button id="btn-open" class="btn" data-i18n-title="actions.openFileTitle" title="Open local JSON file (Ctrl+O)">
+        <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span data-i18n="actions.openFile">Open File</span>
+      </button>
+      <button id="btn-save-as" class="btn" data-i18n-title="actions.saveAsTitle" title="Save to new file (Ctrl+Shift+S)">
+        <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span data-i18n="actions.saveAs">Save As...</span>
+      </button>
+      <button id="btn-sample" class="btn">
+        <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span data-i18n="actions.loadSample">Load Sample</span>
+      </button>
     </div>
 
     <span id="status" class="clean" data-i18n="app.ready">Ready</span>
@@ -1216,11 +1255,40 @@
     <section id="tab-advanced" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-advanced" aria-hidden="true">
       <div class="json-toolbar">
         <span class="status-hint" data-i18n="json.hint">Raw JSON draft — apply or discard explicit changes</span>
-        <button id="btn-apply-json" class="btn primary" data-i18n="json.apply">Apply JSON</button>
-        <button id="btn-discard-json" class="btn" data-i18n="json.discard">Discard Draft</button>
-        <button id="btn-format-json" class="btn" data-i18n="json.format">Format</button>
-        <button id="btn-copy-json" class="btn" data-i18n="json.copy">Copy</button>
-        <button id="btn-reset-json" class="btn danger" data-i18n="json.reset">Reset to Sample</button>
+        <button id="btn-apply-json" class="btn primary">
+          <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span data-i18n="json.apply">Apply JSON</span>
+        </button>
+        <button id="btn-discard-json" class="btn">
+          <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          <span data-i18n="json.discard">Discard Draft</span>
+        </button>
+        <button id="btn-format-json" class="btn">
+          <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+          <span data-i18n="json.format">Format</span>
+        </button>
+        <button id="btn-copy-json" class="btn">
+          <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span data-i18n="json.copy">Copy</span>
+        </button>
+        <button id="btn-reset-json" class="btn danger">
+          <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 .49-3.5"></path>
+          </svg>
+          <span data-i18n="json.reset">Reset to Sample</span>
+        </button>
       </div>
       <textarea id="json-editor" spellcheck="false" aria-label="Raw settings JSON editor"></textarea>
       <div id="json-error"></div>

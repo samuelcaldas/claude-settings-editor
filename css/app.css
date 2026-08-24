@@ -336,6 +336,13 @@ header label,
   transform: none !important;
 }
 
+.btn-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
 #status {
   font-size: var(--font-size-sm);
   color: var(--text-muted);
