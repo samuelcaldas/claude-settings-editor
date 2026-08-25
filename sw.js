@@ -1,13 +1,15 @@
-const CACHE = 'claude-settings-v7';
+const CACHE = 'claude-settings-v8';
 const SHELL = [
   './',
   './index.html',
   './css/app.css',
   './js/i18n.js',
+  './js/settings-schema.js',
   './js/settings-catalog.js',
   './js/settings-model.js',
   './js/toast.js',
   './js/app.js',
+  './docs/claude-code-settings.json',
   './sample.json',
   './manifest.json',
   './icons/icon.svg'

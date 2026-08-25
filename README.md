@@ -4,7 +4,7 @@ Visual web editor for Claude Code `settings.json` — zero dependencies, zero bu
 
 ## Features
 
-- **Complete Schema Coverage & SchemaStore Compliance**: Strictly compliant with the official Claude Code JSON schema published on [SchemaStore](https://json.schemastore.org/claude-code-settings.json) (`docs/claude-code-settings.json`):
+- **Schema-Driven Architecture & SchemaStore Source of Truth**: Powered dynamically by the official Claude Code JSON schema (`docs/claude-code-settings.json` from [SchemaStore](https://json.schemastore.org/claude-code-settings.json)):
   - **General & UI**: Theme, TUI mode, input keybindings (normal/vim), effort level, language, notification channels, accessibility toggles, and view modes.
   - **Permissions & Security**: Starting permission modes (`default`, `acceptEdits`, `plan`, `auto`, `dontAsk`, `bypassPermissions`), rule lists (`deny`, `ask`, `allow`), and additional directories.
   - **Sandboxing**: Process isolation for Bash commands with filesystem path controls (allow/deny read/write), network egress domain rules, and excluded commands.
@@ -16,6 +16,7 @@ Visual web editor for Claude Code `settings.json` — zero dependencies, zero bu
   - **Plugins & Marketplaces**: Plugin enable/disable toggles and custom marketplace source management (`github`, `git`, `url`, `directory`).
   - **Managed Policies**: Enterprise settings (`forceLoginMethod`, `forceLoginGatewayUrl`, `requiredMinimumVersion`, `forceRemoteSettingsRefresh`, etc.).
   - **Advanced Raw JSON**: Direct JSON editing with formatting, syntax validation, draft discard/apply, and copy/download.
+- **Accessible Feature Identity**: Clean, consistent header displays showing compact localized label first and exact canonical schema path second in `<code>`, with accessible tooltip triggers disclosing the authoritative schema description.
 - **Internationalization (i18n)**: Seamless instant switching between **English (`en`)** and **Português do Brasil (`pt-BR`)** across all tabs, fields, hints, dynamic lists, diagnostic messages, and toolbar actions.
 - **Target Scope Selection & Guidance**: Target scope switcher (`User`, `Project`, `Local`, `Managed`) with contextual warnings for scope-restricted settings.
 - **Data Preservation & Precision Patching**: Modifies exact target paths without overwriting or stripping unknown keys, comments, or future enum values.
@@ -40,25 +41,28 @@ Open `http://localhost:8080` in your browser.
 index.html                     Semantic HTML shell & categorized tab panels
 css/app.css                    Terminal monospace styling & responsive mobile layout
 js/i18n.js                     Declarative i18n translation dictionary & DOM binder
-js/settings-catalog.js         Declarative settings metadata, enums, categories, and scopes
+js/settings-schema.js          Pure JSON Schema adapter ($ref resolution, normalization & traversal)
+js/settings-catalog.js         Declarative presentation metadata, scopes, and editor registry
 js/settings-model.js           Pure settings parser, immutable path operations & validation
+js/toast.js                    Accessible toast notification manager
 js/app.js                      Browser controller, scope inspection & dynamic collection builders
 sample.json                    Sample configuration fixture with placeholder credentials
-tests/                         Node.js test suite for settings model, catalog, and i18n
+tests/                         Node.js test suite for schema adapter, model, catalog, and i18n
+scripts/audit-schema.cjs       Automated CLI schema conformance and drift audit script
 sw.js                          PWA service worker for offline caching
 manifest.json                  PWA manifest
 docs/claude-code-settings.json Authoritative JSON Schema from SchemaStore
 docs/settings.md               Authoritative reference documentation for Claude Code settings
 ```
 
-## Feature Development & Schema Enforcement
+## Schema Enforcement & Automated Audit
 
-All feature additions, new settings, enums, and data types must strictly reference and conform to the official SchemaStore JSON Schema:
+All feature additions, new settings, enums, and data types strictly conform to the official SchemaStore JSON Schema:
 
 1. **Schema Reference**: Consult `docs/claude-code-settings.json` (mirrored from [https://json.schemastore.org/claude-code-settings.json](https://json.schemastore.org/claude-code-settings.json)) for exact property names, types, enums, and defaults.
 2. **Scope Rules**: Check `docs/settings.md` for scope applicability (`user`, `project`, `local`, `managed`).
-3. **Catalog & UI**: Register in `js/settings-catalog.js`, bind in `index.html`, and localize with 100% parity in `js/i18n.js`.
-4. **Validation**: Run the automated test suite before committing.
+3. **Catalog & UI**: Presentation overrides live in `js/settings-catalog.js`, markup binds via `data-setting-path`, and compact labels maintain 100% parity in `js/i18n.js`.
+4. **Schema Audit**: Run `node scripts/audit-schema.cjs` to enforce zero drift.
 
 ## Running Tests
 

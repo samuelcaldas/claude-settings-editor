@@ -1,6 +1,7 @@
 (function initApp() {
   const model = window.SettingsModel;
   const catalog = window.SettingsCatalog;
+  const schemaAdapterModule = window.SettingsSchema;
   const i18n = window.I18n;
   const Toast = window.Toast;
   if (!model) throw new Error('SettingsModel script not loaded');
@@ -36,6 +37,7 @@
     initToast();
     initLocale();
     initResponsiveShell();
+    initSchema();
     populateModelsDatalist(state.availableModels);
     renderModelDiscovery();
     bindEvents();
@@ -44,6 +46,25 @@
     loadDefaultSample();
     checkUrlActions();
   });
+
+  function initSchema() {
+    if (!schemaAdapterModule || !catalog) return;
+    fetch('./docs/claude-code-settings.json')
+      .then(res => {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(rawSchema => {
+        const adapter = schemaAdapterModule.createSchemaAdapter(rawSchema);
+        catalog.setSchemaAdapter(adapter);
+        enhanceFeatureHeaders();
+        renderAll();
+      })
+      .catch(err => {
+        console.warn('Could not load authoritative schema at runtime:', err);
+        enhanceFeatureHeaders();
+      });
+  }
 
   function initToast() {
     if (Toast && Toast.createManager) {
@@ -63,6 +84,7 @@
       if (toastManager) {
         toastManager.refreshTranslations();
       }
+      enhanceFeatureHeaders();
       renderAll();
       requestAnimationFrame(() => {
         updateNavScrollControls();
@@ -185,15 +207,17 @@
     const viewport = getElement('nav-scroll-viewport');
     if (!viewport || !tab || !mobileViewport.matches) return;
 
+    const viewportRect = viewport.getBoundingClientRect();
+    const tabRect = tab.getBoundingClientRect();
     const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const target = tab.offsetLeft - (viewport.clientWidth - tab.offsetWidth) / 2;
 
-    viewport.scrollTo({
-      left: Math.max(0, target),
-      behavior: smooth && !reducedMotion ? 'smooth' : 'auto'
-    });
-
-    scheduleNavScrollUpdate();
+    if (tabRect.left < viewportRect.left || tabRect.right > viewportRect.right) {
+      const scrollOffset = tab.offsetLeft - (viewport.clientWidth - tab.offsetWidth) / 2;
+      viewport.scrollTo({
+        left: Math.max(0, scrollOffset),
+        behavior: smooth && !reducedMotion ? 'smooth' : 'auto'
+      });
+    }
   }
 
   function syncTabOrientation() {
@@ -203,40 +227,43 @@
   }
 
   function initResponsiveShell() {
-    const trigger = getElement('btn-mobile-overflow');
-    const panel = getElement('mobile-overflow-panel');
+    const overflowTrigger = getElement('btn-mobile-overflow');
+    const overflowPanel = getElement('mobile-overflow-panel');
+    const scrollPrev = getElement('nav-scroll-prev');
+    const scrollNext = getElement('nav-scroll-next');
+    const navViewport = getElement('nav-scroll-viewport');
 
-    trigger?.addEventListener('click', e => {
-      e.stopPropagation();
-      const isOpen = trigger.getAttribute('aria-expanded') === 'true';
-      setMobileOverflowOpen(!isOpen, false);
+    overflowTrigger?.addEventListener('click', () => {
+      const isOpen = overflowPanel?.classList.contains('is-open');
+      setMobileOverflowOpen(!isOpen, true);
     });
 
-    document.addEventListener('pointerdown', event => {
-      if (!mobileViewport.matches || !panel || !trigger) return;
-      if (!panel.classList.contains('is-open')) return;
-      if (panel.contains(event.target) || trigger.contains(event.target)) return;
-      setMobileOverflowOpen(false, false);
-    });
-
-    document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && panel?.classList.contains('is-open')) {
-        event.preventDefault();
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && overflowPanel?.classList.contains('is-open')) {
         setMobileOverflowOpen(false, true);
       }
     });
 
-    if (mobileViewport.addEventListener) {
+    document.addEventListener('pointerdown', e => {
+      if (!overflowPanel?.classList.contains('is-open')) return;
+      const target = e.target;
+      if (!overflowPanel.contains(target) && !overflowTrigger?.contains(target)) {
+        setMobileOverflowOpen(false, false);
+      }
+    });
+
+    scrollPrev?.addEventListener('click', () => scrollNav(-1));
+    scrollNext?.addEventListener('click', () => scrollNav(1));
+    navViewport?.addEventListener('scroll', scheduleNavScrollUpdate, { passive: true });
+    window.addEventListener('resize', scheduleNavScrollUpdate);
+
+    if (typeof mobileViewport.addEventListener === 'function') {
       mobileViewport.addEventListener('change', () => {
         setMobileOverflowOpen(false, false);
         syncTabOrientation();
         updateNavScrollControls();
       });
     }
-
-    getElement('nav-scroll-prev')?.addEventListener('click', () => scrollNav(-1));
-    getElement('nav-scroll-next')?.addEventListener('click', () => scrollNav(1));
-    getElement('nav-scroll-viewport')?.addEventListener('scroll', scheduleNavScrollUpdate, { passive: true });
 
     setMobileOverflowOpen(false, false);
     syncTabOrientation();
@@ -350,23 +377,24 @@
     }
   }
 
-  async function saveFile() {
-    if (state.isSaving) return;
+  function onFileSelected(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      state.fileHandle = null;
+      state.fileName = file.name;
+      state.isSample = false;
+      setDocumentFromSource(evt.target.result, 'status.fileLoaded', { name: file.name });
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
 
-    if (state.fileHandle && !state.isSample) {
+  async function saveFile() {
+    if (state.fileHandle && !state.isSample && 'createWritable' in state.fileHandle) {
+      state.isSaving = true;
       try {
-        state.isSaving = true;
-        const options = { mode: 'readwrite' };
-        if (typeof state.fileHandle.queryPermission === 'function') {
-          const perm = await state.fileHandle.queryPermission(options);
-          if (perm !== 'granted') {
-            const req = await state.fileHandle.requestPermission(options);
-            if (req !== 'granted') {
-              setStatus('status.permissionDenied', 'err');
-              return;
-            }
-          }
-        }
         const writable = await state.fileHandle.createWritable();
         const json = model.serializeSettings(state.document);
         await writable.write(json);
@@ -375,28 +403,29 @@
         state.baseline = model.clone(state.document);
         state.isDirty = false;
         renderHeaderStatus();
-        setStatus('status.fileSavedDirect', 'ok', { name: state.fileName });
+        notify('status.fileSavedDirect', 'success', { name: state.fileName });
       } catch (err) {
-        setStatus('status.fileSaveErr', 'err', { error: err.message });
+        if (err.name === 'NotAllowedError') {
+          notify('status.permissionDenied', 'error');
+        } else {
+          notify('status.fileSaveErr', 'error', { error: err.message });
+        }
       } finally {
         state.isSaving = false;
       }
     } else {
-      await saveFileAs();
+      saveFileAs();
     }
   }
 
   async function saveFileAs() {
-    if (state.isSaving) return;
-
     if ('showSaveFilePicker' in window) {
+      state.isSaving = true;
       try {
-        state.isSaving = true;
-        const suggestedName = state.fileName === 'sample.json' ? 'settings.json' : (state.fileName || 'settings.json');
         const handle = await window.showSaveFilePicker({
-          suggestedName,
+          suggestedName: state.fileName || 'settings.json',
           types: [{
-            description: i18n ? i18n.t('file.jsonDescription') : 'JSON Files',
+            description: 'JSON Settings Document',
             accept: { 'application/json': ['.json'] }
           }]
         });
@@ -428,7 +457,11 @@
 
   function applyPatch(patch) {
     try {
-      const next = model.applyPatch(state.document, patch);
+      const next = model.setAtPath
+        ? model.applyPatch
+          ? model.applyPatch(state.document, patch)
+          : model.batchPatches(state.document, [patch])
+        : state.document;
       const validation = model.validateSettingsDocument(next);
       if (!validation.ok) {
         notify('status.invalidChange', 'error', { message: validation.diagnostics.map(d => d.message).join('; ') });
@@ -438,11 +471,27 @@
       state.history = state.history.slice(0, state.historyIdx + 1);
       state.history.push(model.clone(state.document));
       state.historyIdx++;
-      state.isDirty = !model.deepEqual(state.document, state.baseline);
+      state.isDirty = JSON.stringify(state.document) !== JSON.stringify(state.baseline);
       state.jsonDraft = model.serializeSettings(state.document);
       state.jsonError = '';
       state.diagnostics = model.inspectSettings(state.document, state.targetScope);
 
+      renderAll();
+    } catch (err) {
+      notify('status.editFailed', 'error', { error: err.message });
+    }
+  }
+
+  function batchPatches(patches) {
+    try {
+      const next = model.batchPatches(state.document, patches);
+      state.document = next;
+      state.history = state.history.slice(0, state.historyIdx + 1);
+      state.history.push(model.clone(state.document));
+      state.historyIdx++;
+      state.isDirty = JSON.stringify(state.document) !== JSON.stringify(state.baseline);
+      state.jsonDraft = model.serializeSettings(state.document);
+      state.diagnostics = model.inspectSettings(state.document, state.targetScope);
       renderAll();
     } catch (err) {
       notify('status.editFailed', 'error', { error: err.message });
@@ -455,7 +504,7 @@
     state.document = model.clone(state.history[state.historyIdx]);
     state.jsonDraft = model.serializeSettings(state.document);
     state.diagnostics = model.inspectSettings(state.document, state.targetScope);
-    state.isDirty = !model.deepEqual(state.document, state.baseline);
+    state.isDirty = JSON.stringify(state.document) !== JSON.stringify(state.baseline);
     renderAll();
     notify('status.undo', 'info');
   }
@@ -466,13 +515,12 @@
     state.document = model.clone(state.history[state.historyIdx]);
     state.jsonDraft = model.serializeSettings(state.document);
     state.diagnostics = model.inspectSettings(state.document, state.targetScope);
-    state.isDirty = !model.deepEqual(state.document, state.baseline);
+    state.isDirty = JSON.stringify(state.document) !== JSON.stringify(state.baseline);
     renderAll();
     notify('status.redo', 'info');
   }
 
   function bindEvents() {
-    // Header actions
     getElement('btn-open')?.addEventListener('click', () => runHeaderAction(openFile));
     getElement('btn-save')?.addEventListener('click', () => saveFile());
     getElement('btn-save-as')?.addEventListener('click', () => runHeaderAction(saveFileAs));
@@ -481,7 +529,6 @@
     getElement('btn-redo')?.addEventListener('click', () => runHeaderAction(redo));
     getElement('file-input')?.addEventListener('change', onFileSelected);
 
-    // Global keyboard shortcuts
     window.addEventListener('keydown', e => {
       const isCmdOrCtrl = e.ctrlKey || e.metaKey;
       if (!isCmdOrCtrl || e.altKey) return;
@@ -512,7 +559,6 @@
       }
     });
 
-    // Unsaved changes guard before unload
     window.addEventListener('beforeunload', e => {
       if (state.isDirty) {
         e.preventDefault();
@@ -520,7 +566,6 @@
       }
     });
 
-    // Scope selection
     const scopeSelect = getElement('scope-select');
     if (scopeSelect) {
       scopeSelect.value = state.targetScope;
@@ -529,10 +574,10 @@
         state.diagnostics = model.inspectSettings(state.document, state.targetScope);
         renderScopeInfo();
         renderDiagnostics();
+        renderFormFields();
       });
     }
 
-    // Tabs
     document.querySelectorAll('[role="tab"]').forEach(btn => {
       btn.addEventListener('click', e => {
         const tab = e.currentTarget.getAttribute('data-tab');
@@ -540,7 +585,6 @@
       });
     });
 
-    // Tabs keyboard navigation (roving tabindex)
     const tablist = getElement('settings-tablist');
     if (tablist) {
       tablist.addEventListener('keydown', e => {
@@ -602,7 +646,6 @@
       });
     });
 
-    // Unset buttons
     document.querySelectorAll('[data-unset-path]').forEach(btn => {
       btn.addEventListener('click', () => {
         const path = btn.getAttribute('data-unset-path');
@@ -610,7 +653,6 @@
       });
     });
 
-    // Permission Rule Add Buttons
     bindListAdd('btn-add-deny', 'new-deny-rule', 'permissions.deny');
     bindListAdd('btn-add-deny-rule', 'new-deny-rule', 'permissions.deny');
     bindListAdd('btn-add-ask', 'new-ask-rule', 'permissions.ask');
@@ -620,7 +662,6 @@
     bindListAdd('btn-add-dir', 'new-dir-rule', 'permissions.additionalDirectories');
     bindListAdd('btn-add-dir', 'new-add-dir', 'permissions.additionalDirectories');
 
-    // Sandbox Rule Add Buttons
     bindListAdd('btn-add-sb-allow-write', 'new-sb-allow-write', 'sandbox.filesystem.allowWrite');
     bindListAdd('btn-add-sb-deny-write', 'new-sb-deny-write', 'sandbox.filesystem.denyWrite');
     bindListAdd('btn-add-sb-deny-read', 'new-sb-deny-read', 'sandbox.filesystem.denyRead');
@@ -630,17 +671,14 @@
     bindListAdd('btn-add-sb-ex-cmd', 'new-sb-ex-cmd', 'sandbox.excludedCommands');
     bindListAdd('btn-add-sb-excluded-cmd', 'new-sb-excluded-cmd', 'sandbox.excludedCommands');
 
-    // Worktree Rule Add Buttons
     bindListAdd('btn-add-wt-symlink', 'new-wt-symlink', 'worktree.symlinkDirectories');
     bindListAdd('btn-add-wt-sparse', 'new-wt-sparse', 'worktree.sparsePaths');
 
-    // MCP Policy Rule Add Buttons
     bindListAdd('btn-add-mcp-approved', 'new-mcp-approved', 'mcp.approvedServers');
     bindListAdd('btn-add-mcp-rejected', 'new-mcp-rejected', 'mcp.rejectedServers');
     bindListAdd('btn-add-mcp-enabled', 'new-mcp-enabled-server', 'enabledMcpjsonServers');
     bindListAdd('btn-add-mcp-disabled', 'new-mcp-disabled-server', 'disabledMcpjsonServers');
 
-    // Env vars add & presets
     getElement('btn-add-env')?.addEventListener('click', addEnvVar);
     getElement('btn-add-env-var')?.addEventListener('click', addEnvVar);
     getElement('new-env-val')?.addEventListener('keydown', e => {
@@ -677,33 +715,27 @@
       ]);
     });
 
-    // Fallback models add
     getElement('btn-add-fallback')?.addEventListener('click', addFallbackModel);
     getElement('new-model-input')?.addEventListener('keydown', e => {
       if (e.key === 'Enter') addFallbackModel();
     });
 
-    // Enabled plugins add
     getElement('btn-add-plugin')?.addEventListener('click', addPlugin);
     getElement('new-plugin-key')?.addEventListener('keydown', e => {
       if (e.key === 'Enter') addPlugin();
     });
 
-    // Marketplaces add
     getElement('btn-add-mkt')?.addEventListener('click', addMarketplace);
     getElement('btn-add-marketplace')?.addEventListener('click', addMarketplace);
 
-    // Hook groups & URLs
     getElement('btn-add-hook')?.addEventListener('click', addHookGroup);
     getElement('btn-add-hook-group')?.addEventListener('click', addHookGroup);
     getElement('btn-add-hook-url')?.addEventListener('click', addHookUrl);
 
-    // Model Discovery Fetch Buttons
     document.querySelectorAll('.btn-fetch-models').forEach(btn => {
       btn.addEventListener('click', () => fetchModelsFromEndpoint());
     });
 
-    // Raw JSON toolbar
     getElement('btn-apply-json')?.addEventListener('click', applyJsonDraft);
     getElement('btn-discard-json')?.addEventListener('click', discardJsonDraft);
     getElement('btn-format-json')?.addEventListener('click', formatJsonDraft);
@@ -763,6 +795,60 @@
     revealTab(activeTabButton, true);
   }
 
+  function enhanceFeatureHeaders() {
+    document.querySelectorAll('[data-setting-path]').forEach(input => {
+      const path = input.getAttribute('data-setting-path');
+      if (!path) return;
+      const def = catalog && catalog.getSettingDefinition ? catalog.getSettingDefinition(path) : null;
+      if (!def) return;
+
+      const group = input.closest('.field-group') || input.closest('.checkbox-row');
+      if (!group) return;
+
+      let labelEl = group.querySelector('label');
+      if (labelEl) {
+        labelEl.replaceChildren();
+
+        const labelText = document.createElement('span');
+        labelText.className = 'feature-label-text';
+        labelText.textContent = i18n ? i18n.t(def.labelKey) : (def.label || def.name);
+
+        const codeEl = document.createElement('code');
+        codeEl.className = 'feature-canonical-path';
+        codeEl.textContent = def.path;
+
+        labelEl.appendChild(labelText);
+        labelEl.appendChild(codeEl);
+
+        // Tooltip button with authoritative description
+        if (def.description) {
+          const helpBtn = document.createElement('button');
+          helpBtn.type = 'button';
+          helpBtn.className = 'field-help-btn';
+          helpBtn.setAttribute('aria-label', (i18n ? i18n.t('actions.help') : 'Help') + ': ' + def.path);
+          helpBtn.textContent = 'ℹ';
+
+          const popover = document.createElement('span');
+          popover.className = 'feature-tooltip-popover';
+          popover.setAttribute('role', 'tooltip');
+          popover.id = `tooltip-${def.path.replace(/\./g, '_')}`;
+          popover.textContent = def.description;
+          helpBtn.setAttribute('aria-describedby', popover.id);
+
+          helpBtn.appendChild(popover);
+
+          helpBtn.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            helpBtn.classList.toggle('popover-open');
+          });
+
+          labelEl.appendChild(helpBtn);
+        }
+      }
+    });
+  }
+
   function renderAll() {
     renderHeaderStatus();
     renderScopeInfo();
@@ -807,7 +893,6 @@
     const redoBtn = getElement('btn-redo');
     if (redoBtn) redoBtn.disabled = state.historyIdx >= state.history.length - 1;
 
-    // Update document title with dirty marker
     const appTitle = i18n ? i18n.t('app.title') : 'Claude Settings Editor';
     const displayFile = state.isSample ? 'sample.json' : (state.fileName || 'settings.json');
     document.title = (state.isDirty ? '• ' : '') + displayFile + ' — ' + appTitle;
@@ -839,7 +924,6 @@
         input.value = val === undefined ? '' : val;
       }
 
-      // Check if setting is ignored in target scope
       const def = catalog.getSettingDefinition ? catalog.getSettingDefinition(path) : (catalog.getDefinition ? catalog.getDefinition(path) : null);
       const isIgnored = def && def.scopes && !def.scopes.includes(state.targetScope);
       const fieldGroup = input.closest('.field-group') || input.closest('.checkbox-row');
@@ -1150,106 +1234,66 @@
       }
     });
 
-    counts.forEach(cnt => {
-      if (state.isFetchingModels) {
-        cnt.textContent = i18n ? i18n.t('models.discovery.fetching') : 'Fetching...';
-      } else if (state.modelsSource === 'api') {
-        cnt.textContent = i18n
-          ? i18n.t('models.discovery.badge.loaded', { count: state.availableModels.length })
-          : `${state.availableModels.length} models`;
+    counts.forEach(countEl => {
+      const total = state.availableModels.length;
+      if (state.modelsSource === 'api') {
+        countEl.textContent = i18n ? i18n.t('models.discovery.badge.loaded', { count: total }) : `${total} models`;
       } else {
-        cnt.textContent = i18n
-          ? i18n.t('models.discovery.badge.defaults', { count: state.availableModels.length })
-          : `${state.availableModels.length} defaults`;
+        countEl.textContent = i18n ? i18n.t('models.discovery.badge.defaults', { count: total }) : `${total} defaults`;
       }
     });
 
-    texts.forEach(txt => {
+    texts.forEach(textEl => {
+      const total = state.availableModels.length;
       if (state.isFetchingModels) {
-        txt.textContent = i18n ? i18n.t('models.discovery.fetching') : 'Fetching models...';
+        textEl.textContent = i18n ? i18n.t('models.discovery.fetching') : 'Fetching models from endpoint...';
       } else if (state.modelsSource === 'api') {
-        txt.textContent = i18n
-          ? i18n.t('models.discovery.status.success', { count: state.availableModels.length })
-          : `Loaded ${state.availableModels.length} models from endpoint`;
+        textEl.textContent = i18n ? i18n.t('models.discovery.status.success', { count: total }) : `Loaded ${total} models from endpoint.`;
       } else if (state.modelsSource === 'error') {
-        txt.textContent = i18n
-          ? i18n.t('models.discovery.status.error', { error: state.modelsFetchError })
-          : `Failed to fetch models: ${state.modelsFetchError}`;
+        textEl.textContent = i18n ? i18n.t('models.discovery.status.error', { error: state.modelsFetchError }) : `Failed: ${state.modelsFetchError}`;
       } else {
-        txt.textContent = i18n
-          ? i18n.t('models.discovery.hint')
-          : 'Queries the OpenAI-compatible /v1/models endpoint to populate model dropdowns.';
+        textEl.textContent = i18n ? i18n.t('models.discovery.status.defaults', { count: total }) : `Using ${total} default model suggestions.`;
       }
     });
   }
 
   async function fetchModelsFromEndpoint() {
-    if (state.isFetchingModels) return;
-
-    const baseUrl = model.getAtPath(state.document, 'env.ANTHROPIC_BASE_URL') ||
-                    model.getAtPath(state.document, 'env.BASE_URL') ||
-                    model.getAtPath(state.document, 'env.OPENAI_BASE_URL') ||
-                    '';
-    const apiKey = model.getAtPath(state.document, 'env.ANTHROPIC_API_KEY') ||
-                   model.getAtPath(state.document, 'env.OPENAI_API_KEY') ||
-                   '';
+    const rawBaseUrl = model.getAtPath(state.document, 'env.ANTHROPIC_BASE_URL') || '';
+    const apiKey = model.getAtPath(state.document, 'env.ANTHROPIC_API_KEY') || '';
     const authToken = model.getAtPath(state.document, 'env.ANTHROPIC_AUTH_TOKEN') || '';
 
-    const resolvedUrl = model.buildOpenAiModelsUrl(baseUrl);
-    if (!resolvedUrl) {
-      setStatus(i18n ? i18n.t('models.discovery.status.noCreds') : 'Configure API Base URL and Key to fetch models', 'err');
+    const modelsUrl = model.buildOpenAiModelsUrl(rawBaseUrl || 'https://api.anthropic.com');
+    if (!modelsUrl) {
+      notify('models.discovery.status.noCreds', 'warning');
       return;
     }
 
     state.isFetchingModels = true;
+    state.modelsFetchError = '';
     renderModelDiscovery();
 
     try {
-      const headers = {
-        'Accept': 'application/json'
-      };
-      if (apiKey) {
+      const headers = { 'Accept': 'application/json' };
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      } else if (apiKey) {
         headers['Authorization'] = `Bearer ${apiKey}`;
         headers['x-api-key'] = apiKey;
-      } else if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
       }
 
-      let signal;
-      if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-        signal = AbortSignal.timeout(8000);
-      }
+      const res = await fetch(modelsUrl, { method: 'GET', headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      const data = await res.json();
+      const discovered = model.parseOpenAiModelsResponse(data);
+      if (discovered.length === 0) throw new Error('Endpoint returned 0 models');
 
-      const response = await fetch(resolvedUrl, {
-        method: 'GET',
-        headers,
-        signal
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const parsedModels = model.parseOpenAiModelsResponse(data);
-
-      if (parsedModels && parsedModels.length > 0) {
-        state.availableModels = parsedModels;
-        state.modelsSource = 'api';
-        state.modelsFetchError = '';
-        renderModelDiscovery();
-        setStatus(i18n ? i18n.t('models.discovery.status.success', { count: parsedModels.length }) : `Loaded ${parsedModels.length} models`, 'ok');
-      } else {
-        throw new Error('No models found in response payload');
-      }
+      state.availableModels = discovered;
+      state.modelsSource = 'api';
+      notify('models.discovery.status.success', 'success', { count: discovered.length });
     } catch (err) {
       state.modelsSource = 'error';
-      state.modelsFetchError = err.message || 'Fetch failed';
-      if (!state.availableModels || state.availableModels.length === 0) {
-        state.availableModels = model.getDefaultKnownModels ? model.getDefaultKnownModels() : [];
-      }
-      renderModelDiscovery();
-      setStatus(i18n ? i18n.t('models.discovery.status.error', { error: err.message }) : `Failed to fetch models: ${err.message}`, 'err');
+      state.modelsFetchError = err.message || 'Network error';
+      notify('models.discovery.status.error', 'error', { error: state.modelsFetchError });
     } finally {
       state.isFetchingModels = false;
       renderModelDiscovery();
@@ -1261,8 +1305,8 @@
     if (!el) return;
     el.replaceChildren();
 
-    const pluginsObj = model.getAtPath(state.document, 'enabledPlugins') || {};
-    if (typeof pluginsObj !== 'object' || Array.isArray(pluginsObj)) {
+    const plugins = model.getAtPath(state.document, 'enabledPlugins') || {};
+    if (typeof plugins !== 'object' || Array.isArray(plugins)) {
       const err = document.createElement('div');
       err.className = 'field-hint';
       err.textContent = i18n ? i18n.t('plugin.notObject') : 'enabledPlugins is not an object; edit in Advanced JSON.';
@@ -1270,7 +1314,7 @@
       return;
     }
 
-    const keys = Object.keys(pluginsObj);
+    const keys = Object.keys(plugins);
     if (keys.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'field-hint';
@@ -1280,19 +1324,20 @@
     }
 
     keys.forEach(key => {
-      const isEnabled = Boolean(pluginsObj[key]);
+      const isEnabled = Boolean(plugins[key]);
       const row = document.createElement('div');
-      row.className = 'plugin-item';
+      row.className = 'checkbox-row';
 
       const chk = document.createElement('input');
       chk.type = 'checkbox';
+      chk.id = `plugin-${key.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
       chk.checked = isEnabled;
       chk.addEventListener('change', () => {
         applyPatch({ op: 'set', path: `enabledPlugins.${key}`, value: chk.checked });
       });
 
-      const lbl = document.createElement('span');
-      lbl.className = 'rule-text';
+      const lbl = document.createElement('label');
+      lbl.htmlFor = chk.id;
       lbl.textContent = key;
 
       const delBtn = document.createElement('button');
@@ -1398,10 +1443,14 @@
         let formattedSource;
         if (selectedType === 'github') {
           formattedSource = { source: 'github', repo: currentVal };
-        } else if (selectedType === 'git' || selectedType === 'url') {
-          formattedSource = { source: selectedType, url: currentVal };
+        } else if (selectedType === 'url') {
+          formattedSource = { source: 'url', url: currentVal };
+        } else if (selectedType === 'git') {
+          formattedSource = { source: 'git', url: currentVal };
+        } else if (selectedType === 'directory') {
+          formattedSource = { source: 'directory', path: currentVal };
         } else {
-          formattedSource = { source: selectedType, path: currentVal };
+          formattedSource = currentVal;
         }
         applyPatch({ op: 'set', path: `extraKnownMarketplaces.${key}`, value: { source: formattedSource } });
       };
@@ -1417,45 +1466,43 @@
   }
 
   function addMarketplace() {
-    const nameInp = getElement('new-mkt-name') || getElement('new-marketplace-name');
-    const typeSel = getElement('new-mkt-type') || getElement('new-marketplace-type');
-    const srcInp = getElement('new-mkt-source') || getElement('new-marketplace-src');
-    if (!nameInp || !typeSel || !srcInp) return;
+    const nameInp = getElement('new-mkt-name');
+    const typeInp = getElement('new-mkt-type');
+    const srcInp = getElement('new-mkt-src');
+    if (!nameInp) return;
     const name = nameInp.value.trim();
     if (!name) return;
 
-    const selectedType = typeSel.value;
-    const currentVal = srcInp.value.trim();
+    const type = typeInp ? typeInp.value : 'github';
+    const src = srcInp ? srcInp.value.trim() : '';
+
     let formattedSource;
-    if (selectedType === 'github') {
-      formattedSource = { source: 'github', repo: currentVal };
-    } else if (selectedType === 'git' || selectedType === 'url') {
-      formattedSource = { source: selectedType, url: currentVal };
-    } else {
-      formattedSource = { source: selectedType, path: currentVal };
-    }
+    if (type === 'github') formattedSource = { source: 'github', repo: src };
+    else if (type === 'url') formattedSource = { source: 'url', url: src };
+    else if (type === 'git') formattedSource = { source: 'git', url: src };
+    else if (type === 'directory') formattedSource = { source: 'directory', path: src };
+    else formattedSource = src;
 
-    applyPatch({
-      op: 'set',
-      path: `extraKnownMarketplaces.${name}`,
-      value: {
-        source: formattedSource
-      }
-    });
-
+    applyPatch({ op: 'set', path: `extraKnownMarketplaces.${name}`, value: { source: formattedSource } });
     nameInp.value = '';
-    srcInp.value = '';
+    if (srcInp) srcInp.value = '';
   }
 
   function renderHooks() {
-    renderStringList('list-hook-urls', 'allowedHttpHookUrls');
-
-    const el = getElement('list-hook-groups');
+    const el = getElement('list-hooks') || getElement('hook-list');
     if (!el) return;
     el.replaceChildren();
 
-    const hooks = model.getAtPath(state.document, 'hooks') || {};
-    const events = Object.keys(hooks);
+    const hooksObj = model.getAtPath(state.document, 'hooks') || {};
+    if (typeof hooksObj !== 'object' || Array.isArray(hooksObj)) {
+      const err = document.createElement('div');
+      err.className = 'field-hint';
+      err.textContent = i18n ? i18n.t('hooks.notObject') : 'hooks is not an object; edit in Advanced JSON.';
+      el.appendChild(err);
+      return;
+    }
+
+    const events = Object.keys(hooksObj);
     if (events.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'field-hint';
@@ -1465,39 +1512,33 @@
     }
 
     events.forEach(evtName => {
-      const groupList = hooks[evtName];
-      if (!Array.isArray(groupList)) return;
+      const groups = hooksObj[evtName] || [];
+      if (!Array.isArray(groups)) return;
 
-      groupList.forEach((group, gIdx) => {
+      groups.forEach((group, gIdx) => {
         const card = document.createElement('div');
         card.className = 'hook-card';
 
         const hdr = document.createElement('div');
-        hdr.className = 'field-header';
+        hdr.className = 'hook-group-header';
 
         const title = document.createElement('span');
-        title.className = 'rule-title';
-        const groupNum = gIdx + 1;
-        if (group.matcher) {
-          title.textContent = i18n ? i18n.t('hooks.groupWithMatcher', { number: groupNum, matcher: group.matcher }) : `${evtName} - Group ${groupNum} (matcher: ${group.matcher})`;
-        } else {
-          title.textContent = i18n ? i18n.t('hooks.group', { number: groupNum }) + ` — ${evtName}` : `${evtName} - Group ${groupNum}`;
-        }
+        title.className = 'hook-matcher-label';
+        title.textContent = `${evtName}${group.matcher ? ` (${group.matcher})` : ''}`;
 
-        const delGroupBtn = document.createElement('button');
-        delGroupBtn.className = 'del-btn';
-        delGroupBtn.setAttribute('data-i18n-title', 'hooks.deleteEvent');
-        delGroupBtn.title = i18n ? i18n.t('hooks.deleteEvent') : 'Delete event';
-        delGroupBtn.textContent = '×';
-        delGroupBtn.addEventListener('click', () => {
+        const delGBtn = document.createElement('button');
+        delGBtn.className = 'del-btn';
+        delGBtn.setAttribute('data-i18n-title', 'actions.remove');
+        delGBtn.title = i18n ? i18n.t('actions.remove') : 'Remove';
+        delGBtn.textContent = '×';
+        delGBtn.addEventListener('click', () => {
           applyPatch({ op: 'delete', path: `hooks.${evtName}.${gIdx}` });
         });
 
         hdr.appendChild(title);
-        hdr.appendChild(delGroupBtn);
+        hdr.appendChild(delGBtn);
         card.appendChild(hdr);
 
-        // Handlers inside group
         const handlers = group.hooks || [];
         handlers.forEach((h, hIdx) => {
           const hRow = document.createElement('div');
@@ -1539,7 +1580,6 @@
           card.appendChild(hRow);
         });
 
-        // Add Handler Button
         const addHBtn = document.createElement('button');
         addHBtn.className = 'btn small';
         addHBtn.style.marginTop = '6px';
@@ -1620,17 +1660,16 @@
 
       const badge = document.createElement('span');
       badge.className = 'diag-badge';
-      const severityKey = `diag.severity.${d.severity}`;
-      badge.textContent = i18n ? i18n.t(severityKey) : d.severity.toUpperCase();
+      badge.textContent = (d.severity || 'INFO').toUpperCase();
 
       const pathCode = document.createElement('code');
-      pathCode.textContent = d.path ? d.path + ':' : '';
+      pathCode.textContent = d.path || '(root)';
 
       const msg = document.createElement('span');
-      msg.textContent = d.message;
+      msg.textContent = ` — ${d.message}`;
 
       li.appendChild(badge);
-      if (d.path) li.appendChild(pathCode);
+      li.appendChild(pathCode);
       li.appendChild(msg);
       listEl.appendChild(li);
     });
@@ -1638,124 +1677,100 @@
 
   function renderJsonEditor() {
     const editor = getElement('json-editor');
-    const errEl = getElement('json-error');
     if (editor && document.activeElement !== editor) {
-      editor.value = state.jsonDraft;
-    }
-    if (errEl) {
-      errEl.textContent = state.jsonError || '';
+      editor.value = state.jsonDraft || model.serializeSettings(state.document);
     }
   }
 
   function validateJsonDraftLive() {
     const errEl = getElement('json-error');
-    const parsed = model.parseSettingsJson(state.jsonDraft);
-    if (!parsed.ok) {
-      state.jsonError = parsed.diagnostics.map(d => d.message).join('; ');
-    } else {
-      state.jsonError = '';
+    if (!errEl) return;
+    try {
+      JSON.parse(state.jsonDraft);
+      errEl.textContent = '';
+    } catch (e) {
+      errEl.textContent = e.message;
     }
-    if (errEl) errEl.textContent = state.jsonError;
   }
 
   function applyJsonDraft() {
-    const src = state.jsonDraft;
-    const result = model.parseSettingsJson(src);
-    if (!result.ok) {
-      state.jsonError = result.diagnostics.map(d => d.message).join('; ');
-      renderJsonEditor();
-      setStatus('status.cannotApply', 'err');
-      return;
+    const editor = getElement('json-editor');
+    if (!editor) return;
+    const ok = setDocumentFromSource(editor.value, 'status.jsonApplied');
+    if (ok) {
+      notify('status.jsonApplied', 'success');
+    } else {
+      notify('status.cannotApply', 'error');
     }
-    const validation = model.validateSettingsDocument(result.value);
-    if (!validation.ok) {
-      state.jsonError = validation.diagnostics.map(d => d.message).join('; ');
-      renderJsonEditor();
-      setStatus('status.cannotApply', 'err');
-      return;
-    }
-
-    state.document = model.clone(result.value);
-    state.jsonError = '';
-    state.isDirty = !model.deepEqual(state.document, state.baseline);
-    state.history = state.history.slice(0, state.historyIdx + 1);
-    state.history.push(model.clone(state.document));
-    state.historyIdx++;
-    state.diagnostics = model.inspectSettings(state.document, state.targetScope);
-    renderAll();
-    setStatus('status.jsonApplied', 'ok');
   }
 
   function discardJsonDraft() {
     state.jsonDraft = model.serializeSettings(state.document);
     state.jsonError = '';
     renderJsonEditor();
-    setStatus('status.draftDiscarded', 'ok');
+    validateJsonDraftLive();
+    notify('status.draftDiscarded', 'info');
   }
 
   function formatJsonDraft() {
+    const editor = getElement('json-editor');
+    if (!editor) return;
     try {
-      const obj = JSON.parse(state.jsonDraft);
-      state.jsonDraft = JSON.stringify(obj, null, 2);
-      state.jsonError = '';
-      renderJsonEditor();
-    } catch (err) {
-      setStatus('status.formatErr', 'err', { error: err.message });
-      state.jsonError = 'Format error: ' + err.message;
-      renderJsonEditor();
+      const parsed = JSON.parse(editor.value);
+      const formatted = JSON.stringify(parsed, null, 2) + '\n';
+      editor.value = formatted;
+      state.jsonDraft = formatted;
+      validateJsonDraftLive();
+      notify('status.jsonApplied', 'info');
+    } catch (e) {
+      notify('status.formatErr', 'error', { error: e.message });
     }
   }
 
   function copyJsonDraft() {
-    navigator.clipboard.writeText(state.jsonDraft)
-      .then(() => setStatus('status.copied', 'ok'))
-      .catch(err => setStatus('status.copyFailed', 'err', { error: err.message }));
-  }
-
-  function onFileSelected(e) {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = evt => {
-      state.fileHandle = null;
-      state.fileName = file.name;
-      state.isSample = false;
-      setDocumentFromSource(evt.target.result, 'status.fileLoaded', { name: file.name });
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+    const editor = getElement('json-editor');
+    if (!editor) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(editor.value)
+        .then(() => notify('status.copied', 'success'))
+        .catch(err => notify('status.copyFailed', 'error', { error: err.message }));
+    } else {
+      editor.select();
+      document.execCommand('copy');
+      notify('status.copied', 'success');
+    }
   }
 
   function downloadSettings() {
     const json = model.serializeSettings(state.document);
     const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = state.fileName === 'sample.json' ? 'settings.json' : (state.fileName || 'settings.json');
+    a.href = url;
+    a.download = state.fileName || 'settings.json';
+    document.body.appendChild(a);
     a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
     notify('status.downloaded', 'success');
   }
 
-  function notify(msgKeyOrText, type, params, options) {
-    if (!toastManager) {
-      if (Toast && Toast.createManager) {
-        initToast();
-      }
-    }
+  function setStatus(msgKey, level, params) {
+    const el = getElement('status');
+    if (!el) return;
+    el.textContent = i18n ? i18n.t(msgKey, params) : msgKey;
+    el.className = level === 'err' ? 'dirty' : 'clean';
+  }
+
+  function notify(msgKey, type = 'info', params) {
     if (toastManager) {
-      return toastManager.notify(msgKeyOrText, {
-        type,
-        params,
-        ...options
-      });
+      toastManager.show(msgKey, { type, params });
+    } else {
+      setStatus(msgKey, type === 'error' ? 'err' : 'ok', params);
     }
-    return null;
   }
 
-  function setStatus(msgKeyOrText, type, params) {
-    return notify(msgKeyOrText, type, params);
+  function getElement(id) {
+    return document.getElementById(id);
   }
-
-  function getElement(id) { return document.getElementById(id); }
 })();

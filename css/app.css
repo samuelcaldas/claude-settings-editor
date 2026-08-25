@@ -517,6 +517,101 @@ main {
 .unset-btn:hover { color: var(--red); }
 .unset-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
+.scope-mismatch {
+  opacity: 0.65;
+  position: relative;
+}
+
+.scope-mismatch::after {
+  content: '⚠️ Ignored in selected scope';
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--yellow);
+  margin-top: 2px;
+  font-family: var(--font-sans);
+}
+
+/* Feature Header & Tooltip Popover */
+.field-header-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.feature-label-text {
+  color: var(--text-bright);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+}
+
+.feature-canonical-path {
+  color: var(--accent);
+  font-size: var(--font-size-xs);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+}
+
+.field-help-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  position: relative;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.field-help-btn:hover,
+.field-help-btn:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+  outline: none;
+}
+
+.feature-tooltip-popover {
+  position: absolute;
+  z-index: var(--layer-popover, 200);
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 320px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  color: var(--text-bright);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease-out, visibility 0.15s ease-out;
+  white-space: normal;
+}
+
+.field-help-btn:hover .feature-tooltip-popover,
+.field-help-btn:focus .feature-tooltip-popover,
+.field-help-btn:focus-visible .feature-tooltip-popover,
+.field-help-btn.popover-open .feature-tooltip-popover {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
 input[type=text], input[type=password], input[type=number], select, textarea {
   width: 100%;
   background: var(--bg-elevated);

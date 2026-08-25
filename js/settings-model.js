@@ -19,30 +19,7 @@
   const UNSAFE_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
   const SECRET_KEY_PATTERN = /(api[_-]?key|auth[_-]?token|access[_-]?token|secret|password|private[_-]?key|credential)/i;
 
-  const KNOWN_SHAPES = [
-    ['env', 'object'],
-    ['permissions', 'object'],
-    ['sandbox', 'object'],
-    ['worktree', 'object'],
-    ['statusLine', 'object'],
-    ['fallbackModel', 'array'],
-    ['enabledPlugins', 'object'],
-    ['pluginConfigs', 'object'],
-    ['hooks', 'object'],
-    ['extraKnownMarketplaces', 'object'],
-    ['strictKnownMarketplaces', 'array'],
-    ['blockedMarketplaces', 'array'],
-    ['allowedMcpServers', 'array'],
-    ['deniedMcpServers', 'array'],
-    ['enabledMcpjsonServers', 'array'],
-    ['disabledMcpjsonServers', 'array'],
-    ['companyAnnouncements', 'array'],
-    ['footerLinksRegexes', 'array'],
-    ['availableModels', 'array'],
-    ['modelOverrides', 'object']
-  ];
-
-  const ENUMS = catalogModule ? catalogModule.ENUMS : {
+  const DEFAULT_ENUMS = {
     'permissions.defaultMode': [
       'default',
       'acceptEdits',
@@ -87,6 +64,37 @@
     dialogExpiry: ['never', '60s', '5m', '10m']
   };
 
+  const KNOWN_SHAPES = [
+    ['env', 'object'],
+    ['permissions', 'object'],
+    ['sandbox', 'object'],
+    ['worktree', 'object'],
+    ['statusLine', 'object'],
+    ['fallbackModel', 'array'],
+    ['enabledPlugins', 'object'],
+    ['pluginConfigs', 'object'],
+    ['hooks', 'object'],
+    ['extraKnownMarketplaces', 'object'],
+    ['strictKnownMarketplaces', 'array'],
+    ['blockedMarketplaces', 'array'],
+    ['allowedMcpServers', 'array'],
+    ['deniedMcpServers', 'array'],
+    ['enabledMcpjsonServers', 'array'],
+    ['disabledMcpjsonServers', 'array'],
+    ['companyAnnouncements', 'array'],
+    ['footerLinksRegexes', 'array'],
+    ['availableModels', 'array'],
+    ['modelOverrides', 'object']
+  ];
+
+  function getEnumListForPath(path) {
+    if (catalogModule && typeof catalogModule.getSettingDefinition === 'function') {
+      const def = catalogModule.getSettingDefinition(path);
+      if (def && Array.isArray(def.enum)) return def.enum;
+    }
+    return DEFAULT_ENUMS[path] || null;
+  }
+
   function isPlainObject(value) {
     if (value === null || typeof value !== 'object') return false;
     const prototype = Object.getPrototypeOf(value);
@@ -97,6 +105,20 @@
     if (typeof structuredClone === 'function') return structuredClone(value);
     if (value === undefined) return undefined;
     return JSON.parse(JSON.stringify(value));
+  }
+
+  function deepEqual(a, b) {
+    if (a === b) return true;
+    if (a === null || typeof a !== 'object' || b === null || typeof b !== 'object') return false;
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+    for (let i = 0; i < keysA.length; i++) {
+      const k = keysA[i];
+      if (!Object.prototype.hasOwnProperty.call(b, k)) return false;
+      if (!deepEqual(a[k], b[k])) return false;
+    }
+    return true;
   }
 
   function normalizePath(path) {
@@ -119,66 +141,64 @@
     let value;
     try {
       value = JSON.parse(source);
-    } catch (error) {
-      return invalidResult('Invalid JSON: ' + error.message);
+    } catch (err) {
+      return invalidResult('JSON parse error: ' + err.message);
     }
-    const validation = validateSettingsDocument(value);
-    if (!validation.ok) return { ok: false, value: null, diagnostics: validation.diagnostics };
-    return { ok: true, value: clone(value), diagnostics: validation.diagnostics };
+    if (!isPlainObject(value)) {
+      return invalidResult('Settings document root must be a JSON object');
+    }
+    const diagnostics = validateSettingsDocument(value, options && options.targetScope);
+    return {
+      ok: !diagnostics.some(d => d.severity === 'error'),
+      value,
+      diagnostics
+    };
+  }
+
+  function serializeSettings(value) {
+    return JSON.stringify(value || {}, null, 2) + '\n';
   }
 
   function invalidResult(message) {
-    return { ok: false, value: null, diagnostics: [{ severity: 'error', path: '$', message }] };
+    return {
+      ok: false,
+      value: null,
+      diagnostics: [{ severity: 'error', path: '', message }]
+    };
   }
 
-  function validateSettingsDocument(value) {
-    if (!isPlainObject(value)) return invalidResult('Settings root must be a JSON object');
-    const diagnostics = inspectSettings(value);
-    const errors = diagnostics.filter(item => item.severity === 'error');
-    return { ok: errors.length === 0, diagnostics };
-  }
-
-  function inspectSettings(value, targetScope) {
-    if (!isPlainObject(value)) return [{ severity: 'error', path: '$', message: 'Settings root must be a JSON object' }];
+  function validateSettingsDocument(value, targetScope) {
     const diagnostics = [];
+    if (!isPlainObject(value)) {
+      diagnostics.push({ severity: 'error', path: '', message: 'Root must be a JSON object' });
+      return diagnostics;
+    }
 
-    // Structural shapes validation
-    KNOWN_SHAPES.forEach(([path, expected]) => {
-      if (!(path in value)) return;
-      const actual = Array.isArray(value[path]) ? 'array' : typeof value[path];
-      if (actual !== expected || (expected === 'object' && !isPlainObject(value[path]))) {
-        diagnostics.push({ severity: 'error', path, message: path + ' must be a ' + expected });
+    KNOWN_SHAPES.forEach(([propPath, expectedType]) => {
+      const current = getAtPath(value, propPath);
+      if (current === undefined) return;
+      if (expectedType === 'object' && (!isPlainObject(current) || Array.isArray(current))) {
+        diagnostics.push({ severity: 'error', path: propPath, message: `${propPath} must be an object` });
+      } else if (expectedType === 'array' && !Array.isArray(current)) {
+        diagnostics.push({ severity: 'error', path: propPath, message: `${propPath} must be an array` });
       }
     });
 
-    // Enums inspection
-    Object.entries(ENUMS).forEach(([path, allowed]) => {
-      const current = getAtPath(value, path);
-      if (current === undefined || current === null || current === '') return;
-      if (typeof current === 'string' && current.startsWith('custom:')) return; // Custom themes allowed
-      if (!allowed.includes(current)) {
-        diagnostics.push({ severity: 'warning', path, message: 'Non-standard value preserved: ' + String(current) });
+    const checkEnum = (path) => {
+      const allowed = getEnumListForPath(path);
+      if (allowed) {
+        const val = getAtPath(value, path);
+        if (val !== undefined && !allowed.includes(val)) {
+          diagnostics.push({
+            severity: 'warning',
+            path,
+            message: `Unknown value "${val}" for ${path}. Valid options: ${allowed.join(', ')}`
+          });
+        }
       }
-    });
+    };
 
-    // Specific constraints
-    if (value.autoCompactWindow !== undefined && value.autoCompactWindow !== null) {
-      const num = Number(value.autoCompactWindow);
-      if (!Number.isFinite(num) || num < 100000 || num > 1000000) {
-        diagnostics.push({ severity: 'warning', path: 'autoCompactWindow', message: 'autoCompactWindow should typically be between 100000 and 1000000 tokens' });
-      }
-    }
-
-    if (Array.isArray(value.fallbackModel) && value.fallbackModel.length > 3) {
-      diagnostics.push({ severity: 'warning', path: 'fallbackModel', message: 'Fallback model chains are capped at 3 models; excess models will be ignored by Claude Code.' });
-    }
-
-    if (value.cleanupPeriodDays !== undefined && value.cleanupPeriodDays !== null) {
-      const days = Number(value.cleanupPeriodDays);
-      if (!Number.isFinite(days) || days < 1) {
-        diagnostics.push({ severity: 'error', path: 'cleanupPeriodDays', message: 'cleanupPeriodDays must be an integer of at least 1' });
-      }
-    }
+    ['theme', 'tui', 'editorMode', 'effortLevel', 'preferredNotifChannel', 'worktree.baseRef', 'worktree.bgIsolation', 'viewMode', 'teammateMode', 'workflowSizeGuideline', 'autoUpdatesChannel', 'forceLoginMethod', 'parentSettingsBehavior', 'defaultShell', 'crossSessionInbound', 'askUserQuestionTimeout', 'dialogExpiry', 'permissions.defaultMode'].forEach(checkEnum);
 
     inspectHooks(value, diagnostics);
     inspectPermissions(value, diagnostics);
@@ -233,7 +253,6 @@
   function inspectScope(value, targetScope, diagnostics) {
     if (!targetScope) return;
 
-    // Scope rules
     if (targetScope === 'project' || targetScope === 'local') {
       if (value.claudeMd !== undefined) {
         diagnostics.push({
@@ -263,261 +282,210 @@
           message: 'auto permission mode is ignored in Project and Local settings.'
         });
       }
-      if ((value.permissions && value.permissions.skipDangerousModePermissionPrompt) || value.skipDangerousModePermissionPrompt) {
-        diagnostics.push({
-          severity: 'warning',
-          path: value.skipDangerousModePermissionPrompt ? 'skipDangerousModePermissionPrompt' : 'permissions.skipDangerousModePermissionPrompt',
-          message: 'skipDangerousModePermissionPrompt is ignored in Project settings.'
-        });
-      }
-      if (value.skipAutoPermissionPrompt) {
-        diagnostics.push({
-          severity: 'warning',
-          path: 'skipAutoPermissionPrompt',
-          message: 'skipAutoPermissionPrompt is ignored in Project settings.'
-        });
-      }
-    }
-
-    if (targetScope !== 'managed') {
-      if (value.allowManagedPermissionRulesOnly) {
+      if (value.allowManagedPermissionRulesOnly !== undefined) {
         diagnostics.push({
           severity: 'warning',
           path: 'allowManagedPermissionRulesOnly',
-          message: 'allowManagedPermissionRulesOnly is a Managed-only policy setting.'
+          message: 'allowManagedPermissionRulesOnly is only supported in Managed scope.'
         });
       }
-      if (value.allowManagedHooksOnly) {
+    }
+
+    if (targetScope === 'managed') {
+      if (value.allowManagedPermissionRulesOnly !== undefined && typeof value.allowManagedPermissionRulesOnly !== 'boolean') {
         diagnostics.push({
-          severity: 'warning',
-          path: 'allowManagedHooksOnly',
-          message: 'allowManagedHooksOnly is a Managed-only policy setting.'
-        });
-      }
-      if (value.allowManagedMcpServersOnly) {
-        diagnostics.push({
-          severity: 'warning',
-          path: 'allowManagedMcpServersOnly',
-          message: 'allowManagedMcpServersOnly is a Managed-only policy setting.'
+          severity: 'error',
+          path: 'allowManagedPermissionRulesOnly',
+          message: 'allowManagedPermissionRulesOnly must be a boolean'
         });
       }
     }
   }
 
-  function getAtPath(root, path) {
+  function getAtPath(doc, path) {
+    if (!doc || typeof doc !== 'object') return undefined;
     const segments = normalizePath(path);
-    let current = root;
-    for (const segment of segments) {
-      if (current === null || current === undefined) return undefined;
-      current = current[segment];
+    let current = doc;
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i];
+      if (current === null || typeof current !== 'object' || !(seg in current)) {
+        return undefined;
+      }
+      current = current[seg];
     }
     return current;
   }
 
-  function setAtPath(root, path, value) {
+  function setAtPath(doc, path, value) {
     const segments = normalizePath(path);
-    if (!segments.length) {
-      if (!isPlainObject(value)) throw new Error('Settings root must be a JSON object');
-      return clone(value);
-    }
-    const result = clone(root);
-    if (!isPlainObject(result) && !Array.isArray(result)) throw new Error('Cannot set path on non-object root');
-    let current = result;
-    segments.forEach((segment, index) => {
-      const last = index === segments.length - 1;
-      if (last) {
-        current[segment] = clone(value);
-        return;
-      }
-      const nextSegment = segments[index + 1];
-      if (current[segment] === undefined || current[segment] === null || typeof current[segment] !== 'object') {
-        current[segment] = isArrayIndex(nextSegment) ? [] : {};
-      }
-      current = current[segment];
-    });
-    return result;
-  }
+    if (segments.length === 0) return clone(value);
 
-  function deleteAtPath(root, path) {
-    const segments = normalizePath(path);
-    if (!segments.length) throw new Error('Cannot delete settings root');
-    const result = clone(root);
-    const parent = getAtPath(result, segments.slice(0, -1));
-    if (parent === null || parent === undefined) return result;
-    const key = segments[segments.length - 1];
-    if (Array.isArray(parent) && isArrayIndex(key)) parent.splice(Number(key), 1);
-    else if (isPlainObject(parent)) delete parent[key];
-    return result;
-  }
-
-  function moveAtPath(root, path, fromIndex, toIndex) {
-    const segments = normalizePath(path);
-    const result = clone(root);
-    const list = getAtPath(result, segments);
-    if (!Array.isArray(list)) throw new Error('Move path must reference an array');
-    if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex)) throw new Error('Move indexes must be integers');
-    if (fromIndex < 0 || fromIndex >= list.length || toIndex < 0 || toIndex >= list.length) return result;
-    const item = list.splice(fromIndex, 1)[0];
-    list.splice(toIndex, 0, item);
-    return result;
-  }
-
-  function renameKeyAtPath(root, path, oldKey, newKey) {
-    if (!oldKey || !newKey || oldKey === newKey) return root;
-    if (UNSAFE_SEGMENTS.has(newKey) || UNSAFE_SEGMENTS.has(oldKey)) {
-      throw new Error('Unsafe key name: ' + (UNSAFE_SEGMENTS.has(newKey) ? newKey : oldKey));
-    }
-    const segments = normalizePath(path);
-    const result = clone(root);
-    const targetObj = segments.length ? getAtPath(result, segments) : result;
-    if (!isPlainObject(targetObj)) throw new Error('Target for key rename must be an object');
-    if (oldKey in targetObj) {
-      const val = targetObj[oldKey];
-      delete targetObj[oldKey];
-      targetObj[newKey] = val;
-    }
-    return result;
-  }
-
-  function applyPatch(root, patch) {
-    if (!patch || typeof patch !== 'object') throw new Error('Patch must be an object');
-    if (patch.op === 'set') return setAtPath(root, patch.path, patch.value);
-    if (patch.op === 'delete') return deleteAtPath(root, patch.path);
-    if (patch.op === 'move') {
-      const from = patch.from !== undefined ? patch.from : patch.fromIndex;
-      const to = patch.to !== undefined ? patch.to : patch.toIndex;
-      return moveAtPath(root, patch.path, from, to);
-    }
-    if (patch.op === 'renameKey' || patch.op === 'rename_key') {
-      const oldKey = patch.oldKey !== undefined ? patch.oldKey : patch.fromKey;
-      const newKey = patch.newKey !== undefined ? patch.newKey : patch.toKey;
-      return renameKeyAtPath(root, patch.path, oldKey, newKey);
-    }
-    throw new Error('Unsupported patch operation: ' + patch.op);
-  }
-
-  function batchPatches(root, patches) {
-    if (!Array.isArray(patches)) throw new Error('patches must be an array');
+    const root = clone(doc || {});
     let current = root;
+    for (let i = 0; i < segments.length - 1; i++) {
+      const seg = segments[i];
+      const nextSeg = segments[i + 1];
+      const isNextNumeric = /^\d+$/.test(nextSeg);
+
+      if (!(seg in current) || current[seg] === null || typeof current[seg] !== 'object') {
+        current[seg] = isNextNumeric ? [] : {};
+      }
+      current = current[seg];
+    }
+
+    const lastSeg = segments[segments.length - 1];
+    if (Array.isArray(current) && /^\d+$/.test(lastSeg)) {
+      current[parseInt(lastSeg, 10)] = clone(value);
+    } else {
+      current[lastSeg] = clone(value);
+    }
+
+    return root;
+  }
+
+  function deleteAtPath(doc, path) {
+    const segments = normalizePath(path);
+    if (segments.length === 0) return {};
+    const root = clone(doc || {});
+    let current = root;
+
+    for (let i = 0; i < segments.length - 1; i++) {
+      const seg = segments[i];
+      if (current === null || typeof current !== 'object' || !(seg in current)) {
+        return root;
+      }
+      current = current[seg];
+    }
+
+    const lastSeg = segments[segments.length - 1];
+    if (Array.isArray(current) && /^\d+$/.test(lastSeg)) {
+      current.splice(parseInt(lastSeg, 10), 1);
+    } else if (isPlainObject(current)) {
+      delete current[lastSeg];
+    }
+
+    return root;
+  }
+
+  function moveAtPath(doc, arrayPath, fromIndex, toIndex) {
+    const arr = getAtPath(doc, arrayPath);
+    if (!Array.isArray(arr)) return clone(doc);
+    if (fromIndex < 0 || fromIndex >= arr.length || toIndex < 0 || toIndex >= arr.length) {
+      return clone(doc);
+    }
+    const newArr = [...arr];
+    const [item] = newArr.splice(fromIndex, 1);
+    newArr.splice(toIndex, 0, item);
+    return setAtPath(doc, arrayPath, newArr);
+  }
+
+  function renameKeyAtPath(doc, mapPath, oldKey, newKey) {
+    if (!oldKey || !newKey || oldKey === newKey) return clone(doc);
+    if (UNSAFE_SEGMENTS.has(String(newKey))) {
+      throw new Error('Unsafe key name: ' + newKey);
+    }
+    validateSegment(newKey);
+    const map = getAtPath(doc, mapPath);
+    if (!isPlainObject(map) || !(oldKey in map)) return clone(doc);
+
+    const root = clone(doc || {});
+    const targetMap = getAtPath(root, mapPath);
+    const val = targetMap[oldKey];
+    delete targetMap[oldKey];
+    targetMap[newKey] = val;
+    return root;
+  }
+
+  function batchPatches(doc, patches) {
+    let current = clone(doc || {});
+    if (!Array.isArray(patches)) return current;
     for (const patch of patches) {
-      current = applyPatch(current, patch);
+      if (!patch || typeof patch !== 'object') continue;
+      if (patch.op === 'set') {
+        current = setAtPath(current, patch.path, patch.value);
+      } else if (patch.op === 'delete') {
+        current = deleteAtPath(current, patch.path);
+      } else if (patch.op === 'move') {
+        current = moveAtPath(current, patch.path, patch.fromIndex, patch.toIndex);
+      } else if (patch.op === 'renameKey' || patch.op === 'rename_key') {
+        current = renameKeyAtPath(current, patch.path, patch.oldKey || patch.fromKey, patch.newKey || patch.toKey);
+      }
     }
     return current;
   }
 
-  function serializeSettings(value, spacing) {
-    const validation = validateSettingsDocument(value);
-    if (!validation.ok) throw new Error(validation.diagnostics.map(item => item.message).join('; '));
-    return JSON.stringify(value, null, spacing === undefined ? 2 : spacing) + '\n';
-  }
+  function redactSecrets(doc) {
+    if (!doc || typeof doc !== 'object') return doc;
+    const cloned = clone(doc);
 
-  function deepEqual(left, right) {
-    if (Object.is(left, right)) return true;
-    if (typeof left !== typeof right || left === null || right === null) return false;
-    if (Array.isArray(left) !== Array.isArray(right)) return false;
-    if (Array.isArray(left)) return left.length === right.length && left.every((item, index) => deepEqual(item, right[index]));
-    if (typeof left === 'object') {
-      const leftKeys = Object.keys(left);
-      const rightKeys = Object.keys(right);
-      return leftKeys.length === rightKeys.length && leftKeys.every(key => Object.prototype.hasOwnProperty.call(right, key) && deepEqual(left[key], right[key]));
-    }
-    return false;
-  }
-
-  function redactSecrets(value) {
-    if (Array.isArray(value)) return value.map(redactSecrets);
-    if (!isPlainObject(value)) return value;
-    return Object.fromEntries(Object.entries(value).map(([key, entry]) => {
-      const isSecret = SECRET_KEY_PATTERN.test(key);
-      if (isSecret && typeof entry === 'string' && entry.trim().length > 0) {
-        return [key, '[redacted]'];
+    function walk(node) {
+      if (Array.isArray(node)) {
+        node.forEach(walk);
+      } else if (isPlainObject(node)) {
+        Object.keys(node).forEach(k => {
+          if (SECRET_KEY_PATTERN.test(k) && typeof node[k] === 'string' && node[k].length > 0) {
+            node[k] = '[redacted]';
+          } else {
+            walk(node[k]);
+          }
+        });
       }
-      return [key, redactSecrets(entry)];
-    }));
-  }
+    }
 
-  const DEFAULT_KNOWN_MODELS = [
-    'claude-3-7-sonnet-20250219',
-    'claude-3-5-sonnet-20241022',
-    'claude-3-5-haiku-20241022',
-    'claude-3-opus-20240229',
-    'claude-sonnet-5',
-    'claude-opus-5',
-    'claude-haiku-4-5-20251001',
-    'claude-fable-5',
-    'gpt-4o',
-    'gpt-4o-mini',
-    'o1',
-    'o3-mini',
-    'gemini-2.5-pro',
-    'gemini-2.5-flash',
-    'gemini-3.7-flash-high[1m]',
-    'gemini-3.7-flash-medium[1m]',
-    'gemini-3.7-flash-low[1m]'
-  ];
-
-  function getDefaultKnownModels() {
-    return DEFAULT_KNOWN_MODELS.slice();
+    walk(cloned);
+    return cloned;
   }
 
   function buildOpenAiModelsUrl(baseUrl) {
     if (!baseUrl || typeof baseUrl !== 'string') return '';
     const trimmed = baseUrl.trim();
-    if (!/^https?:\/\//i.test(trimmed)) return '';
-    const cleaned = trimmed.replace(/\/+$/, '');
-    if (!cleaned) return '';
-    if (cleaned.endsWith('/models')) return cleaned;
-    if (cleaned.endsWith('/v1')) return cleaned + '/models';
-    return cleaned + '/v1/models';
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) return '';
+    const cleanBase = trimmed.replace(/\/+$/, '');
+    if (cleanBase.endsWith('/models')) return cleanBase;
+    if (cleanBase.endsWith('/v1')) return cleanBase + '/models';
+    return cleanBase + '/v1/models';
   }
 
-  function parseOpenAiModelsResponse(payload) {
-    if (!payload) return [];
-    let data = payload;
-    if (typeof payload === 'string') {
+  function parseOpenAiModelsResponse(input) {
+    if (!input) return [];
+    let json = input;
+    if (typeof input === 'string') {
       try {
-        data = JSON.parse(payload);
+        json = JSON.parse(input);
       } catch (_) {
         return [];
       }
     }
-    let list = [];
-    if (Array.isArray(data)) {
-      list = data;
-    } else if (data && typeof data === 'object') {
-      if (Array.isArray(data.data)) {
-        list = data.data;
-      } else if (Array.isArray(data.models)) {
-        list = data.models;
-      }
+    if (!json || typeof json !== 'object') return [];
+    let items = [];
+    if (Array.isArray(json.data)) {
+      items = json.data.map(m => (typeof m === 'string' ? m : m.id || m.model || m.name)).filter(Boolean);
+    } else if (Array.isArray(json.models)) {
+      items = json.models.map(m => (typeof m === 'string' ? m : m.name || m.id || m.model)).filter(Boolean);
+    } else if (Array.isArray(json)) {
+      items = json.map(m => (typeof m === 'string' ? m : m.id || m.model || m.name)).filter(Boolean);
     }
-    const extracted = [];
-    for (const item of list) {
-      if (typeof item === 'string') {
-        const id = item.trim();
-        if (id) extracted.push(id);
-      } else if (item && typeof item === 'object') {
-        const candidate = item.id || item.name || item.model;
-        if (typeof candidate === 'string') {
-          const id = candidate.trim();
-          if (id) extracted.push(id);
-        }
-      }
-    }
-    const unique = Array.from(new Set(extracted));
-    unique.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-    return unique;
+    return Array.from(new Set(items)).sort();
   }
 
-  function isArrayIndex(segment) {
-    return /^(0|[1-9]\d*)$/.test(String(segment));
+  function getDefaultKnownModels() {
+    return [
+      'claude-3-7-sonnet-20250219',
+      'claude-3-5-sonnet-20241022',
+      'claude-3-5-haiku-20241022',
+      'claude-3-opus-20240229',
+      'claude-sonnet-5',
+      'claude-fable-5',
+      'claude-haiku-4-5-20251001',
+      'gpt-4o',
+      'gpt-4o-mini',
+      'o3-mini',
+      'gemini-2.0-flash'
+    ];
   }
 
   return {
-    ENUMS,
-    KNOWN_SHAPES,
-    DEFAULT_KNOWN_MODELS,
-    applyPatch,
+    applyPatch: (doc, patch) => batchPatches(doc, [patch]),
     batchPatches,
     buildOpenAiModelsUrl,
     clone,
@@ -525,11 +493,7 @@
     deleteAtPath,
     getAtPath,
     getDefaultKnownModels,
-    inspectPermissions,
-    inspectSandbox,
-    inspectScope,
-    inspectSettings,
-    isPlainObject,
+    inspectSettings: validateSettingsDocument,
     moveAtPath,
     normalizePath,
     parseOpenAiModelsResponse,
