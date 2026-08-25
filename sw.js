@@ -1,4 +1,4 @@
-const CACHE = 'claude-settings-v8';
+const CACHE = 'claude-settings-v9';
 const SHELL = [
   './',
   './index.html',

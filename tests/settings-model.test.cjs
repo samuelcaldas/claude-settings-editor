@@ -232,3 +232,29 @@ test('real ~/.claude/settings.json parses and serializes with 100% roundtrip fid
     assert.deepEqual(roundTripped, expected);
   }
 });
+
+test('validateSettingsDocument returns ok boolean and diagnostics array', () => {
+  const validDoc = { theme: 'dark', permissions: { allow: ['Bash'] } };
+  const validResult = model.validateSettingsDocument(validDoc);
+  assert.equal(typeof validResult, 'object');
+  assert.equal(validResult.ok, true);
+  assert.ok(Array.isArray(validResult.diagnostics));
+
+  const invalidDoc = { permissions: { allow: 'not-an-array' } };
+  const invalidResult = model.validateSettingsDocument(invalidDoc);
+  assert.equal(invalidResult.ok, false);
+  assert.ok(Array.isArray(invalidResult.diagnostics));
+  assert.equal(invalidResult.diagnostics.some(d => d.severity === 'error'), true);
+
+  const nonObjectResult = model.validateSettingsDocument('not-an-object');
+  assert.equal(nonObjectResult.ok, false);
+  assert.ok(Array.isArray(nonObjectResult.diagnostics));
+  assert.equal(nonObjectResult.diagnostics.some(d => d.severity === 'error'), true);
+});
+
+test('inspectSettings returns diagnostics array directly', () => {
+  const doc = { theme: 'invalid-theme' };
+  const diagnostics = model.inspectSettings(doc);
+  assert.ok(Array.isArray(diagnostics));
+  assert.equal(diagnostics.some(d => d.path === 'theme'), true);
+});

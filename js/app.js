@@ -464,7 +464,9 @@
         : state.document;
       const validation = model.validateSettingsDocument(next);
       if (!validation.ok) {
-        notify('status.invalidChange', 'error', { message: validation.diagnostics.map(d => d.message).join('; ') });
+        const diagnostics = validation.diagnostics || [];
+        const message = diagnostics.map(d => d.message).join('; ');
+        notify('status.invalidChange', 'error', { message });
         return;
       }
       state.document = next;
@@ -485,6 +487,13 @@
   function batchPatches(patches) {
     try {
       const next = model.batchPatches(state.document, patches);
+      const validation = model.validateSettingsDocument(next);
+      if (!validation.ok) {
+        const diagnostics = validation.diagnostics || [];
+        const message = diagnostics.map(d => d.message).join('; ');
+        notify('status.invalidChange', 'error', { message });
+        return;
+      }
       state.document = next;
       state.history = state.history.slice(0, state.historyIdx + 1);
       state.history.push(model.clone(state.document));

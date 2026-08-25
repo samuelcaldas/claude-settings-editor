@@ -147,11 +147,11 @@
     if (!isPlainObject(value)) {
       return invalidResult('Settings document root must be a JSON object');
     }
-    const diagnostics = validateSettingsDocument(value, options && options.targetScope);
+    const validation = validateSettingsDocument(value, options && options.targetScope);
     return {
-      ok: !diagnostics.some(d => d.severity === 'error'),
+      ok: validation.ok,
       value,
-      diagnostics
+      diagnostics: validation.diagnostics
     };
   }
 
@@ -167,7 +167,7 @@
     };
   }
 
-  function validateSettingsDocument(value, targetScope) {
+  function inspectSettings(value, targetScope) {
     const diagnostics = [];
     if (!isPlainObject(value)) {
       diagnostics.push({ severity: 'error', path: '', message: 'Root must be a JSON object' });
@@ -209,6 +209,21 @@
     }
 
     return diagnostics;
+  }
+
+  function validateSettingsDocument(value, targetScope) {
+    if (!isPlainObject(value)) {
+      return {
+        ok: false,
+        diagnostics: [{ severity: 'error', path: '', message: 'Settings root must be a JSON object' }]
+      };
+    }
+    const diagnostics = inspectSettings(value, targetScope);
+    const errors = diagnostics.filter(item => item.severity === 'error');
+    return {
+      ok: errors.length === 0,
+      diagnostics
+    };
   }
 
   function inspectHooks(value, diagnostics) {
@@ -493,7 +508,7 @@
     deleteAtPath,
     getAtPath,
     getDefaultKnownModels,
-    inspectSettings: validateSettingsDocument,
+    inspectSettings,
     moveAtPath,
     normalizePath,
     parseOpenAiModelsResponse,
