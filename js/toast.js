@@ -159,21 +159,20 @@
       const wasRunning = item.pauseReasons.size === 0;
       item.pauseReasons.add(reason);
 
-      if (wasRunning) {
-        if (item.timerId && clearTimeoutFn) {
-          clearTimeoutFn(item.timerId);
-          item.timerId = null;
+      if (wasRunning && item.timerId && clearTimeoutFn) {
+        clearTimeoutFn(item.timerId);
+        item.timerId = null;
+        if (item.startedAt > 0) {
+          const elapsed = Math.max(0, nowFn() - item.startedAt);
+          item.remaining = Math.max(0, item.remaining - elapsed);
         }
-        const elapsed = nowFn() - (item.startedAt || nowFn());
-        item.remaining = Math.max(0, item.remaining - elapsed);
       }
     }
 
     function resumeToast(item, reason) {
       if (!item.pauseReasons) return;
       item.pauseReasons.delete(reason);
-
-      if (item.pauseReasons.size === 0 && item.remaining > 0 && !item.isExiting) {
+      if (item.pauseReasons.size === 0 && item.state === 'visible' && !item.isExiting) {
         startTimer(item);
       }
     }
@@ -208,7 +207,7 @@
     function notify(msgKeyOrText, opts = {}) {
       const type = normalizeType(opts.type || (typeof opts === 'string' ? opts : 'info'));
       const duration = resolveDuration(type, opts.duration);
-      const isKey = Boolean(opts.isKey || (typeof msgKeyOrText === 'string' && (msgKeyOrText.startsWith('status.') || msgKeyOrText.startsWith('toast.'))));
+      const isKey = Boolean(opts.isKey || (typeof msgKeyOrText === 'string' && (msgKeyOrText.startsWith('status.') || msgKeyOrText.startsWith('toast.') || msgKeyOrText.startsWith('models.'))));
 
       const item = {
         id: nextId++,
@@ -326,6 +325,7 @@
 
     return {
       notify,
+      show: notify,
       dismiss,
       dismissAll,
       refreshTranslations,
