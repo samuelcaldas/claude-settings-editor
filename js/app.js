@@ -29,6 +29,22 @@
     modelsFetchError: ''
   };
 
+  const SESSION_STORAGE_KEY = 'claude_settings_editor_session_v1';
+  const VALID_TABS = new Set([
+    'general',
+    'permissions',
+    'sandbox',
+    'env',
+    'models',
+    'hooks',
+    'mcp',
+    'worktree',
+    'plugins',
+    'advanced-policies',
+    'advanced'
+  ]);
+  const VALID_SCOPES = new Set(['user', 'project', 'local', 'managed']);
+
   const mobileViewport = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(max-width: 768px)') : { matches: false, addEventListener: () => {} };
   let navScrollFrame = 0;
   let toastManager = null;
@@ -43,9 +59,185 @@
     bindEvents();
     registerLaunchQueue();
     registerServiceWorker();
-    loadDefaultSample();
+
+    const urlParams = getUrlParams();
+    const restored = restoreSessionState();
+
+    if (restored) {
+      if (urlParams.tab) state.activeTab = urlParams.tab;
+      if (urlParams.scope) state.targetScope = urlParams.scope;
+
+      const scopeSelect = getElement('scope-select');
+      if (scopeSelect) scopeSelect.value = state.targetScope;
+
+      renderAll();
+      switchTab(state.activeTab, false);
+      syncUrl(state.activeTab, state.targetScope, false);
+    } else {
+      if (urlParams.tab) state.activeTab = urlParams.tab;
+      if (urlParams.scope) state.targetScope = urlParams.scope;
+
+      const scopeSelect = getElement('scope-select');
+      if (scopeSelect) scopeSelect.value = state.targetScope;
+
+      loadDefaultSample();
+    }
+
+    window.addEventListener('popstate', onPopState);
     checkUrlActions();
   });
+
+  function getUrlParams() {
+    try {
+      if (typeof window === 'undefined' || !window.location) {
+        return { tab: null, scope: null };
+      }
+      const params = new URLSearchParams(window.location.search);
+      let tab = params.get('tab');
+      let scope = params.get('scope');
+
+      if (!tab && window.location.hash) {
+        const cleanHash = window.location.hash.replace(/^#tab-|^#/, '');
+        if (VALID_TABS.has(cleanHash)) {
+          tab = cleanHash;
+        }
+      }
+
+      return {
+        tab: VALID_TABS.has(tab) ? tab : null,
+        scope: VALID_SCOPES.has(scope) ? scope : null
+      };
+    } catch (_) {
+      return { tab: null, scope: null };
+    }
+  }
+
+  function syncUrl(tabId, scope, pushHistory = false) {
+    try {
+      if (typeof window === 'undefined' || !window.history || !window.location) return;
+      const effectiveTab = VALID_TABS.has(tabId) ? tabId : state.activeTab;
+      const effectiveScope = VALID_SCOPES.has(scope) ? scope : state.targetScope;
+
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', effectiveTab);
+      url.searchParams.set('scope', effectiveScope);
+      url.searchParams.delete('action');
+      const target = url.pathname + url.search + url.hash;
+
+      const stateObj = { tab: effectiveTab, scope: effectiveScope };
+      if (pushHistory) {
+        window.history.pushState(stateObj, '', target);
+      } else {
+        window.history.replaceState(stateObj, '', target);
+      }
+    } catch (_) {}
+  }
+
+  function saveSessionState() {
+    try {
+      if (typeof window === 'undefined' || !window.sessionStorage) return;
+
+      const maxHistory = 15;
+      let trimmedHistory = state.history;
+      let trimmedIdx = state.historyIdx;
+      if (Array.isArray(state.history) && state.history.length > maxHistory) {
+        const start = Math.max(0, state.historyIdx - (maxHistory - 1));
+        trimmedHistory = state.history.slice(start, start + maxHistory);
+        trimmedIdx = state.historyIdx - start;
+      }
+
+      const payload = {
+        version: 1,
+        timestamp: Date.now ? Date.now() : 0,
+        state: {
+          document: state.document,
+          baseline: state.baseline,
+          fileName: state.fileName,
+          isSample: state.isSample,
+          targetScope: state.targetScope,
+          activeTab: state.activeTab,
+          isDirty: state.isDirty,
+          history: trimmedHistory,
+          historyIdx: trimmedIdx,
+          jsonDraft: state.jsonDraft || ''
+        }
+      };
+
+      try {
+        window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
+      } catch (quotaErr) {
+        payload.state.history = [state.document];
+        payload.state.historyIdx = 0;
+        window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
+      }
+    } catch (_) {}
+  }
+
+  function restoreSessionState() {
+    try {
+      if (typeof window === 'undefined' || !window.sessionStorage) return false;
+      const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (!raw) return false;
+
+      const payload = JSON.parse(raw);
+      if (!payload || typeof payload !== 'object' || !payload.state) return false;
+      const s = payload.state;
+      if (!s.document || typeof s.document !== 'object') return false;
+
+      state.document = model.clone(s.document);
+      state.baseline = s.baseline && typeof s.baseline === 'object' ? model.clone(s.baseline) : model.clone(s.document);
+      state.fileName = typeof s.fileName === 'string' ? s.fileName : 'settings.json';
+      state.isSample = Boolean(s.isSample);
+      state.targetScope = VALID_SCOPES.has(s.targetScope) ? s.targetScope : 'user';
+      state.activeTab = VALID_TABS.has(s.activeTab) ? s.activeTab : 'general';
+      state.isDirty = Boolean(s.isDirty);
+      state.jsonDraft = typeof s.jsonDraft === 'string' ? s.jsonDraft : model.serializeSettings(state.document);
+      state.jsonError = '';
+
+      if (Array.isArray(s.history) && s.history.length > 0) {
+        state.history = s.history.map(item => model.clone(item));
+        state.historyIdx = typeof s.historyIdx === 'number' && s.historyIdx >= 0 && s.historyIdx < state.history.length
+          ? s.historyIdx
+          : state.history.length - 1;
+      } else {
+        state.history = [model.clone(state.document)];
+        state.historyIdx = 0;
+      }
+
+      state.diagnostics = model.inspectSettings(state.document, state.targetScope);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function clearSessionState() {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      }
+    } catch (_) {}
+  }
+
+  function onPopState(e) {
+    const params = getUrlParams();
+    const tab = (e && e.state && e.state.tab) || params.tab || 'general';
+    const scope = (e && e.state && e.state.scope) || params.scope || 'user';
+
+    if (VALID_SCOPES.has(scope) && scope !== state.targetScope) {
+      state.targetScope = scope;
+      const scopeSelect = getElement('scope-select');
+      if (scopeSelect) scopeSelect.value = scope;
+      state.diagnostics = model.inspectSettings(state.document, state.targetScope);
+      renderScopeInfo();
+      renderDiagnostics();
+      renderFormFields();
+    }
+
+    if (VALID_TABS.has(tab) && tab !== state.activeTab) {
+      switchTab(tab, false);
+    }
+  }
 
   function initSchema() {
     if (!schemaAdapterModule || !catalog) return;
@@ -129,6 +321,9 @@
         setTimeout(() => openFile(), 150);
       } else if (action === 'sample') {
         setTimeout(() => loadDefaultSample(), 150);
+      }
+      if (action) {
+        syncUrl(state.activeTab, state.targetScope, false);
       }
     } catch (_) {}
   }
@@ -281,6 +476,9 @@
         state.fileName = 'sample.json';
         state.isSample = true;
         setDocumentFromSource(source, 'status.sampleLoaded');
+        const urlParams = getUrlParams();
+        const tab = urlParams.tab || state.activeTab || 'general';
+        switchTab(tab, false);
       })
       .catch(err => {
         state.fileHandle = null;
@@ -288,6 +486,9 @@
         state.isSample = false;
         setDocumentFromObject({}, 'status.initEmpty');
         setStatus('status.loadSampleErr', 'err', { error: err.message });
+        const urlParams = getUrlParams();
+        const tab = urlParams.tab || state.activeTab || 'general';
+        switchTab(tab, false);
       });
   }
 
@@ -319,6 +520,7 @@
     state.diagnostics = model.inspectSettings(state.document, state.targetScope);
 
     renderAll();
+    saveSessionState();
     if (statusMsgKey) setStatus(statusMsgKey, 'ok', statusParams);
   }
 
@@ -403,6 +605,7 @@
         state.baseline = model.clone(state.document);
         state.isDirty = false;
         renderHeaderStatus();
+        saveSessionState();
         notify('status.fileSavedDirect', 'success', { name: state.fileName });
       } catch (err) {
         if (err.name === 'NotAllowedError') {
@@ -440,6 +643,7 @@
         state.baseline = model.clone(state.document);
         state.isDirty = false;
         renderHeaderStatus();
+        saveSessionState();
         notify('status.fileSavedDirect', 'success', { name: state.fileName });
       } catch (err) {
         if (err.name === 'AbortError') {
@@ -453,6 +657,24 @@
     } else {
       downloadSettings();
     }
+  }
+
+  function downloadSettings() {
+    const json = model.serializeSettings(state.document);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = state.fileName || 'settings.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    state.baseline = model.clone(state.document);
+    state.isDirty = false;
+    renderHeaderStatus();
+    saveSessionState();
+    notify('status.downloaded', 'success');
   }
 
   function applyPatch(patch) {
@@ -479,6 +701,7 @@
       state.diagnostics = model.inspectSettings(state.document, state.targetScope);
 
       renderAll();
+      saveSessionState();
     } catch (err) {
       notify('status.editFailed', 'error', { error: err.message });
     }
@@ -502,6 +725,7 @@
       state.jsonDraft = model.serializeSettings(state.document);
       state.diagnostics = model.inspectSettings(state.document, state.targetScope);
       renderAll();
+      saveSessionState();
     } catch (err) {
       notify('status.editFailed', 'error', { error: err.message });
     }
@@ -515,6 +739,7 @@
     state.diagnostics = model.inspectSettings(state.document, state.targetScope);
     state.isDirty = JSON.stringify(state.document) !== JSON.stringify(state.baseline);
     renderAll();
+    saveSessionState();
     notify('status.undo', 'info');
   }
 
@@ -526,6 +751,7 @@
     state.diagnostics = model.inspectSettings(state.document, state.targetScope);
     state.isDirty = JSON.stringify(state.document) !== JSON.stringify(state.baseline);
     renderAll();
+    saveSessionState();
     notify('status.redo', 'info');
   }
 
@@ -584,6 +810,8 @@
         renderScopeInfo();
         renderDiagnostics();
         renderFormFields();
+        syncUrl(state.activeTab, state.targetScope, true);
+        saveSessionState();
       });
     }
 
@@ -770,6 +998,7 @@
       jsonEditor.addEventListener('input', e => {
         state.jsonDraft = e.target.value;
         validateJsonDraftLive();
+        saveSessionState();
       });
     }
   }
@@ -797,25 +1026,28 @@
     });
   }
 
-  function switchTab(tabId) {
-    state.activeTab = tabId;
+  function switchTab(tabId, pushHistory = true) {
+    const validId = VALID_TABS.has(tabId) ? tabId : 'general';
+    state.activeTab = validId;
     let activeTabButton = null;
     document.querySelectorAll('[role="tab"]').forEach(btn => {
-      const active = btn.getAttribute('data-tab') === tabId;
+      const active = btn.getAttribute('data-tab') === validId;
       btn.setAttribute('aria-selected', String(active));
       btn.classList.toggle('active', active);
       btn.tabIndex = active ? 0 : -1;
       if (active) activeTabButton = btn;
     });
     document.querySelectorAll('.tab-panel').forEach(panel => {
-      const active = panel.id === `tab-${tabId}`;
+      const active = panel.id === `tab-${validId}`;
       panel.classList.toggle('active', active);
       panel.setAttribute('aria-hidden', String(!active));
     });
-    if (tabId === 'advanced') {
+    if (validId === 'advanced') {
       renderJsonEditor();
     }
     revealTab(activeTabButton, true);
+    syncUrl(validId, state.targetScope, pushHistory);
+    saveSessionState();
   }
 
   function enhanceFeatureHeaders() {
