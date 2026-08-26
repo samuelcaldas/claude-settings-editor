@@ -77,3 +77,10 @@ test('boolean and 0/1 settings are represented as accessible checkbox inputs in 
   assert.ok(!html.includes('<select id="permissions_disableAutoMode"'), 'No select element for permissions_disableAutoMode');
   assert.ok(!html.includes('<select id="permissions_disableBypassPermissionsMode"'), 'No select element for permissions_disableBypassPermissionsMode');
 });
+
+test('css/app.css defines 2-line layout rules for field-label and feature-meta-line', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'app.css'), 'utf8');
+  assert.ok(css.includes('.feature-meta-line'), 'CSS must define .feature-meta-line class');
+  assert.ok(css.includes('flex-direction: column'), 'CSS must define column flex direction for stacked field labels');
+  assert.ok(css.includes('.checkbox-row label'), 'CSS must define .checkbox-row label rules');
+});

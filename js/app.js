@@ -830,18 +830,23 @@
 
       let labelEl = group.querySelector('label');
       if (labelEl) {
+        const existingSpan = labelEl.querySelector('span');
+        const fallbackText = (existingSpan && existingSpan.textContent.trim()) || def.label || def.name;
+
         labelEl.replaceChildren();
 
         const labelText = document.createElement('span');
         labelText.className = 'feature-label-text';
-        labelText.textContent = i18n ? i18n.t(def.labelKey) : (def.label || def.name);
+        const translated = i18n ? i18n.t(def.labelKey) : null;
+        labelText.textContent = (translated && translated !== def.labelKey) ? translated : fallbackText;
+
+        const metaLine = document.createElement('span');
+        metaLine.className = 'feature-meta-line';
 
         const codeEl = document.createElement('code');
         codeEl.className = 'feature-canonical-path';
         codeEl.textContent = def.path;
-
-        labelEl.appendChild(labelText);
-        labelEl.appendChild(codeEl);
+        metaLine.appendChild(codeEl);
 
         // Tooltip button with authoritative description
         if (def.description) {
@@ -866,8 +871,18 @@
             helpBtn.classList.toggle('popover-open');
           });
 
-          labelEl.appendChild(helpBtn);
+          metaLine.appendChild(helpBtn);
         }
+
+        if (def.scopes && def.scopes.length === 1 && def.scopes[0] === 'managed') {
+          const badge = document.createElement('span');
+          badge.className = 'badge-scope badge-managed';
+          badge.textContent = i18n ? i18n.t('badge.managedOnly') : 'Managed Only';
+          metaLine.appendChild(badge);
+        }
+
+        labelEl.appendChild(labelText);
+        labelEl.appendChild(metaLine);
       }
     });
   }

@@ -475,8 +475,9 @@ main {
 .field-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
+  align-items: flex-start;
+  margin-bottom: 5px;
+  gap: var(--space-sm);
 }
 
 .field-label {
@@ -484,10 +485,11 @@ main {
   font-weight: 600;
   color: var(--text-bright);
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   letter-spacing: 0.3px;
-  flex-wrap: wrap;
-  gap: 4px;
+  gap: 3px;
+  width: 100%;
 }
 
 .field-label code {
@@ -543,6 +545,15 @@ main {
   color: var(--text-bright);
   font-weight: 600;
   font-size: var(--font-size-sm);
+  line-height: 1.35;
+}
+
+.feature-meta-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
 }
 
 .feature-canonical-path {
@@ -601,6 +612,7 @@ main {
   visibility: hidden;
   transition: opacity 0.15s ease-out, visibility 0.15s ease-out;
   white-space: normal;
+  word-break: break-word;
 }
 
 .field-help-btn:hover .feature-tooltip-popover,
@@ -649,10 +661,11 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
 
 .checkbox-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  padding: 4px 0;
-  min-height: 32px;
+  padding: 5px 0;
+  min-height: 36px;
+  transition: background-color 0.12s ease-out;
 }
 
 .checkbox-row input[type=checkbox] {
@@ -661,6 +674,7 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
   accent-color: var(--accent);
   cursor: pointer;
   flex-shrink: 0;
+  margin-top: 3px;
 }
 
 .checkbox-row label {
@@ -669,6 +683,10 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
   flex: 1;
   line-height: 1.4;
   font-size: var(--font-size-base);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 
 .checkbox-row label code {
