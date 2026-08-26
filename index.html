@@ -377,37 +377,18 @@
           <div class="field-hint" data-i18n="field.permMode.hint">Note: <code>auto</code> mode is only honored in User or Managed scope.</div>
         </div>
 
-        <div class="field-group">
-          <div class="field-header">
-            <label class="field-label" for="permissions_disableAutoMode"><code>permissions.disableAutoMode</code></label>
-            <button class="unset-btn" data-unset-path="permissions.disableAutoMode" data-i18n="actions.unset">unset</button>
-          </div>
-          <select id="permissions_disableAutoMode" data-setting-path="permissions.disableAutoMode">
-            <option value="" data-i18n="field.disableAutoMode.default">(Enabled / Not set)</option>
-            <option value="disable" data-i18n="field.disableAutoMode.disable">disable — prevent auto mode entirely</option>
-          </select>
-        </div>
-
-        <div class="field-group">
-          <div class="field-header">
-            <label class="field-label" for="permissions_disableBypassPermissionsMode"><code>permissions.disableBypassPermissionsMode</code></label>
-            <button class="unset-btn" data-unset-path="permissions.disableBypassPermissionsMode" data-i18n="actions.unset">unset</button>
-          </div>
-          <select id="permissions_disableBypassPermissionsMode" data-setting-path="permissions.disableBypassPermissionsMode">
-            <option value="" data-i18n="field.disableBypass.default">(Enabled / Not set)</option>
-            <option value="disable" data-i18n="field.disableBypass.disable">disable — block bypass permissions mode</option>
-          </select>
-        </div>
       </div>
 
       <div class="section-title mt-xl" data-i18n="sections.permissions.flags">Permission Flags</div>
       <div class="grid-2">
         <div>
+          <div class="checkbox-row"><input type="checkbox" id="permissions_disableAutoMode" data-setting-path="permissions.disableAutoMode" data-checkbox-true="disable"><label for="permissions_disableAutoMode"><code>permissions.disableAutoMode</code> <span class="badge-scope badge-managed" data-i18n="badge.managedOnly">Managed Only</span> — <span data-i18n="toggle.disableAutoMode">Disable auto mode entirely</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="permissions_disableBypassPermissionsMode" data-setting-path="permissions.disableBypassPermissionsMode" data-checkbox-true="disable"><label for="permissions_disableBypassPermissionsMode"><code>permissions.disableBypassPermissionsMode</code> <span class="badge-scope badge-managed" data-i18n="badge.managedOnly">Managed Only</span> — <span data-i18n="toggle.disableBypass">Block bypass permissions mode</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="skipDangerousModePermissionPrompt" data-setting-path="skipDangerousModePermissionPrompt"><label for="skipDangerousModePermissionPrompt"><code>skipDangerousModePermissionPrompt</code> — <span data-i18n="toggle.skipDangerousModeTop">Skip dangerous mode prompt (top-level)</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="permissions_skipDangerousModePermissionPrompt" data-setting-path="permissions.skipDangerousModePermissionPrompt"><label for="permissions_skipDangerousModePermissionPrompt"><code>permissions.skipDangerousModePermissionPrompt</code> — <span data-i18n="toggle.skipDangerousModePrompt">Skip dangerous mode prompt (nested)</span></label></div>
-          <div class="checkbox-row"><input type="checkbox" id="skipAutoPermissionPrompt" data-setting-path="skipAutoPermissionPrompt"><label for="skipAutoPermissionPrompt"><code>skipAutoPermissionPrompt</code> — <span data-i18n="toggle.skipAutoPermissionPrompt">Skip auto permission prompt</span></label></div>
         </div>
         <div>
+          <div class="checkbox-row"><input type="checkbox" id="skipAutoPermissionPrompt" data-setting-path="skipAutoPermissionPrompt"><label for="skipAutoPermissionPrompt"><code>skipAutoPermissionPrompt</code> — <span data-i18n="toggle.skipAutoPermissionPrompt">Skip auto permission prompt</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="useAutoModeDuringPlan" data-setting-path="useAutoModeDuringPlan"><label for="useAutoModeDuringPlan"><code>useAutoModeDuringPlan</code> — <span data-i18n="toggle.useAutoModeDuringPlan">Use auto mode during plan execution</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="autoMode_classifyAllShell" data-setting-path="autoMode.classifyAllShell"><label for="autoMode_classifyAllShell"><code>autoMode.classifyAllShell</code> — <span data-i18n="toggle.classifyAllShell">Classify all shell commands in auto mode</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="allowManagedPermissionRulesOnly" data-setting-path="allowManagedPermissionRulesOnly"><label for="allowManagedPermissionRulesOnly"><code>allowManagedPermissionRulesOnly</code> <span class="badge-scope badge-managed" data-i18n="badge.managedOnly">Managed Only</span></label></div>
@@ -840,19 +821,9 @@
             </div>
             <input type="text" id="env_CLAUDE_CODE_SUBAGENT_MODEL" data-setting-path="env.CLAUDE_CODE_SUBAGENT_MODEL" placeholder="e.g. gpt-5.6-sol[1m]" list="available-models-datalist">
           </div>
-          <div class="field-group">
-            <div class="field-header">
-              <label class="field-label" for="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-i18n="models.field.discovery">Gateway Model Discovery (1/0)</label>
-              <button class="unset-btn" data-unset-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-i18n="actions.unset">unset</button>
-            </div>
-            <input type="text" id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" placeholder="1">
-          </div>
-          <div class="field-group">
-            <div class="field-header">
-              <label class="field-label" for="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-i18n="models.field.advisorTool">Disable Advisor Tool (1/0)</label>
-              <button class="unset-btn" data-unset-path="env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-i18n="actions.unset">unset</button>
-            </div>
-            <input type="text" id="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-setting-path="env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL" placeholder="1">
+          <div class="field-group field-group-checkbox">
+            <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-checkbox-true="1"><label for="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"><code>env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY</code> — <span data-i18n="toggle.enableGatewayModelDiscovery">Gateway model discovery</span></label></div>
+            <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-setting-path="env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-checkbox-true="1"><label for="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL"><code>env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL</code> — <span data-i18n="toggle.disableAdvisorTool">Disable server-side advisor tool</span></label></div>
           </div>
         </div>
       </div>

@@ -635,11 +635,25 @@
       input.addEventListener(eventType, () => {
         let val;
         if (input.type === 'checkbox') {
-          val = input.checked;
-          if (val === false) {
-            applyPatch({ op: 'set', path, value: false });
-            return;
+          const customTrue = input.getAttribute('data-checkbox-true');
+          const customFalse = input.getAttribute('data-checkbox-false');
+          if (input.checked) {
+            val = customTrue !== null ? customTrue : true;
+          } else {
+            if (customFalse !== null) {
+              val = customFalse;
+            } else if (customTrue !== null) {
+              val = undefined;
+            } else {
+              val = false;
+            }
           }
+          if (val === undefined) {
+            applyPatch({ op: 'delete', path });
+          } else {
+            applyPatch({ op: 'set', path, value: val });
+          }
+          return;
         } else if (input.type === 'number') {
           val = input.value === '' ? undefined : Number(input.value);
         } else {
@@ -926,7 +940,21 @@
       const path = input.getAttribute('data-setting-path');
       const val = model.getAtPath(state.document, path);
       if (input.type === 'checkbox') {
-        input.checked = Boolean(val);
+        const customTrue = input.getAttribute('data-checkbox-true');
+        const customFalse = input.getAttribute('data-checkbox-false');
+        if (customTrue !== null) {
+          if (customTrue === 'disable') {
+            input.checked = val === 'disable';
+          } else if (customTrue === '1') {
+            input.checked = val === '1' || val === 1 || val === true || val === 'true';
+          } else {
+            input.checked = String(val) === String(customTrue);
+          }
+        } else if (customFalse !== null) {
+          input.checked = val !== customFalse && Boolean(val) && val !== '0' && val !== 0 && val !== 'false';
+        } else {
+          input.checked = Boolean(val) && val !== '0' && val !== 0 && val !== 'false';
+        }
       } else if (input.type === 'number') {
         input.value = val === undefined ? '' : val;
       } else {

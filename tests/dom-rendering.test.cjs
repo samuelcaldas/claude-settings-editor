@@ -49,3 +49,31 @@ test('index.html contains expected category panels and script tags', () => {
   assert.ok(html.includes('id="tab-plugins"'), 'HTML must contain plugins tab');
   assert.ok(html.includes('id="tab-advanced-policies"'), 'HTML must contain advanced-policies tab');
 });
+
+test('boolean and 0/1 settings are represented as accessible checkbox inputs in index.html', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // Check permissions boolean flags converted from select
+  assert.ok(
+    html.includes('type="checkbox" id="permissions_disableAutoMode" data-setting-path="permissions.disableAutoMode" data-checkbox-true="disable"'),
+    'permissions.disableAutoMode must be a checkbox with data-checkbox-true="disable"'
+  );
+  assert.ok(
+    html.includes('type="checkbox" id="permissions_disableBypassPermissionsMode" data-setting-path="permissions.disableBypassPermissionsMode" data-checkbox-true="disable"'),
+    'permissions.disableBypassPermissionsMode must be a checkbox with data-checkbox-true="disable"'
+  );
+
+  // Check model environment 0/1 flags converted from text inputs
+  assert.ok(
+    html.includes('type="checkbox" id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-checkbox-true="1"'),
+    'env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY must be a checkbox with data-checkbox-true="1"'
+  );
+  assert.ok(
+    html.includes('type="checkbox" id="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-setting-path="env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-checkbox-true="1"'),
+    'env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL must be a checkbox with data-checkbox-true="1"'
+  );
+
+  // Ensure no select elements remain for disableAutoMode or disableBypass
+  assert.ok(!html.includes('<select id="permissions_disableAutoMode"'), 'No select element for permissions_disableAutoMode');
+  assert.ok(!html.includes('<select id="permissions_disableBypassPermissionsMode"'), 'No select element for permissions_disableBypassPermissionsMode');
+});

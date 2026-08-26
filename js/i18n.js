@@ -203,9 +203,11 @@
       'setting.permissions_ask.label': 'Ask Rules',
       'setting.permissions_deny.label': 'Deny Rules',
       'setting.permissions_additionalDirectories.label': 'Additional Directories',
+      'setting.permissions_disableAutoMode.label': 'Disable Auto Mode (Permissions)',
       'setting.permissions_disableBypassPermissionsMode.label': 'Disable Bypass Mode (Permissions)',
       'setting.permissions_allowManagedPermissionRulesOnly.label': 'Allow Managed Rules Only (Permissions)',
       'setting.allowManagedPermissionRulesOnly.label': 'Allow Managed Rules Only',
+      'setting.disableAutoMode.label': 'Disable Auto Mode',
       'setting.disableBypassPermissionsMode.label': 'Disable Bypass Mode',
       'setting.skipDangerousModePermissionPrompt.label': 'Skip Dangerous Mode Prompt',
       'setting.skipWorkflowUsageWarning.label': 'Skip Workflow Usage Warning',
@@ -237,6 +239,8 @@
       'setting.sandbox_network_allowLocalBinding.label': 'Allow Localhost Binding',
 
       'setting.env.label': 'Environment Variables Map',
+      'setting.env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY.label': 'Gateway Model Discovery',
+      'setting.env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL.label': 'Disable Advisor Tool',
 
       'setting.model.label': 'Primary Model',
       'setting.advisorModel.label': 'Advisor Model',
@@ -398,6 +402,8 @@
       'field.disableBypass.default': '(Enabled / Not set)',
       'field.disableBypass.disable': 'disable — block bypass permissions mode',
 
+      'toggle.disableAutoMode': 'Disable auto mode entirely',
+      'toggle.disableBypass': 'Block bypass permissions mode',
       'toggle.skipDangerousModePrompt': 'Skip dangerous mode permission prompt',
       'toggle.useAutoModeDuringPlan': 'Use auto mode during plan execution',
       'toggle.classifyAllShell': 'Classify all shell commands in auto mode',
@@ -545,6 +551,8 @@
       'toggle.fastMode': 'Enable fast mode (Opus Fast Mode)',
       'toggle.fastModeOptIn': 'Per-session opt-in required for fast mode',
       'toggle.autoCompact': 'Auto-compact context window when full',
+      'toggle.enableGatewayModelDiscovery': 'Enable gateway model discovery',
+      'toggle.disableAdvisorTool': 'Disable server-side advisor tool',
 
       'models.fallback.add': '+ Add Fallback Model',
       'models.fallback.placeholder': 'Model ID (e.g. claude-3-5-haiku-20241022)',
@@ -882,9 +890,11 @@
       'setting.permissions_ask.label': 'Regras de Confirmação (Ask)',
       'setting.permissions_deny.label': 'Regras de Negação (Deny)',
       'setting.permissions_additionalDirectories.label': 'Diretórios Adicionais',
+      'setting.permissions_disableAutoMode.label': 'Desativar Modo Automático (Permissões)',
       'setting.permissions_disableBypassPermissionsMode.label': 'Desativar Modo Bypass (Permissões)',
       'setting.permissions_allowManagedPermissionRulesOnly.label': 'Apenas Regras Gerenciadas (Permissões)',
       'setting.allowManagedPermissionRulesOnly.label': 'Apenas Regras Gerenciadas',
+      'setting.disableAutoMode.label': 'Desativar Modo Automático',
       'setting.disableBypassPermissionsMode.label': 'Desativar Modo Bypass',
       'setting.skipDangerousModePermissionPrompt.label': 'Pular Confirmação de Modo Perigoso',
       'setting.skipWorkflowUsageWarning.label': 'Pular Aviso de Uso de Fluxo',
@@ -916,6 +926,8 @@
       'setting.sandbox_network_allowLocalBinding.label': 'Permitir Vinculação Local (Localhost)',
 
       'setting.env.label': 'Mapa de Variáveis de Ambiente',
+      'setting.env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY.label': 'Descoberta de Modelos do Gateway',
+      'setting.env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL.label': 'Desativar Ferramenta Advisor',
 
       'setting.model.label': 'Modelo Principal',
       'setting.advisorModel.label': 'Modelo do Advisor',
@@ -1077,6 +1089,8 @@
       'field.disableBypass.default': '(Habilitado / Não definido)',
       'field.disableBypass.disable': 'disable — bloquear modo bypass de permissões',
 
+      'toggle.disableAutoMode': 'Desativar o modo automático totalmente',
+      'toggle.disableBypass': 'Bloquear modo de ignorar permissões',
       'toggle.skipDangerousModePrompt': 'Pular confirmação do modo de permissão perigoso',
       'toggle.useAutoModeDuringPlan': 'Usar modo auto durante a execução do plano',
       'toggle.classifyAllShell': 'Classificar todos os comandos de shell no modo auto',
@@ -1224,6 +1238,8 @@
       'toggle.fastMode': 'Habilitar modo rápido (Opus Fast Mode)',
       'toggle.fastModeOptIn': 'Exigir escolha por sessão para modo rápido',
       'toggle.autoCompact': 'Compactar contexto automaticamente ao aproximar do limite',
+      'toggle.enableGatewayModelDiscovery': 'Habilitar descoberta de modelos do gateway',
+      'toggle.disableAdvisorTool': 'Desativar ferramenta Advisor no servidor',
 
       'models.fallback.add': '+ Adicionar Modelo de Fallback',
       'models.fallback.placeholder': 'ID do Modelo (ex.: claude-3-5-haiku-20241022)',
