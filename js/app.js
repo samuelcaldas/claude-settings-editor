@@ -1247,9 +1247,10 @@
     const datalist = getElement('available-models-datalist');
     if (!datalist) return;
     datalist.replaceChildren();
-    const list = Array.isArray(modelsList) && modelsList.length > 0
+    const rawList = Array.isArray(modelsList) && modelsList.length > 0
       ? modelsList
       : (model.getDefaultKnownModels ? model.getDefaultKnownModels() : []);
+    const list = Array.from(new Set(rawList.filter(Boolean)));
     list.forEach(m => {
       const opt = document.createElement('option');
       opt.value = m;
