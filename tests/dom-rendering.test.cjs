@@ -84,3 +84,30 @@ test('css/app.css defines 2-line layout rules for field-label and feature-meta-l
   assert.ok(css.includes('flex-direction: column'), 'CSS must define column flex direction for stacked field labels');
   assert.ok(css.includes('.checkbox-row label'), 'CSS must define .checkbox-row label rules');
 });
+
+test('subagent and gateway option checkboxes have distinct IDs, setting paths, and label bindings', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // Verify distinct inputs
+  assert.ok(html.includes('id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"'));
+  assert.ok(html.includes('id="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL"'));
+
+  // Verify distinct label for associations
+  assert.ok(html.includes('for="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"'));
+  assert.ok(html.includes('for="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL"'));
+
+  // Verify setting paths are distinct
+  assert.ok(html.includes('data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"'));
+  assert.ok(html.includes('data-setting-path="env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL"'));
+
+  // Verify app.js uses innermost container (.checkbox-row) or explicit label[for] matching
+  const appJs = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8');
+  assert.ok(
+    appJs.includes("input.closest('.checkbox-row') || input.closest('.field-group')"),
+    'app.js must prioritize innermost .checkbox-row over ancestor .field-group'
+  );
+  assert.ok(
+    appJs.includes('group.querySelector(`label[for="${input.id}"]`)'),
+    'app.js must target specific label matching input id'
+  );
+});

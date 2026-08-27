@@ -1057,12 +1057,12 @@
       const def = catalog && catalog.getSettingDefinition ? catalog.getSettingDefinition(path) : null;
       if (!def) return;
 
-      const group = input.closest('.field-group') || input.closest('.checkbox-row');
+      const group = input.closest('.checkbox-row') || input.closest('.field-group');
       if (!group) return;
 
-      let labelEl = group.querySelector('label');
+      let labelEl = input.id ? (group.querySelector(`label[for="${input.id}"]`) || document.querySelector(`label[for="${input.id}"]`)) : group.querySelector('label');
       if (labelEl) {
-        const existingSpan = labelEl.querySelector('span');
+        const existingSpan = labelEl.querySelector('span.feature-label-text') || labelEl.querySelector('span');
         const fallbackText = (existingSpan && existingSpan.textContent.trim()) || def.label || def.name;
 
         labelEl.replaceChildren();
@@ -1210,7 +1210,7 @@
 
       const def = catalog.getSettingDefinition ? catalog.getSettingDefinition(path) : (catalog.getDefinition ? catalog.getDefinition(path) : null);
       const isIgnored = def && def.scopes && !def.scopes.includes(state.targetScope);
-      const fieldGroup = input.closest('.field-group') || input.closest('.checkbox-row');
+      const fieldGroup = input.closest('.checkbox-row') || input.closest('.field-group');
       if (fieldGroup) {
         fieldGroup.classList.toggle('scope-mismatch', Boolean(isIgnored));
       }
