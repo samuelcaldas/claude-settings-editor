@@ -303,6 +303,7 @@
             <option value="bash" data-i18n="field.defaultShell.bash">bash</option>
             <option value="powershell" data-i18n="field.defaultShell.powershell">powershell</option>
           </select>
+          <div class="field-hint" data-i18n="field.defaultShell.hint">Routes ! commands and subshell calls. On Linux/macOS, requires CLAUDE_CODE_USE_POWERSHELL_TOOL=1 with pwsh in PATH for remote management &amp; PSRemoting.</div>
         </div>
 
         <div class="field-group">
@@ -349,6 +350,7 @@
           <div class="checkbox-row"><input type="checkbox" id="wheelScrollAccelerationEnabled" data-setting-path="wheelScrollAccelerationEnabled"><label for="wheelScrollAccelerationEnabled"><code>wheelScrollAccelerationEnabled</code> — <span data-i18n="toggle.wheelScrollAccelerationEnabled">Mouse wheel acceleration</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="fileCheckpointingEnabled" data-setting-path="fileCheckpointingEnabled"><label for="fileCheckpointingEnabled"><code>fileCheckpointingEnabled</code> — <span data-i18n="toggle.fileCheckpointingEnabled">Snapshot files for /rewind</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="verbose" data-setting-path="verbose"><label for="verbose"><code>verbose</code> — <span data-i18n="toggle.verbose">Show full tool output</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_USE_POWERSHELL_TOOL" data-setting-path="env.CLAUDE_CODE_USE_POWERSHELL_TOOL" data-checkbox-true="1"><label for="env_CLAUDE_CODE_USE_POWERSHELL_TOOL"><code>env.CLAUDE_CODE_USE_POWERSHELL_TOOL</code> — <span data-i18n="toggle.usePowerShellTool">Enable PowerShell tool (pwsh / PSRemoting on Linux/macOS/Windows)</span></label></div>
         </div>
       </div>
     </section>
@@ -595,6 +597,7 @@
       <div class="env-presets-toolbar">
         <span class="field-label" data-i18n="sections.env.presets">Quick Presets:</span>
         <button class="btn small" id="btn-preset-telemetry" data-i18n="env.preset.telemetry">+ OpenTelemetry</button>
+        <button class="btn small" id="btn-preset-powershell" data-i18n="env.preset.powershell">+ PowerShell Tool (pwsh/PSRemote)</button>
       </div>
 
       <div id="env-var-list" class="mt-md"></div>

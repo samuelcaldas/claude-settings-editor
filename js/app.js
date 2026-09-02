@@ -956,6 +956,7 @@
     });
     getElement('btn-preset-anthropic')?.addEventListener('click', () => applyPatch({ op: 'set', path: 'env.ANTHROPIC_API_KEY', value: '' }));
     getElement('btn-preset-telemetry')?.addEventListener('click', () => applyPatch({ op: 'set', path: 'env.OTEL_EXPORTER_OTLP_ENDPOINT', value: 'http://localhost:4318' }));
+    getElement('btn-preset-powershell')?.addEventListener('click', () => applyPatch({ op: 'set', path: 'env.CLAUDE_CODE_USE_POWERSHELL_TOOL', value: '1' }));
     getElement('btn-preset-models')?.addEventListener('click', () => applyPatch({ op: 'set', path: 'env.ANTHROPIC_MODEL', value: 'claude-sonnet-5' }));
     getElement('btn-preset-gateway')?.addEventListener('click', () => {
       batchPatches([

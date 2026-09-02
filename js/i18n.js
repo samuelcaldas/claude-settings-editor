@@ -263,6 +263,7 @@
       'setting.env_CLAUDE_CODE_SUBAGENT_MODEL.label': 'Subagent Model Override',
       'setting.env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY.label': 'Gateway Model Discovery',
       'setting.env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL.label': 'Disable Advisor Tool',
+      'setting.env_CLAUDE_CODE_USE_POWERSHELL_TOOL.label': 'PowerShell Tool (pwsh / PSRemoting)',
 
       'setting.model.label': 'Primary Model',
       'setting.advisorModel.label': 'Advisor Model',
@@ -388,6 +389,7 @@
       'field.defaultShell.default': '(Default: bash / powershell)',
       'field.defaultShell.bash': 'bash',
       'field.defaultShell.powershell': 'powershell',
+      'field.defaultShell.hint': 'Routes ! commands and subshell calls. On Linux/macOS, requires CLAUDE_CODE_USE_POWERSHELL_TOOL=1 with pwsh in PATH for remote management & PSRemoting.',
 
       'field.feedbackSurveyRate.label': 'Feedback Survey Rate',
       'field.feedbackSurveyRate.placeholder': '0.05',
@@ -411,6 +413,7 @@
       'toggle.wheelScrollAccelerationEnabled': 'Accelerate fast mouse wheel scrolling',
       'toggle.fileCheckpointingEnabled': 'Snapshot files for /rewind restore',
       'toggle.verbose': 'Show full verbose tool outputs',
+      'toggle.usePowerShellTool': 'Enable PowerShell tool (pwsh / PSRemoting on Linux/macOS/Windows)',
 
       // Permissions Fields & Options
       'field.permMode.default': '(Default: default / as planned)',
@@ -497,6 +500,7 @@
       // Environment
       'env.preset.anthropic': '+ Anthropic API',
       'env.preset.telemetry': '+ OpenTelemetry',
+      'env.preset.powershell': '+ PowerShell Tool (pwsh/PSRemote)',
       'env.preset.models': '+ Default Models',
       'env.preset.gateway': '+ Gateway Models',
       'env.addVar': '+ Add Variable',
@@ -976,6 +980,7 @@
       'setting.env_CLAUDE_CODE_SUBAGENT_MODEL.label': 'Sobrescrita de Modelo para Subagentes',
       'setting.env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY.label': 'Descoberta de Modelos do Gateway',
       'setting.env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL.label': 'Desativar Ferramenta Advisor',
+      'setting.env_CLAUDE_CODE_USE_POWERSHELL_TOOL.label': 'Ferramenta PowerShell (pwsh / PSRemoting)',
 
       'setting.model.label': 'Modelo Principal',
       'setting.advisorModel.label': 'Modelo do Advisor',
@@ -1101,6 +1106,7 @@
       'field.defaultShell.default': '(Padrão: bash / powershell)',
       'field.defaultShell.bash': 'bash',
       'field.defaultShell.powershell': 'powershell',
+      'field.defaultShell.hint': 'Roteia comandos ! e chamadas de subshell. No Linux/macOS, requer CLAUDE_CODE_USE_POWERSHELL_TOOL=1 com pwsh no PATH para gerenciamento remoto e PSRemoting.',
 
       'field.feedbackSurveyRate.label': 'Taxa de Pesquisa',
       'field.feedbackSurveyRate.placeholder': '0.05',
@@ -1124,6 +1130,7 @@
       'toggle.wheelScrollAccelerationEnabled': 'Aceleração da roda do mouse',
       'toggle.fileCheckpointingEnabled': 'Instantâneos de arquivos para /rewind',
       'toggle.verbose': 'Exibir saída completa das ferramentas',
+      'toggle.usePowerShellTool': 'Habilitar ferramenta PowerShell (pwsh / PSRemoting no Linux/macOS/Windows)',
 
       // Permissions Fields & Options
       'field.permMode.default': '(Padrão: padrão / conforme plano)',
@@ -1210,6 +1217,7 @@
       // Environment
       'env.preset.anthropic': '+ API Anthropic',
       'env.preset.telemetry': '+ OpenTelemetry',
+      'env.preset.powershell': '+ Ferramenta PowerShell (pwsh/PSRemote)',
       'env.preset.models': '+ Modelos Padrão',
       'env.preset.gateway': '+ Modelos Gateway',
       'env.addVar': '+ Adicionar Variável',

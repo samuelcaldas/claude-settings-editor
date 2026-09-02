@@ -63,7 +63,7 @@ test('boolean and 0/1 settings are represented as accessible checkbox inputs in 
     'permissions.disableBypassPermissionsMode must be a checkbox with data-checkbox-true="disable"'
   );
 
-  // Check model environment 0/1 flags converted from text inputs
+  // Check model and shell environment 0/1 flags converted from text inputs
   assert.ok(
     html.includes('type="checkbox" id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-checkbox-true="1"'),
     'env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY must be a checkbox with data-checkbox-true="1"'
@@ -71,6 +71,14 @@ test('boolean and 0/1 settings are represented as accessible checkbox inputs in 
   assert.ok(
     html.includes('type="checkbox" id="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-setting-path="env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-checkbox-true="1"'),
     'env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL must be a checkbox with data-checkbox-true="1"'
+  );
+  assert.ok(
+    html.includes('type="checkbox" id="env_CLAUDE_CODE_USE_POWERSHELL_TOOL" data-setting-path="env.CLAUDE_CODE_USE_POWERSHELL_TOOL" data-checkbox-true="1"'),
+    'env.CLAUDE_CODE_USE_POWERSHELL_TOOL must be a checkbox with data-checkbox-true="1"'
+  );
+  assert.ok(
+    html.includes('id="btn-preset-powershell"'),
+    'index.html must include btn-preset-powershell preset button'
   );
 
   // Ensure no select elements remain for disableAutoMode or disableBypass
