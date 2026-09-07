@@ -135,3 +135,42 @@ test('header actions do not contain load sample button and default file displays
   assert.ok(appJs.includes("fileName: 'settings.json'"), "app.js state must default to settings.json");
   assert.ok(appJs.includes('isSample: false'), 'app.js state must default to isSample: false');
 });
+
+test('save, undo, redo, and open buttons in header are icon-only with accessible tooltip titles', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  const buttonIds = ['btn-save', 'btn-undo', 'btn-redo', 'btn-open'];
+  buttonIds.forEach(id => {
+    const btnRegex = new RegExp(`<button[^>]*id="${id}"[^>]*>([\\s\\S]*?)<\\/button>`, 'i');
+    const match = html.match(btnRegex);
+    assert.ok(match, `Button #${id} must exist in index.html`);
+
+    const buttonHtml = match[0];
+    const buttonContent = match[1];
+
+    assert.ok(buttonHtml.includes('icon-only'), `#${id} must have icon-only class`);
+    assert.ok(buttonContent.includes('<svg'), `#${id} must contain SVG icon`);
+    assert.ok(!buttonContent.includes('<span'), `#${id} must not contain span text element`);
+    assert.ok(buttonHtml.includes('data-i18n-title='), `#${id} must have data-i18n-title for hover tooltip`);
+    assert.ok(buttonHtml.includes('data-i18n-aria-label='), `#${id} must have data-i18n-aria-label for screen reader accessibility`);
+  });
+
+  const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'app.css'), 'utf8');
+  assert.ok(css.includes('.btn.icon-only'), 'css/app.css must define .btn.icon-only');
+});
+
+test('header does not contain manual language selector, relying purely on browser locale detection', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  assert.ok(!html.includes('id="lang-select"'), 'index.html must NOT contain id="lang-select"');
+  assert.ok(!html.includes('class="lang-selector-wrap"'), 'index.html must NOT contain .lang-selector-wrap');
+  assert.ok(!html.includes('data-i18n="app.languageLabel"'), 'index.html must NOT contain data-i18n="app.languageLabel"');
+
+  const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'app.css'), 'utf8');
+  assert.ok(!css.includes('.lang-selector-wrap'), 'css/app.css must NOT define .lang-selector-wrap');
+  assert.ok(!css.includes('.lang-select'), 'css/app.css must NOT define .lang-select');
+
+  const appJs = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8');
+  assert.ok(!appJs.includes("getElement('lang-select')"), 'app.js must not bind lang-select change events');
+});
+
+

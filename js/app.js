@@ -284,14 +284,6 @@
         revealTab(activeTab, false);
       });
     });
-
-    const langSelect = getElement('lang-select');
-    if (langSelect) {
-      langSelect.value = i18n.getLocale();
-      langSelect.addEventListener('change', e => {
-        i18n.setLocale(e.target.value);
-      });
-    }
   }
 
   function registerServiceWorker() {

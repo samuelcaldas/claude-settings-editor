@@ -1455,13 +1455,6 @@
   }
 
   function detectLocale() {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) return normalizeLocale(stored);
-      }
-    } catch (_) {}
-
     if (typeof navigator !== 'undefined') {
       const langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
       for (const lang of langs) {

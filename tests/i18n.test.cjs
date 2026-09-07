@@ -70,3 +70,40 @@ test('subscribe notifies listeners on locale change', () => {
   i18n.setLocale('en', false);
   assert.equal(notifiedLocale, 'pt-BR'); // not called after unsubscribe
 });
+
+test('detectLocale detects browser language from navigator.languages and navigator.language', () => {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+
+  const setMockNavigator = nav => {
+    Object.defineProperty(globalThis, 'navigator', {
+      value: nav,
+      configurable: true,
+      writable: true
+    });
+  };
+
+  try {
+    setMockNavigator({ languages: ['pt-BR', 'en'] });
+    assert.equal(i18n.detectLocale(), 'pt-BR');
+
+    setMockNavigator({ languages: ['pt'] });
+    assert.equal(i18n.detectLocale(), 'pt-BR');
+
+    setMockNavigator({ languages: ['en-US', 'en'] });
+    assert.equal(i18n.detectLocale(), 'en');
+
+    setMockNavigator({ languages: [], language: 'pt-BR' });
+    assert.equal(i18n.detectLocale(), 'pt-BR');
+
+    setMockNavigator({ languages: [], language: 'es-ES' });
+    assert.equal(i18n.detectLocale(), 'en');
+
+    setMockNavigator(undefined);
+    assert.equal(i18n.detectLocale(), 'en');
+  } finally {
+    if (originalDescriptor) {
+      Object.defineProperty(globalThis, 'navigator', originalDescriptor);
+    }
+  }
+});
+

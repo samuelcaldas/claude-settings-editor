@@ -40,13 +40,12 @@
   </div>
 
   <div class="header-actions">
-    <button id="btn-save" class="btn primary header-save" data-i18n-title="actions.saveTitle" title="Save changes in-place (Ctrl+S)">
+    <button id="btn-save" class="btn primary header-save icon-only" data-i18n-title="actions.saveTitle" data-i18n-aria-label="actions.saveTitle" title="Save changes in-place (Ctrl+S)" aria-label="Save changes in-place (Ctrl+S)">
       <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
         <polyline points="17 21 17 13 7 13 7 21"></polyline>
         <polyline points="7 3 7 8 15 8"></polyline>
       </svg>
-      <span data-i18n="actions.save">Save</span>
     </button>
 
     <button id="btn-mobile-overflow" class="icon-btn mobile-overflow-trigger" type="button" aria-expanded="false" aria-controls="mobile-overflow-panel" data-i18n-aria-label="actions.more" data-i18n-title="actions.moreTitle" title="More actions" aria-label="More actions">
@@ -60,38 +59,27 @@
     <div id="mobile-overflow-panel" class="secondary-actions" aria-labelledby="mobile-overflow-title">
       <div id="mobile-overflow-title" class="mobile-overflow-title" data-i18n="actions.more">More actions</div>
 
-      <div class="lang-selector-wrap">
-        <label for="lang-select" class="scope-label" data-i18n="app.languageLabel">Language:</label>
-        <select id="lang-select" class="lang-select" data-i18n-aria-label="app.languageSelectAria" aria-label="Select language">
-          <option value="en">English (EN)</option>
-          <option value="pt-BR">Português (PT-BR)</option>
-        </select>
-      </div>
-
       <span id="active-file-pill" class="active-file-pill" data-i18n-title="file.currentTitle" title="Current settings file">
         <span class="file-icon" aria-hidden="true">📄</span>
         <span id="active-file-name">settings.json</span>
       </span>
 
-      <button id="btn-undo" class="btn small" data-i18n-title="actions.undoTitle" title="Undo change (Ctrl+Z)" disabled>
+      <button id="btn-undo" class="btn icon-only" data-i18n-title="actions.undoTitle" data-i18n-aria-label="actions.undoTitle" title="Undo change (Ctrl+Z)" aria-label="Undo change (Ctrl+Z)" disabled>
         <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="1 4 1 10 7 10"></polyline>
           <path d="M3.51 15a9 9 0 1 0 .49-3.5"></path>
         </svg>
-        <span data-i18n="actions.undo">Undo</span>
       </button>
-      <button id="btn-redo" class="btn small" data-i18n-title="actions.redoTitle" title="Redo change (Ctrl+Y)" disabled>
+      <button id="btn-redo" class="btn icon-only" data-i18n-title="actions.redoTitle" data-i18n-aria-label="actions.redoTitle" title="Redo change (Ctrl+Y)" aria-label="Redo change (Ctrl+Y)" disabled>
         <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"></polyline>
           <path d="M20.49 15a9 9 0 1 1-.49-3.5"></path>
         </svg>
-        <span data-i18n="actions.redo">Redo</span>
       </button>
-      <button id="btn-open" class="btn" data-i18n-title="actions.openFileTitle" title="Open local JSON file (Ctrl+O)">
+      <button id="btn-open" class="btn icon-only" data-i18n-title="actions.openFileTitle" data-i18n-aria-label="actions.openFileTitle" title="Open local JSON file (Ctrl+O)" aria-label="Open local JSON file (Ctrl+O)">
         <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
         </svg>
-        <span data-i18n="actions.openFile">Open File</span>
       </button>
       <button id="btn-save-as" class="btn" data-i18n-title="actions.saveAsTitle" title="Save to new file (Ctrl+Shift+S)">
         <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

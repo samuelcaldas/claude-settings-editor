@@ -223,41 +223,13 @@ header label,
   white-space: nowrap;
 }
 
-/* Language Selector in Header */
-.lang-selector-wrap {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  background: var(--bg-elevated);
-  padding: 4px 8px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-}
-
-.lang-select {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  color: var(--text-bright);
-  font-weight: 600;
-  font-size: var(--font-size-sm);
-  padding: 4px 16px 4px 6px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  outline: none;
-}
-
-.lang-select:focus-visible {
-  border-color: var(--accent);
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
 /* Header Actions */
 .header-actions {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  margin-left: auto;
+  margin-left: 0;
+  width: 100%;
   flex-wrap: wrap;
 }
 
@@ -303,14 +275,14 @@ header label,
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   color: var(--text-bright);
-  padding: 6px 12px;
+  padding: 5px 12px;
   border-radius: var(--radius);
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: var(--font-size-base);
   transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.05s;
   white-space: nowrap;
-  min-height: 30px;
+  min-height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -326,6 +298,19 @@ header label,
 .btn.danger { border-color: var(--red); color: var(--red); }
 .btn.danger:hover { background: var(--red); color: var(--bg); }
 .btn.small { padding: 4px 8px; min-height: 26px; font-size: var(--font-size-sm); }
+.btn.icon-only {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  gap: 0;
+}
+
+.btn.icon-only .btn-icon {
+  width: 16px;
+  height: 16px;
+}
 
 .btn:disabled {
   opacity: 0.4;
@@ -1216,7 +1201,7 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
   .checkbox-row { min-height: 44px; padding: 6px 0; }
   .checkbox-row input[type=checkbox] { width: 20px; height: 20px; }
   select, input[type=text], input[type=password], input[type=number] { padding: 10px 12px; font-size: var(--font-size-md); min-height: 44px; }
-  .scope-select, .lang-select { padding: 8px 24px 8px 10px; min-height: 40px; }
+  .scope-select { padding: 8px 24px 8px 10px; min-height: 40px; }
 }
 
 /* Tablet & Intermediate Viewports */
@@ -1323,6 +1308,7 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
     align-items: center;
     gap: 6px;
     margin-left: auto;
+    width: auto;
     flex-wrap: nowrap;
   }
 
@@ -1334,6 +1320,15 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
     padding: 0 10px;
     font-size: var(--font-size-sm);
     font-weight: 700;
+  }
+
+  .header-actions .header-save.icon-only {
+    flex: 0 0 34px;
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
   }
 
   .mobile-overflow-trigger {
@@ -1408,7 +1403,6 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
   }
 
   .secondary-actions .active-file-pill,
-  .secondary-actions .lang-selector-wrap,
   .secondary-actions #btn-open,
   .secondary-actions #btn-save-as {
     grid-column: 1 / -1;
@@ -1425,22 +1419,11 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
     min-height: 36px;
   }
 
-  .secondary-actions .lang-selector-wrap {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  .secondary-actions .btn.icon-only {
+    width: 100%;
+    min-width: 0;
     min-height: 36px;
-    margin-top: 4px;
-    padding: 8px 0 0;
-    background: transparent;
-    border: 0;
-    border-top: 1px solid var(--border);
-  }
-
-  .secondary-actions .lang-select {
-    width: auto;
-    min-width: 130px;
-    min-height: 32px;
+    height: auto;
   }
 
   /* Toast Notifications on Mobile */
