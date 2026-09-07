@@ -173,4 +173,39 @@ test('header does not contain manual language selector, relying purely on browse
   assert.ok(!appJs.includes("getElement('lang-select')"), 'app.js must not bind lang-select change events');
 });
 
+test('autoCompactThreshold is rendered as a range slidebar with value badge, min/max bounds and two-way binding', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  assert.ok(
+    html.includes('type="range" id="autoCompactThreshold" data-setting-path="autoCompactThreshold"'),
+    'autoCompactThreshold must be an input of type="range" with data-setting-path="autoCompactThreshold"'
+  );
+  assert.ok(
+    html.includes('min="0"'),
+    'autoCompactThreshold slider must have min="0"'
+  );
+  assert.ok(
+    html.includes('max="1"'),
+    'autoCompactThreshold slider must have max="1"'
+  );
+  assert.ok(
+    html.includes('id="autoCompactThreshold-val"'),
+    'index.html must include value display element #autoCompactThreshold-val'
+  );
+  assert.ok(
+    !html.includes('type="number" id="autoCompactThreshold"'),
+    'index.html must NOT contain number input for autoCompactThreshold'
+  );
+
+  const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'app.css'), 'utf8');
+  assert.ok(css.includes('.slider-wrap'), 'css/app.css must define .slider-wrap');
+  assert.ok(css.includes('.slider-input'), 'css/app.css must define .slider-input');
+  assert.ok(css.includes('.slider-value'), 'css/app.css must define .slider-value');
+
+  const appJs = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8');
+  assert.ok(
+    appJs.includes("input.type === 'range'"),
+    'app.js must handle input.type === range in form binding and rendering'
+  );
+});
+
 

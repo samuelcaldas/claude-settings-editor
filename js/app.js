@@ -883,11 +883,21 @@
             applyPatch({ op: 'set', path, value: val });
           }
           return;
-        } else if (input.type === 'number') {
+        } else if (input.type === 'number' || input.type === 'range') {
           val = input.value === '' ? undefined : Number(input.value);
         } else {
           val = input.value.trim();
           if (val === '') val = undefined;
+        }
+
+        if (input.type === 'range') {
+          const displayEl = document.getElementById(`${input.id}-val`);
+          if (displayEl && val !== undefined) {
+            displayEl.textContent = val.toFixed(2);
+            displayEl.classList.remove('is-default');
+            const configuredTitle = (i18n ? i18n.t('field.autoCompactThreshold.configuredTitle') : '') || 'Configured threshold ratio';
+            displayEl.title = configuredTitle;
+          }
         }
 
         if (val === undefined) {
@@ -1206,6 +1216,30 @@
         }
       } else if (input.type === 'number') {
         input.value = val === undefined ? '' : val;
+      } else if (input.type === 'range') {
+        const defaultVal = input.getAttribute('data-default-value') || '0.9';
+        const displayEl = document.getElementById(`${input.id}-val`);
+        if (val === undefined) {
+          if (document.activeElement !== input) {
+            input.value = defaultVal;
+          }
+          if (displayEl) {
+            displayEl.textContent = Number(defaultVal).toFixed(2);
+            displayEl.classList.add('is-default');
+            const defaultTitle = (i18n ? i18n.t('field.autoCompactThreshold.defaultTitle') : '') || 'Default ratio (unset)';
+            displayEl.title = defaultTitle;
+          }
+        } else {
+          if (document.activeElement !== input) {
+            input.value = String(val);
+          }
+          if (displayEl) {
+            displayEl.textContent = Number(val).toFixed(2);
+            displayEl.classList.remove('is-default');
+            const configuredTitle = (i18n ? i18n.t('field.autoCompactThreshold.configuredTitle') : '') || 'Configured threshold ratio';
+            displayEl.title = configuredTitle;
+          }
+        }
       } else {
         input.value = val === undefined ? '' : val;
       }
