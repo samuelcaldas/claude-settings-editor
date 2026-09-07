@@ -290,7 +290,16 @@
             <label class="field-label" for="feedbackSurveyRate"><code>feedbackSurveyRate</code> — <span data-i18n="field.feedbackSurveyRate.label">Survey Rate</span></label>
             <button class="unset-btn" data-unset-path="feedbackSurveyRate" data-i18n="actions.unset">unset</button>
           </div>
-          <input type="number" id="feedbackSurveyRate" data-setting-path="feedbackSurveyRate" step="0.01" min="0" max="1" placeholder="0.05" data-i18n-placeholder="field.feedbackSurveyRate.placeholder">
+          <div class="slider-wrap">
+            <input type="range" id="feedbackSurveyRate" data-setting-path="feedbackSurveyRate" min="0" max="1" step="0.01" value="0.05" data-default-value="0.05" class="slider-input" aria-label="feedbackSurveyRate">
+            <span class="slider-value is-default" id="feedbackSurveyRate-val" data-i18n-title="field.feedbackSurveyRate.defaultTitle" title="Default rate (unset: 0.05)">0.05</span>
+          </div>
+          <div class="slider-ticks">
+            <span>0.0</span>
+            <span>0.5</span>
+            <span>1.0</span>
+          </div>
+          <div class="field-hint" data-i18n="field.feedbackSurveyRate.hint">Probability (0.0 to 1.0) that the session quality survey appears when eligible.</div>
         </div>
 
         <div class="field-group">
@@ -298,7 +307,16 @@
             <label class="field-label" for="skillListingBudgetFraction"><code>skillListingBudgetFraction</code> — <span data-i18n="field.skillBudget.label">Skill Budget Fraction</span></label>
             <button class="unset-btn" data-unset-path="skillListingBudgetFraction" data-i18n="actions.unset">unset</button>
           </div>
-          <input type="number" id="skillListingBudgetFraction" data-setting-path="skillListingBudgetFraction" step="0.001" min="0" max="1" placeholder="0.01" data-i18n-placeholder="field.skillBudget.placeholder">
+          <div class="slider-wrap">
+            <input type="range" id="skillListingBudgetFraction" data-setting-path="skillListingBudgetFraction" min="0" max="1" step="0.001" value="0.01" data-default-value="0.01" data-precision="3" data-title-default-key="field.skillBudget.defaultTitle" data-title-configured-key="field.skillBudget.configuredTitle" class="slider-input" aria-label="skillListingBudgetFraction">
+            <span class="slider-value is-default" id="skillListingBudgetFraction-val" data-i18n-title="field.skillBudget.defaultTitle" title="Default fraction (unset: 0.01)">0.010</span>
+          </div>
+          <div class="slider-ticks">
+            <span>0.0</span>
+            <span>0.5</span>
+            <span>1.0</span>
+          </div>
+          <div class="field-hint" data-i18n="field.skillBudget.hint">Fraction of context window reserved for skill listings (0.00 to 1.00, default 0.01 = 1%).</div>
         </div>
 
         <div class="field-group">
@@ -830,7 +848,7 @@
           </div>
           <div class="slider-wrap">
             <input type="range" id="autoCompactThreshold" data-setting-path="autoCompactThreshold" min="0" max="1" step="0.01" value="0.9" data-default-value="0.9" class="slider-input" aria-label="autoCompactThreshold">
-            <span class="slider-value is-default" id="autoCompactThreshold-val" title="Default ratio (unset)">0.90</span>
+            <span class="slider-value is-default" id="autoCompactThreshold-val" data-i18n-title="field.autoCompactThreshold.defaultTitle" title="Default ratio (unset)">0.90</span>
           </div>
           <div class="slider-ticks">
             <span>0.0</span>

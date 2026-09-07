@@ -393,8 +393,16 @@
 
       'field.feedbackSurveyRate.label': 'Feedback Survey Rate',
       'field.feedbackSurveyRate.placeholder': '0.05',
+      'field.feedbackSurveyRate.hint': 'Probability (0.0 to 1.0) that the session quality survey appears when eligible.',
+      'field.feedbackSurveyRate.defaultTitle': 'Default rate (unset: 0.05)',
+      'field.feedbackSurveyRate.configuredTitle': 'Configured survey rate',
       'field.skillBudget.label': 'Skill Budget Fraction',
       'field.skillBudget.placeholder': '0.01',
+      'field.skillBudget.hint': 'Fraction of context window reserved for skill listings (0.00 to 1.00, default 0.01 = 1%).',
+      'field.skillBudget.defaultTitle': 'Default fraction (unset: 0.01)',
+      'field.skillBudget.configuredTitle': 'Configured skill budget fraction',
+      'field.skillListingBudgetFraction.defaultTitle': 'Default fraction (unset: 0.01)',
+      'field.skillListingBudgetFraction.configuredTitle': 'Configured skill budget fraction',
       'field.skillMaxChars.label': 'Skill Max Description Length',
       'field.skillMaxChars.placeholder': '1536',
 
@@ -1113,8 +1121,16 @@
 
       'field.feedbackSurveyRate.label': 'Taxa de Pesquisa',
       'field.feedbackSurveyRate.placeholder': '0.05',
+      'field.feedbackSurveyRate.hint': 'Probabilidade (0,0 a 1,0) de exibição da pesquisa de avaliação da sessão quando elegível.',
+      'field.feedbackSurveyRate.defaultTitle': 'Taxa padrão (não definida: 0,05)',
+      'field.feedbackSurveyRate.configuredTitle': 'Taxa de pesquisa configurada',
       'field.skillBudget.label': 'Orçamento para Skills',
       'field.skillBudget.placeholder': '0.01',
+      'field.skillBudget.hint': 'Fração da janela de contexto reservada para listagem de skills (0,00 a 1,00, padrão 0,01 = 1%).',
+      'field.skillBudget.defaultTitle': 'Fração padrão (não definida: 0,01)',
+      'field.skillBudget.configuredTitle': 'Fração de orçamento configurada',
+      'field.skillListingBudgetFraction.defaultTitle': 'Fração padrão (não definida: 0,01)',
+      'field.skillListingBudgetFraction.configuredTitle': 'Fração de orçamento configurada',
       'field.skillMaxChars.label': 'Máx. Caracteres por Skill',
       'field.skillMaxChars.placeholder': '1536',
 

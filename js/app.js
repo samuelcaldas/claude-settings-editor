@@ -757,6 +757,26 @@
     notify('status.redo', 'info');
   }
 
+  function getSliderPrecision(input) {
+    const precisionAttr = input.getAttribute('data-precision');
+    if (precisionAttr !== null) return parseInt(precisionAttr, 10);
+    const step = input.step;
+    if (step && step.includes('.')) {
+      return step.split('.')[1].length;
+    }
+    return 2;
+  }
+
+  function getSliderTitles(input) {
+    const defaultKey = input.getAttribute('data-title-default-key') || `field.${input.id}.defaultTitle`;
+    const configuredKey = input.getAttribute('data-title-configured-key') || `field.${input.id}.configuredTitle`;
+    const defaultVal = (i18n && typeof i18n.t === 'function') ? i18n.t(defaultKey) : '';
+    const configuredVal = (i18n && typeof i18n.t === 'function') ? i18n.t(configuredKey) : '';
+    const defaultTitle = (defaultVal && defaultVal !== defaultKey) ? defaultVal : (input.getAttribute('data-default-title') || 'Default value (unset)');
+    const configuredTitle = (configuredVal && configuredVal !== configuredKey) ? configuredVal : (input.getAttribute('data-configured-title') || 'Configured value');
+    return { defaultTitle, configuredTitle };
+  }
+
   function bindEvents() {
     getElement('btn-open')?.addEventListener('click', () => runHeaderAction(openFile));
     getElement('btn-save')?.addEventListener('click', () => saveFile());
@@ -893,10 +913,11 @@
         if (input.type === 'range') {
           const displayEl = document.getElementById(`${input.id}-val`);
           if (displayEl && val !== undefined) {
-            displayEl.textContent = val.toFixed(2);
+            const precision = getSliderPrecision(input);
+            displayEl.textContent = Number(val).toFixed(precision);
             displayEl.classList.remove('is-default');
-            const configuredTitle = (i18n ? i18n.t('field.autoCompactThreshold.configuredTitle') : '') || 'Configured threshold ratio';
-            displayEl.title = configuredTitle;
+            const titles = getSliderTitles(input);
+            displayEl.title = titles.configuredTitle;
           }
         }
 
@@ -1217,27 +1238,27 @@
       } else if (input.type === 'number') {
         input.value = val === undefined ? '' : val;
       } else if (input.type === 'range') {
-        const defaultVal = input.getAttribute('data-default-value') || '0.9';
+        const defaultVal = input.getAttribute('data-default-value') || '0';
         const displayEl = document.getElementById(`${input.id}-val`);
+        const precision = getSliderPrecision(input);
+        const titles = getSliderTitles(input);
         if (val === undefined) {
           if (document.activeElement !== input) {
             input.value = defaultVal;
           }
           if (displayEl) {
-            displayEl.textContent = Number(defaultVal).toFixed(2);
+            displayEl.textContent = Number(defaultVal).toFixed(precision);
             displayEl.classList.add('is-default');
-            const defaultTitle = (i18n ? i18n.t('field.autoCompactThreshold.defaultTitle') : '') || 'Default ratio (unset)';
-            displayEl.title = defaultTitle;
+            displayEl.title = titles.defaultTitle;
           }
         } else {
           if (document.activeElement !== input) {
             input.value = String(val);
           }
           if (displayEl) {
-            displayEl.textContent = Number(val).toFixed(2);
+            displayEl.textContent = Number(val).toFixed(precision);
             displayEl.classList.remove('is-default');
-            const configuredTitle = (i18n ? i18n.t('field.autoCompactThreshold.configuredTitle') : '') || 'Configured threshold ratio';
-            displayEl.title = configuredTitle;
+            displayEl.title = titles.configuredTitle;
           }
         }
       } else {

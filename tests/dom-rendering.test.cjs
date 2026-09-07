@@ -208,4 +208,41 @@ test('autoCompactThreshold is rendered as a range slidebar with value badge, min
   );
 });
 
+test('feedbackSurveyRate and skillListingBudgetFraction are rendered as range slidebars with bounds, badges and precision', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // Verify feedbackSurveyRate
+  assert.ok(
+    html.includes('type="range" id="feedbackSurveyRate" data-setting-path="feedbackSurveyRate"'),
+    'feedbackSurveyRate must be an input of type="range" with data-setting-path="feedbackSurveyRate"'
+  );
+  assert.ok(
+    html.includes('id="feedbackSurveyRate-val"'),
+    'index.html must include value display element #feedbackSurveyRate-val'
+  );
+  assert.ok(
+    !html.includes('type="number" id="feedbackSurveyRate"'),
+    'index.html must NOT contain number input for feedbackSurveyRate'
+  );
+
+  // Verify skillListingBudgetFraction
+  assert.ok(
+    html.includes('type="range" id="skillListingBudgetFraction" data-setting-path="skillListingBudgetFraction"'),
+    'skillListingBudgetFraction must be an input of type="range" with data-setting-path="skillListingBudgetFraction"'
+  );
+  assert.ok(
+    html.includes('id="skillListingBudgetFraction-val"'),
+    'index.html must include value display element #skillListingBudgetFraction-val'
+  );
+  assert.ok(
+    !html.includes('type="number" id="skillListingBudgetFraction"'),
+    'index.html must NOT contain number input for skillListingBudgetFraction'
+  );
+
+  // Verify app.js dynamic slider precision and title helpers
+  const appJs = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8');
+  assert.ok(appJs.includes('getSliderPrecision'), 'app.js must implement getSliderPrecision');
+  assert.ok(appJs.includes('getSliderTitles'), 'app.js must implement getSliderTitles');
+});
+
 
