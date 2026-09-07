@@ -127,3 +127,20 @@ test('model discovery parser deduplicates models across all endpoint formats', (
   const parsedArray = model.parseOpenAiModelsResponse(arrayPayload);
   assert.deepEqual(parsedArray, ['model-a', 'model-b', 'model-c']);
 });
+
+test('Fable model tier in index.html does not contain supported capabilities setting and catalog excludes it from dedicated keys', () => {
+  const currentHtml = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  assert.ok(
+    !currentHtml.includes('data-setting-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES"'),
+    'index.html must NOT contain env.ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES'
+  );
+  assert.ok(
+    !currentHtml.includes('id="env_ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES"'),
+    'index.html must NOT contain env_ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES element ID'
+  );
+  assert.equal(
+    catalog.isDedicatedEnvKey('ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES'),
+    false,
+    'Catalog must not treat ANTHROPIC_DEFAULT_FABLE_MODEL_SUPPORTED_CAPABILITIES as a dedicated key'
+  );
+});
