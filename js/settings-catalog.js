@@ -190,7 +190,7 @@
     'fallbackModel': { category: 'models', order: 3, labelKey: 'setting.fallbackModel.label', editorId: 'fallback-models', scopes: ['user', 'project', 'local', 'managed'] },
     'availableModels': { category: 'models', order: 4, labelKey: 'setting.availableModels.label', editorId: 'rule-list', scopes: ['user', 'managed'] },
     'enforceAvailableModels': { category: 'models', order: 5, labelKey: 'setting.enforceAvailableModels.label', scopes: ['managed'], managedOnly: true },
-    'modelOverrides': { category: 'models', order: 6, labelKey: 'setting.modelOverrides.label', editorId: 'structured-json', scopes: ['user', 'project', 'local', 'managed'] },
+    'modelOverrides': { category: 'models', order: 6, labelKey: 'setting.modelOverrides.label', editorId: 'model-overrides', scopes: ['user', 'project', 'local', 'managed'] },
     'alwaysThinkingEnabled': { category: 'models', order: 7, labelKey: 'setting.alwaysThinkingEnabled.label', scopes: ['user', 'project', 'local', 'managed'] },
     'showThinkingSummaries': { category: 'models', order: 8, labelKey: 'setting.showThinkingSummaries.label', scopes: ['user', 'project', 'local', 'managed'] },
     'fastMode': { category: 'models', order: 9, labelKey: 'setting.fastMode.label', scopes: ['user', 'project', 'local', 'managed'] },

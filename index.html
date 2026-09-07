@@ -12,13 +12,13 @@
 <meta name="apple-mobile-web-app-title" content="Claude Config">
 <link rel="apple-touch-icon" href="icons/icon.svg">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="css/app.css?v=1.2">
-<script defer src="js/i18n.js?v=1.2"></script>
-<script defer src="js/settings-schema.js?v=1.2"></script>
-<script defer src="js/settings-catalog.js?v=1.2"></script>
-<script defer src="js/settings-model.js?v=1.2"></script>
-<script defer src="js/toast.js?v=1.2"></script>
-<script defer src="js/app.js?v=1.2"></script>
+<link rel="stylesheet" href="css/app.css?v=1.3">
+<script defer src="js/i18n.js?v=1.3"></script>
+<script defer src="js/settings-schema.js?v=1.3"></script>
+<script defer src="js/settings-catalog.js?v=1.3"></script>
+<script defer src="js/settings-model.js?v=1.3"></script>
+<script defer src="js/toast.js?v=1.3"></script>
+<script defer src="js/app.js?v=1.3"></script>
 </head>
 <body>
 
@@ -62,6 +62,11 @@
       <span id="active-file-pill" class="active-file-pill" data-i18n-title="file.currentTitle" title="Current settings file">
         <span class="file-icon" aria-hidden="true">📄</span>
         <span id="active-file-name">settings.json</span>
+      </span>
+
+      <span id="schema-status-badge" class="schema-status-badge" data-source="none" data-status="loading" data-i18n-title="schema.status.tooltip" title="Real-time SchemaStore validation status">
+        <span class="schema-status-dot" aria-hidden="true"></span>
+        <span id="schema-status-label" class="schema-status-label" data-i18n="schema.status.loading">SchemaStore: Loading...</span>
       </span>
 
       <button id="btn-undo" class="btn icon-only" data-i18n-title="actions.undoTitle" data-i18n-aria-label="actions.undoTitle" title="Undo change (Ctrl+Z)" aria-label="Undo change (Ctrl+Z)" disabled>
@@ -171,6 +176,7 @@
       <ul id="diagnostic-list" class="diag-list"></ul>
     </section>
     <datalist id="available-models-datalist"></datalist>
+    <datalist id="canonical-anthropic-models-datalist"></datalist>
 
     <!-- TAB 1: General & UI -->
     <section id="tab-general" class="tab-panel active" role="tabpanel" aria-labelledby="tab-btn-general" aria-hidden="false">
@@ -629,9 +635,9 @@
         <span class="models-status-text field-hint" data-i18n="models.discovery.hint">Queries the OpenAI-compatible /v1/models endpoint to populate model dropdowns.</span>
       </div>
 
-      <!-- Section: Gateway Model Tiers (First-class UI) -->
-      <div class="section-title mt-lg" data-i18n="sections.models.tiers.title">Gateway Model Tiers &amp; Capabilities</div>
-      <div class="section-desc" data-i18n="sections.models.tiers.desc">Configure the model mappings, friendly display names, descriptions, and capabilities for each model tier (stored in <code>env.ANTHROPIC_DEFAULT_*</code>).</div>
+      <!-- Section: Gateway Model Tiers & Family Aliases (First-class UI) -->
+      <div class="section-title mt-lg" data-i18n="sections.models.tiers.title">Gateway Model Tiers &amp; Family Aliases (env.ANTHROPIC_DEFAULT_*)</div>
+      <div class="section-desc" data-i18n="sections.models.tiers.desc">Configure family-level default model mappings and aliases (stored in <code>env.ANTHROPIC_DEFAULT_*</code>) to route entire model families (fable, opus, sonnet, haiku) through gateway endpoints.</div>
 
       <div class="grid-2 mt-md">
         <!-- Fable Tier Card -->
@@ -796,6 +802,30 @@
             <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-checkbox-true="1"><label for="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"><code>env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY</code> — <span data-i18n="toggle.enableGatewayModelDiscovery">Gateway model discovery</span></label></div>
             <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-setting-path="env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-checkbox-true="1"><label for="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL"><code>env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL</code> — <span data-i18n="toggle.disableAdvisorTool">Disable server-side advisor tool</span></label></div>
           </div>
+        </div>
+      </div>
+
+      <!-- Section: Cloud Provider Model Overrides -->
+      <div class="rule-box mt-xl model-overrides-card">
+        <div class="rule-box-header">
+          <div>
+            <span class="rule-title"><span data-i18n="sections.models.overrides.title">Cloud Provider Model Overrides</span> (<code>modelOverrides</code>)</span>
+            <span class="rule-desc" data-i18n="sections.models.overrides.desc">Map specific Anthropic model identifiers to provider-specific identifiers (e.g. AWS Bedrock ARNs, Google Vertex model IDs, or Azure Foundry deployments).</span>
+          </div>
+          <button class="unset-btn" id="btn-unset-model-overrides" data-unset-path="modelOverrides" data-i18n="actions.unset">unset</button>
+        </div>
+
+        <div class="env-presets-toolbar mt-sm">
+          <span class="field-label" data-i18n="models.overrides.presets">Quick Presets:</span>
+          <button type="button" class="btn small" id="btn-preset-bedrock" data-i18n="models.overrides.presetBedrock">+ Bedrock Defaults</button>
+        </div>
+
+        <div id="model-overrides-list" class="mt-md"></div>
+
+        <div class="input-wrap mt-md model-override-add-wrap">
+          <input type="text" id="new-override-source" class="flex-1" placeholder="Anthropic Model ID (e.g. claude-sonnet-5)" data-i18n-placeholder="models.overrides.sourcePlaceholder" list="canonical-anthropic-models-datalist" aria-label="Source model ID">
+          <input type="text" id="new-override-target" class="flex-2" placeholder="Provider Model ID / ARN (e.g. arn:aws:bedrock:...)" data-i18n-placeholder="models.overrides.targetPlaceholder" list="available-models-datalist" aria-label="Target provider model ID or ARN">
+          <button type="button" id="btn-add-model-override" class="btn primary small" data-i18n="models.overrides.add">+ Add Override</button>
         </div>
       </div>
 

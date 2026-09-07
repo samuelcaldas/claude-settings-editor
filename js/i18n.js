@@ -122,8 +122,10 @@
 
       'sections.models.title': 'Models & Dynamic Workflows',
       'sections.models.desc': 'Configure primary model selection, gateway model tiers (Fable, Opus, Sonnet, Haiku), fallback chains, and workflow boundaries.',
-      'sections.models.tiers.title': 'Model Tiers & Gateway Capabilities',
-      'sections.models.tiers.desc': 'Configure model mapping, display names, descriptions, and capabilities for each model tier (stored in env.ANTHROPIC_DEFAULT_*).',
+      'sections.models.tiers.title': 'Gateway Model Tiers & Family Aliases (env.ANTHROPIC_DEFAULT_*)',
+      'sections.models.tiers.desc': 'Configure family-level default model mappings and aliases (stored in env.ANTHROPIC_DEFAULT_*) to route entire model families (fable, opus, sonnet, haiku) through gateway endpoints.',
+      'sections.models.overrides.title': 'Cloud Provider Model Overrides',
+      'sections.models.overrides.desc': 'Map specific Anthropic model identifiers to provider-specific identifiers (e.g. AWS Bedrock ARNs, Google Vertex model IDs, or Azure Foundry deployments).',
       'sections.models.sessionSelection.title': 'Global & Session Model Selection',
       'sections.models.toggles': 'Model & Workflow Toggles',
       'sections.models.fallbackChain': 'Fallback Model Chain',
@@ -599,6 +601,17 @@
       'models.fallback.placeholder': 'Model ID (e.g. claude-3-5-haiku-20241022)',
       'models.fallback.empty': 'No fallback models configured.',
 
+      'models.overrides.presets': 'Quick Presets:',
+      'models.overrides.presetBedrock': '+ Bedrock Defaults',
+      'models.overrides.sourcePlaceholder': 'Anthropic Model ID (e.g. claude-sonnet-5)',
+      'models.overrides.targetPlaceholder': 'Provider Model ID / ARN (e.g. arn:aws:bedrock:...)',
+      'models.overrides.add': '+ Add Model Override',
+      'models.overrides.empty': 'No provider model overrides configured. Default Anthropic endpoints will be used.',
+      'models.overrides.notObject': 'modelOverrides must be a key-value object; edit in Advanced JSON.',
+      'models.overrides.duplicateKey': 'Model override for this key already exists.',
+      'models.overrides.invalidKey': 'Model identifier cannot be empty or contain unsafe characters.',
+      'models.overrides.invalidValue': 'Provider target value must be a non-empty string.',
+
       // Hooks & Status Line
       'hooks.addEvent': '+ Add Event Hook Group',
       'hooks.empty': 'No hooks configured.',
@@ -724,6 +737,15 @@
       'status.copied': 'Copied to clipboard',
       'status.copyFailed': 'Copy failed: {error}',
       'status.downloaded': 'Downloaded settings.json',
+      'status.invalidSchema': 'Cannot apply JSON: Schema validation failed ({error})',
+      'schema.status.tooltip': 'Real-time SchemaStore validation status',
+      'schema.status.loading': 'SchemaStore: Loading...',
+      'schema.status.online': 'SchemaStore: Active',
+      'schema.status.cached': 'SchemaStore: Cached',
+      'schema.status.bundled': 'SchemaStore: Offline (Bundled)',
+      'schema.status.updating': 'SchemaStore: Updating...',
+      'schema.status.error': 'SchemaStore: Offline',
+      'schema.valid': 'JSON syntax and SchemaStore schema valid',
       'empty.none': 'None configured.',
 
       // Toast Notifications & Diagnostics Region
@@ -850,8 +872,10 @@
 
       'sections.models.title': 'Modelos e Fluxos de Trabalho Dinâmicos',
       'sections.models.desc': 'Configure a seleção do modelo principal, níveis de modelo via gateway (Fable, Opus, Sonnet, Haiku), cadeias de fallback e fluxos.',
-      'sections.models.tiers.title': 'Níveis de Modelo e Capacidades do Gateway',
-      'sections.models.tiers.desc': 'Configure o mapeamento de modelos, nomes de exibição, descrições e capacidades para cada nível de modelo (armazenado em env.ANTHROPIC_DEFAULT_*).',
+      'sections.models.tiers.title': 'Níveis de Modelo do Gateway e Aliases de Família (env.ANTHROPIC_DEFAULT_*)',
+      'sections.models.tiers.desc': 'Configure mapeamentos e aliases padrão em nível de família (em env.ANTHROPIC_DEFAULT_*) para rotear famílias inteiras de modelos (fable, opus, sonnet, haiku) via gateway.',
+      'sections.models.overrides.title': 'Sobrescritas de Modelo para Provedores em Nuvem',
+      'sections.models.overrides.desc': 'Mapeie identificadores específicos de modelos Anthropic para identificadores de provedores (ex.: ARNs do AWS Bedrock, IDs do Google Vertex ou implantações do Azure Foundry).',
       'sections.models.sessionSelection.title': 'Seleção Global e de Sessão de Modelos',
       'sections.models.toggles': 'Alternâncias de Modelo e Fluxo',
       'sections.models.fallbackChain': 'Cadeia de Modelos de Fallback',
@@ -1327,6 +1351,17 @@
       'models.fallback.placeholder': 'ID do Modelo (ex.: claude-3-5-haiku-20241022)',
       'models.fallback.empty': 'Nenhum modelo de fallback configurado.',
 
+      'models.overrides.presets': 'Predefinições Rápidas:',
+      'models.overrides.presetBedrock': '+ Padrões Bedrock',
+      'models.overrides.sourcePlaceholder': 'ID do Modelo Anthropic (ex.: claude-sonnet-5)',
+      'models.overrides.targetPlaceholder': 'ID / ARN no Provedor (ex.: arn:aws:bedrock:...)',
+      'models.overrides.add': '+ Adicionar Sobrescrita',
+      'models.overrides.empty': 'Nenhuma sobrescrita de modelo de provedor configurada. Os endpoints padrão da Anthropic serão usados.',
+      'models.overrides.notObject': 'modelOverrides deve ser um objeto chave-valor; edite no JSON Avançado.',
+      'models.overrides.duplicateKey': 'A sobrescrita para esta chave de modelo já existe.',
+      'models.overrides.invalidKey': 'O identificador do modelo não pode estar vazio nem conter caracteres inseguros.',
+      'models.overrides.invalidValue': 'O valor de destino no provedor deve ser uma string não vazia.',
+
       // Hooks & Status Line
       'hooks.addEvent': '+ Adicionar Grupo de Hooks para Evento',
       'hooks.empty': 'Nenhum hook configurado.',
@@ -1452,6 +1487,15 @@
       'status.copied': 'Copiado para a área de transferência',
       'status.copyFailed': 'Falha ao copiar: {error}',
       'status.downloaded': 'settings.json baixado',
+      'status.invalidSchema': 'Não é possível aplicar o JSON: Falha na validação do schema ({error})',
+      'schema.status.tooltip': 'Status da validação do SchemaStore em tempo real',
+      'schema.status.loading': 'SchemaStore: Carregando...',
+      'schema.status.online': 'SchemaStore: Ativo',
+      'schema.status.cached': 'SchemaStore: Em cache',
+      'schema.status.bundled': 'SchemaStore: Offline (Embutido)',
+      'schema.status.updating': 'SchemaStore: Atualizando...',
+      'schema.status.error': 'SchemaStore: Desconectado',
+      'schema.valid': 'Sintaxe JSON e schema do SchemaStore válidos',
       'empty.none': 'Nenhum configurado.',
 
       // Toast Notifications & Diagnostics Region

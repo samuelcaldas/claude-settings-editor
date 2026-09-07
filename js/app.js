@@ -26,10 +26,18 @@
     availableModels: model.getDefaultKnownModels ? model.getDefaultKnownModels() : [],
     modelsSource: 'defaults',
     isFetchingModels: false,
-    modelsFetchError: ''
+    modelsFetchError: '',
+    schemaAdapter: null,
+    schemaSource: 'none',
+    schemaStatus: 'loading'
   };
 
   const SESSION_STORAGE_KEY = 'claude_settings_editor_session_v1';
+  const SCHEMA_CACHE_KEY = 'claude_settings_schema_cache';
+  const SCHEMA_PRIMARY_URL = 'https://www.schemastore.org/claude-code-settings.json';
+  const SCHEMA_MIRROR_URL = 'https://json.schemastore.org/claude-code-settings.json';
+  const SCHEMA_BUNDLED_URL = './docs/claude-code-settings.json';
+  const SCHEMA_FETCH_TIMEOUT_MS = 4000;
   const VALID_TABS = new Set([
     'general',
     'permissions',
@@ -48,6 +56,7 @@
   const mobileViewport = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(max-width: 768px)') : { matches: false, addEventListener: () => {} };
   let navScrollFrame = 0;
   let toastManager = null;
+  let jsonDraftDebounceTimer = null;
 
   document.addEventListener('DOMContentLoaded', () => {
     initToast();
@@ -55,6 +64,7 @@
     initResponsiveShell();
     initSchema();
     populateModelsDatalist(state.availableModels);
+    populateCanonicalModelsDatalist();
     renderModelDiscovery();
     bindEvents();
     registerLaunchQueue();
@@ -204,7 +214,7 @@
         state.historyIdx = 0;
       }
 
-      state.diagnostics = model.inspectSettings(state.document, state.targetScope);
+      state.diagnostics = model.inspectSettings(state.document, state.targetScope, state.schemaAdapter);
       return true;
     } catch (_) {
       return false;
@@ -228,7 +238,7 @@
       state.targetScope = scope;
       const scopeSelect = getElement('scope-select');
       if (scopeSelect) scopeSelect.value = scope;
-      state.diagnostics = model.inspectSettings(state.document, state.targetScope);
+      state.diagnostics = model.inspectSettings(state.document, state.targetScope, state.schemaAdapter);
       renderScopeInfo();
       renderDiagnostics();
       renderFormFields();
@@ -239,23 +249,149 @@
     }
   }
 
-  function initSchema() {
-    if (!schemaAdapterModule || !catalog) return;
-    fetch('./docs/claude-code-settings.json')
-      .then(res => {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
-      })
-      .then(rawSchema => {
-        const adapter = schemaAdapterModule.createSchemaAdapter(rawSchema);
-        catalog.setSchemaAdapter(adapter);
-        enhanceFeatureHeaders();
-        renderAll();
-      })
-      .catch(err => {
-        console.warn('Could not load authoritative schema at runtime:', err);
-        enhanceFeatureHeaders();
+  async function fetchSchemaWithTimeout(url, timeoutMs = SCHEMA_FETCH_TIMEOUT_MS) {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+    try {
+      const res = await fetch(url, {
+        signal: controller ? controller.signal : undefined,
+        headers: { Accept: 'application/json' }
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  }
+
+  function applyLoadedSchema(rawSchema, source, status, shouldCache = true) {
+    if (!schemaAdapterModule || !rawSchema) return;
+    try {
+      const adapter = schemaAdapterModule.createSchemaAdapter(rawSchema);
+      state.schemaAdapter = adapter;
+      state.schemaSource = source;
+      state.schemaStatus = status;
+
+      if (catalog && typeof catalog.setSchemaAdapter === 'function') {
+        catalog.setSchemaAdapter(adapter);
+      }
+
+      if (shouldCache && source === 'schemastore') {
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem(
+              SCHEMA_CACHE_KEY,
+              JSON.stringify({
+                timestamp: Date.now(),
+                source: 'schemastore',
+                schema: rawSchema
+              })
+            );
+          }
+        } catch (_) {}
+      }
+
+      renderSchemaStatus();
+      enhanceFeatureHeaders();
+      state.diagnostics = model.inspectSettings(state.document, state.targetScope, state.schemaAdapter);
+      renderDiagnostics();
+      if (state.activeTab === 'advanced') {
+        validateJsonDraftLive(true);
+      }
+    } catch (err) {
+      console.warn('Failed to apply schema:', err);
+    }
+  }
+
+  function renderSchemaStatus() {
+    const badge = getElement('schema-status-badge');
+    const label = getElement('schema-status-label');
+    if (!badge || !label) return;
+
+    badge.setAttribute('data-source', state.schemaSource || 'none');
+    badge.setAttribute('data-status', state.schemaStatus || 'loading');
+    if (i18n) {
+      badge.title = i18n.t('schema.status.tooltip');
+    }
+
+    let textKey = 'schema.status.loading';
+    if (state.schemaStatus === 'updating') {
+      textKey = 'schema.status.updating';
+    } else if (state.schemaSource === 'schemastore') {
+      textKey = 'schema.status.online';
+    } else if (state.schemaSource === 'cache') {
+      textKey = 'schema.status.cached';
+    } else if (state.schemaSource === 'bundled') {
+      textKey = 'schema.status.bundled';
+    } else if (state.schemaStatus === 'error') {
+      textKey = 'schema.status.error';
+    }
+
+    label.textContent = i18n ? i18n.t(textKey) : textKey;
+    label.setAttribute('data-i18n', textKey);
+  }
+
+  async function initSchema() {
+    if (!schemaAdapterModule) return;
+
+    let hasAppliedCache = false;
+
+    // Tier 1: Cached Startup from localStorage
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const cachedRaw = window.localStorage.getItem(SCHEMA_CACHE_KEY);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw);
+          if (cached && cached.schema && typeof cached.schema === 'object') {
+            applyLoadedSchema(cached.schema, 'cache', 'ready', false);
+            hasAppliedCache = true;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Could not read cached schema:', err);
+    }
+
+    if (hasAppliedCache) {
+      state.schemaStatus = 'updating';
+      renderSchemaStatus();
+    }
+
+    // Tier 2: Remote SchemaStore Fetch (Primary with Mirror Fallback)
+    let remoteSchema = null;
+    try {
+      remoteSchema = await fetchSchemaWithTimeout(SCHEMA_PRIMARY_URL, SCHEMA_FETCH_TIMEOUT_MS);
+    } catch (primaryErr) {
+      console.warn('Primary SchemaStore fetch failed, attempting mirror:', primaryErr.message);
+      try {
+        remoteSchema = await fetchSchemaWithTimeout(SCHEMA_MIRROR_URL, SCHEMA_FETCH_TIMEOUT_MS);
+      } catch (mirrorErr) {
+        console.warn('Mirror SchemaStore fetch failed:', mirrorErr.message);
+      }
+    }
+
+    if (remoteSchema) {
+      applyLoadedSchema(remoteSchema, 'schemastore', 'ready', true);
+      return;
+    }
+
+    if (hasAppliedCache) {
+      state.schemaStatus = 'ready';
+      renderSchemaStatus();
+      return;
+    }
+
+    // Tier 3: Bundled Fallback
+    try {
+      const bundledSchema = await fetchSchemaWithTimeout(SCHEMA_BUNDLED_URL, SCHEMA_FETCH_TIMEOUT_MS);
+      applyLoadedSchema(bundledSchema, 'bundled', 'ready', false);
+    } catch (bundledErr) {
+      console.warn('Could not load bundled schema:', bundledErr.message);
+      state.schemaSource = 'none';
+      state.schemaStatus = 'error';
+      renderSchemaStatus();
+      enhanceFeatureHeaders();
+    }
   }
 
   function initToast() {
@@ -276,6 +412,7 @@
       if (toastManager) {
         toastManager.refreshTranslations();
       }
+      renderSchemaStatus();
       enhanceFeatureHeaders();
       renderAll();
       requestAnimationFrame(() => {
@@ -495,18 +632,22 @@
   }
 
   function setDocumentFromSource(source, statusMsgKey, statusParams) {
-    const result = model.parseSettingsJson(source);
+    const result = model.parseSettingsJson(source, {
+      schemaAdapter: state.schemaAdapter,
+      targetScope: state.targetScope
+    });
     state.jsonDraft = source;
     if (!result.ok) {
       state.jsonError = result.diagnostics.map(d => d.message).join('; ');
       state.diagnostics = result.diagnostics;
       renderDiagnostics();
       renderJsonEditor();
+      validateJsonDraftLive(true);
       setStatus('status.invalidSource', 'err');
       return false;
     }
     state.jsonError = '';
-    state.diagnostics = model.inspectSettings(result.value, state.targetScope);
+    state.diagnostics = model.inspectSettings(result.value, state.targetScope, state.schemaAdapter);
     setDocumentFromObject(result.value, statusMsgKey, statusParams);
     return true;
   }
@@ -519,7 +660,7 @@
     state.isDirty = false;
     state.history = [model.clone(state.document)];
     state.historyIdx = 0;
-    state.diagnostics = model.inspectSettings(state.document, state.targetScope);
+    state.diagnostics = model.inspectSettings(state.document, state.targetScope, state.schemaAdapter);
 
     renderAll();
     saveSessionState();
@@ -700,7 +841,7 @@
       state.isDirty = JSON.stringify(state.document) !== JSON.stringify(state.baseline);
       state.jsonDraft = model.serializeSettings(state.document);
       state.jsonError = '';
-      state.diagnostics = model.inspectSettings(state.document, state.targetScope);
+      state.diagnostics = model.inspectSettings(state.document, state.targetScope, state.schemaAdapter);
 
       renderAll();
       saveSessionState();
@@ -725,7 +866,7 @@
       state.historyIdx++;
       state.isDirty = JSON.stringify(state.document) !== JSON.stringify(state.baseline);
       state.jsonDraft = model.serializeSettings(state.document);
-      state.diagnostics = model.inspectSettings(state.document, state.targetScope);
+      state.diagnostics = model.inspectSettings(state.document, state.targetScope, state.schemaAdapter);
       renderAll();
       saveSessionState();
     } catch (err) {
@@ -738,7 +879,7 @@
     state.historyIdx--;
     state.document = model.clone(state.history[state.historyIdx]);
     state.jsonDraft = model.serializeSettings(state.document);
-    state.diagnostics = model.inspectSettings(state.document, state.targetScope);
+    state.diagnostics = model.inspectSettings(state.document, state.targetScope, state.schemaAdapter);
     state.isDirty = JSON.stringify(state.document) !== JSON.stringify(state.baseline);
     renderAll();
     saveSessionState();
@@ -750,7 +891,7 @@
     state.historyIdx++;
     state.document = model.clone(state.history[state.historyIdx]);
     state.jsonDraft = model.serializeSettings(state.document);
-    state.diagnostics = model.inspectSettings(state.document, state.targetScope);
+    state.diagnostics = model.inspectSettings(state.document, state.targetScope, state.schemaAdapter);
     state.isDirty = JSON.stringify(state.document) !== JSON.stringify(state.baseline);
     renderAll();
     saveSessionState();
@@ -827,7 +968,7 @@
       scopeSelect.value = state.targetScope;
       scopeSelect.addEventListener('change', e => {
         state.targetScope = e.target.value;
-        state.diagnostics = model.inspectSettings(state.document, state.targetScope);
+        state.diagnostics = model.inspectSettings(state.document, state.targetScope, state.schemaAdapter);
         renderScopeInfo();
         renderDiagnostics();
         renderFormFields();
@@ -1004,6 +1145,15 @@
       if (e.key === 'Enter') addFallbackModel();
     });
 
+    getElement('btn-add-model-override')?.addEventListener('click', addModelOverride);
+    getElement('new-override-source')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') addModelOverride();
+    });
+    getElement('new-override-target')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') addModelOverride();
+    });
+    getElement('btn-preset-bedrock')?.addEventListener('click', addBedrockDefaults);
+
     getElement('btn-add-plugin')?.addEventListener('click', addPlugin);
     getElement('new-plugin-key')?.addEventListener('keydown', e => {
       if (e.key === 'Enter') addPlugin();
@@ -1077,6 +1227,7 @@
     });
     if (validId === 'advanced') {
       renderJsonEditor();
+      validateJsonDraftLive(true);
     }
     revealTab(activeTabButton, true);
     syncUrl(validId, state.targetScope, pushHistory);
@@ -1159,6 +1310,7 @@
     renderRuleLists();
     renderEnvVars();
     renderFallbackModels();
+    renderModelOverrides();
     renderPlugins();
     renderMarketplaces();
     renderHooks();
@@ -1530,6 +1682,148 @@
       applyPatch({ op: 'set', path: 'fallbackModel', value: [val] });
     }
     inp.value = '';
+  }
+
+  function renderModelOverrides() {
+    const el = getElement('model-overrides-list');
+    if (!el) return;
+    el.replaceChildren();
+
+    const overridesObj = model.getAtPath(state.document, 'modelOverrides') || {};
+    if (typeof overridesObj !== 'object' || overridesObj === null || Array.isArray(overridesObj)) {
+      const err = document.createElement('div');
+      err.className = 'field-hint';
+      err.textContent = i18n ? i18n.t('models.overrides.notObject') : 'modelOverrides must be a key-value object; edit in Advanced JSON.';
+      el.appendChild(err);
+      return;
+    }
+
+    const keys = Object.keys(overridesObj);
+    if (keys.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'field-hint';
+      empty.textContent = i18n ? i18n.t('models.overrides.empty') : 'No provider model overrides configured. Default Anthropic endpoints will be used.';
+      el.appendChild(empty);
+      return;
+    }
+
+    keys.forEach(sourceModel => {
+      const targetVal = overridesObj[sourceModel];
+      const row = document.createElement('div');
+      row.className = 'model-override-item';
+
+      const keyInp = document.createElement('input');
+      keyInp.type = 'text';
+      keyInp.className = 'model-override-key flex-1';
+      keyInp.value = sourceModel;
+      keyInp.setAttribute('list', 'canonical-anthropic-models-datalist');
+      keyInp.setAttribute('aria-label', `Source model for ${sourceModel}`);
+      keyInp.addEventListener('change', () => {
+        const newKey = keyInp.value.trim();
+        if (!newKey) {
+          keyInp.value = sourceModel;
+          return;
+        }
+        if (newKey !== sourceModel) {
+          if (newKey in overridesObj) {
+            notify('models.overrides.duplicateKey', 'error');
+            keyInp.value = sourceModel;
+            return;
+          }
+          applyPatch({ op: 'rename_key', path: 'modelOverrides', fromKey: sourceModel, toKey: newKey });
+        }
+      });
+
+      const arrow = document.createElement('span');
+      arrow.className = 'model-override-arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+      arrow.textContent = '→';
+
+      const targetInp = document.createElement('input');
+      targetInp.type = 'text';
+      targetInp.className = 'model-override-target flex-2';
+      targetInp.value = String(targetVal !== undefined ? targetVal : '');
+      targetInp.setAttribute('list', 'available-models-datalist');
+      targetInp.setAttribute('aria-label', `Provider target for ${sourceModel}`);
+      targetInp.addEventListener('change', () => {
+        const newVal = targetInp.value.trim();
+        applyPatch({ op: 'set', path: ['modelOverrides', sourceModel], value: newVal });
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'del-btn';
+      delBtn.setAttribute('data-i18n-title', 'actions.remove');
+      delBtn.title = i18n ? i18n.t('actions.remove') : 'Remove';
+      delBtn.textContent = '×';
+      delBtn.addEventListener('click', () => {
+        applyPatch({ op: 'delete', path: ['modelOverrides', sourceModel] });
+      });
+
+      row.appendChild(keyInp);
+      row.appendChild(arrow);
+      row.appendChild(targetInp);
+      row.appendChild(delBtn);
+      el.appendChild(row);
+    });
+  }
+
+  function addModelOverride() {
+    const sourceInp = getElement('new-override-source');
+    const targetInp = getElement('new-override-target');
+    if (!sourceInp || !targetInp) return;
+
+    const sourceKey = sourceInp.value.trim();
+    const targetVal = targetInp.value.trim();
+
+    if (!sourceKey) {
+      notify('models.overrides.invalidKey', 'error');
+      sourceInp.focus();
+      return;
+    }
+    if (!targetVal) {
+      notify('models.overrides.invalidValue', 'error');
+      targetInp.focus();
+      return;
+    }
+
+    const currentOverrides = model.getAtPath(state.document, 'modelOverrides') || {};
+    if (typeof currentOverrides === 'object' && currentOverrides !== null && !Array.isArray(currentOverrides)) {
+      if (sourceKey in currentOverrides) {
+        notify('models.overrides.duplicateKey', 'error');
+        return;
+      }
+    }
+
+    applyPatch({ op: 'set', path: ['modelOverrides', sourceKey], value: targetVal });
+    sourceInp.value = '';
+    targetInp.value = '';
+  }
+
+  function addBedrockDefaults() {
+    const bedrockPresets = [
+      { key: 'claude-sonnet-5', value: 'arn:aws:bedrock:us-east-1:123456789012:inference-profile/us.anthropic.claude-3-7-sonnet-20250219-v1:0' },
+      { key: 'claude-haiku-4-5-20251001', value: 'arn:aws:bedrock:us-east-1:123456789012:inference-profile/us.anthropic.claude-3-5-haiku-20241022-v1:0' },
+      { key: 'claude-opus-5', value: 'arn:aws:bedrock:us-east-1:123456789012:inference-profile/us.anthropic.claude-3-opus-20240229-v1:0' }
+    ];
+    const patches = bedrockPresets.map(p => ({
+      op: 'set',
+      path: ['modelOverrides', p.key],
+      value: p.value
+    }));
+    batchPatches(patches);
+  }
+
+  function populateCanonicalModelsDatalist() {
+    const datalist = getElement('canonical-anthropic-models-datalist');
+    if (!datalist) return;
+    datalist.replaceChildren();
+    const list = model.getCanonicalAnthropicModels ? model.getCanonicalAnthropicModels() : [];
+    list.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      datalist.appendChild(opt);
+    });
   }
 
   function populateModelsDatalist(modelsList) {
@@ -2024,22 +2318,88 @@
     }
   }
 
-  function validateJsonDraftLive() {
+  function validateJsonDraftLive(immediate = false) {
+    if (jsonDraftDebounceTimer) {
+      clearTimeout(jsonDraftDebounceTimer);
+      jsonDraftDebounceTimer = null;
+    }
+    if (immediate) {
+      runJsonDraftValidation();
+    } else {
+      jsonDraftDebounceTimer = setTimeout(runJsonDraftValidation, 250);
+    }
+  }
+
+  function runJsonDraftValidation() {
     const errEl = getElement('json-error');
     if (!errEl) return;
+
+    let parsed;
     try {
-      JSON.parse(state.jsonDraft);
-      errEl.textContent = '';
+      parsed = JSON.parse(state.jsonDraft);
     } catch (e) {
-      errEl.textContent = e.message;
+      errEl.className = 'error';
+      errEl.textContent = `Syntax Error: ${e.message}`;
+      return;
     }
+
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      errEl.className = 'error';
+      errEl.textContent = 'Syntax Error: Root must be a JSON object';
+      return;
+    }
+
+    if (state.schemaAdapter && typeof state.schemaAdapter.validate === 'function') {
+      const validation = state.schemaAdapter.validate(parsed);
+      if (!validation.valid && validation.errors && validation.errors.length > 0) {
+        errEl.className = 'error';
+        const formatted = validation.errors.map(err => {
+          const loc = err.path ? ` at ${err.path}` : '';
+          return `Schema Error${loc}: ${err.message}`;
+        }).join('\n');
+        errEl.textContent = formatted;
+        return;
+      }
+    }
+
+    errEl.className = 'valid';
+    errEl.textContent = i18n ? i18n.t('schema.valid') : 'JSON syntax and SchemaStore schema valid';
   }
 
   function applyJsonDraft() {
     const editor = getElement('json-editor');
     if (!editor) return;
-    const ok = setDocumentFromSource(editor.value, 'status.jsonApplied');
+    const source = editor.value;
+
+    let parsed;
+    try {
+      parsed = JSON.parse(source);
+    } catch (e) {
+      notify('status.cannotApply', 'error');
+      validateJsonDraftLive(true);
+      return;
+    }
+
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      notify('status.cannotApply', 'error');
+      validateJsonDraftLive(true);
+      return;
+    }
+
+    if (state.schemaAdapter && typeof state.schemaAdapter.validate === 'function') {
+      const validation = state.schemaAdapter.validate(parsed);
+      if (!validation.valid && validation.errors && validation.errors.length > 0) {
+        const firstErr = validation.errors[0];
+        const errDesc = (firstErr.path ? `${firstErr.path}: ` : '') + firstErr.message;
+        notify('status.invalidSchema', 'error', { error: errDesc });
+        validateJsonDraftLive(true);
+        return;
+      }
+    }
+
+    const ok = setDocumentFromSource(source, 'status.jsonApplied');
     if (ok) {
+      validateJsonDraftLive(true);
       notify('status.jsonApplied', 'success');
     } else {
       notify('status.cannotApply', 'error');
@@ -2050,7 +2410,7 @@
     state.jsonDraft = model.serializeSettings(state.document);
     state.jsonError = '';
     renderJsonEditor();
-    validateJsonDraftLive();
+    validateJsonDraftLive(true);
     notify('status.draftDiscarded', 'info');
   }
 
@@ -2062,7 +2422,7 @@
       const formatted = JSON.stringify(parsed, null, 2) + '\n';
       editor.value = formatted;
       state.jsonDraft = formatted;
-      validateJsonDraftLive();
+      validateJsonDraftLive(true);
       notify('status.jsonApplied', 'info');
     } catch (e) {
       notify('status.formatErr', 'error', { error: e.message });

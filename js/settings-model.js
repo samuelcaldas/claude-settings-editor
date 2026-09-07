@@ -147,7 +147,7 @@
     if (!isPlainObject(value)) {
       return invalidResult('Settings document root must be a JSON object');
     }
-    const validation = validateSettingsDocument(value, options && options.targetScope);
+    const validation = validateSettingsDocument(value, options && options.targetScope, options && options.schemaAdapter);
     return {
       ok: validation.ok,
       value,
@@ -167,58 +167,82 @@
     };
   }
 
-  function inspectSettings(value, targetScope) {
+  function inspectSettings(value, targetScope, schemaAdapter) {
     const diagnostics = [];
     if (!isPlainObject(value)) {
       diagnostics.push({ severity: 'error', path: '', message: 'Root must be a JSON object' });
       return diagnostics;
     }
 
-    KNOWN_SHAPES.forEach(([propPath, expectedType]) => {
-      const current = getAtPath(value, propPath);
-      if (current === undefined) return;
-      if (expectedType === 'object' && (!isPlainObject(current) || Array.isArray(current))) {
-        diagnostics.push({ severity: 'error', path: propPath, message: `${propPath} must be an object` });
-      } else if (expectedType === 'array' && !Array.isArray(current)) {
-        diagnostics.push({ severity: 'error', path: propPath, message: `${propPath} must be an array` });
-      }
-    });
-
-    const checkEnum = (path) => {
-      const allowed = getEnumListForPath(path);
-      if (allowed) {
-        const val = getAtPath(value, path);
-        if (val !== undefined && !allowed.includes(val)) {
+    if (schemaAdapter && typeof schemaAdapter.validate === 'function') {
+      const schemaResult = schemaAdapter.validate(value);
+      if (schemaResult && Array.isArray(schemaResult.errors)) {
+        schemaResult.errors.forEach(err => {
           diagnostics.push({
-            severity: 'warning',
-            path,
-            message: `Unknown value "${val}" for ${path}. Valid options: ${allowed.join(', ')}`
+            severity: 'error',
+            path: err.path,
+            message: err.message,
+            keyword: err.keyword
           });
-        }
+        });
       }
-    };
+    } else {
+      KNOWN_SHAPES.forEach(([propPath, expectedType]) => {
+        const current = getAtPath(value, propPath);
+        if (current === undefined) return;
+        if (expectedType === 'object' && (!isPlainObject(current) || Array.isArray(current))) {
+          diagnostics.push({ severity: 'error', path: propPath, message: `${propPath} must be an object` });
+        } else if (expectedType === 'array' && !Array.isArray(current)) {
+          diagnostics.push({ severity: 'error', path: propPath, message: `${propPath} must be an array` });
+        }
+      });
 
-    ['theme', 'tui', 'editorMode', 'effortLevel', 'preferredNotifChannel', 'worktree.baseRef', 'worktree.bgIsolation', 'viewMode', 'teammateMode', 'workflowSizeGuideline', 'autoUpdatesChannel', 'forceLoginMethod', 'parentSettingsBehavior', 'defaultShell', 'crossSessionInbound', 'askUserQuestionTimeout', 'dialogExpiry', 'permissions.defaultMode'].forEach(checkEnum);
+      const checkEnum = (path) => {
+        const allowed = getEnumListForPath(path);
+        if (allowed) {
+          const val = getAtPath(value, path);
+          if (val !== undefined && !allowed.includes(val)) {
+            diagnostics.push({
+              severity: 'warning',
+              path,
+              message: `Unknown value "${val}" for ${path}. Valid options: ${allowed.join(', ')}`
+            });
+          }
+        }
+      };
 
-    inspectHooks(value, diagnostics);
-    inspectPermissions(value, diagnostics);
-    inspectSandbox(value, diagnostics);
+      ['theme', 'tui', 'editorMode', 'effortLevel', 'preferredNotifChannel', 'worktree.baseRef', 'worktree.bgIsolation', 'viewMode', 'teammateMode', 'workflowSizeGuideline', 'autoUpdatesChannel', 'forceLoginMethod', 'parentSettingsBehavior', 'defaultShell', 'crossSessionInbound', 'askUserQuestionTimeout', 'dialogExpiry', 'permissions.defaultMode'].forEach(checkEnum);
+
+      inspectHooks(value, diagnostics);
+      inspectPermissions(value, diagnostics);
+      inspectSandbox(value, diagnostics);
+    }
 
     if (targetScope) {
       inspectScope(value, targetScope, diagnostics);
     }
 
-    return diagnostics;
+    const seen = new Set();
+    const uniqueDiagnostics = [];
+    for (const d of diagnostics) {
+      const key = `${d.severity}:${d.path}:${d.message}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueDiagnostics.push(d);
+      }
+    }
+
+    return uniqueDiagnostics;
   }
 
-  function validateSettingsDocument(value, targetScope) {
+  function validateSettingsDocument(value, targetScope, schemaAdapter) {
     if (!isPlainObject(value)) {
       return {
         ok: false,
         diagnostics: [{ severity: 'error', path: '', message: 'Settings root must be a JSON object' }]
       };
     }
-    const diagnostics = inspectSettings(value, targetScope);
+    const diagnostics = inspectSettings(value, targetScope, schemaAdapter);
     const errors = diagnostics.filter(item => item.severity === 'error');
     return {
       ok: errors.length === 0,
@@ -499,6 +523,21 @@
     ];
   }
 
+  function getCanonicalAnthropicModels() {
+    return [
+      'claude-fable-5',
+      'claude-opus-5',
+      'claude-sonnet-5',
+      'claude-haiku-4-5-20251001',
+      'claude-opus-4-6',
+      'claude-sonnet-4-6',
+      'claude-3-7-sonnet-20250219',
+      'claude-3-5-sonnet-20241022',
+      'claude-3-5-haiku-20241022',
+      'claude-3-opus-20240229'
+    ];
+  }
+
   return {
     applyPatch: (doc, patch) => batchPatches(doc, [patch]),
     batchPatches,
@@ -507,6 +546,7 @@
     deepEqual,
     deleteAtPath,
     getAtPath,
+    getCanonicalAnthropicModels,
     getDefaultKnownModels,
     inspectSettings,
     moveAtPath,

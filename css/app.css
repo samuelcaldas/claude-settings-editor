@@ -112,6 +112,7 @@ header label,
 .dirty-badge,
 .scope-info-pill,
 .active-file-pill,
+.schema-status-badge,
 #status {
   -webkit-app-region: no-drag;
   app-region: no-drag;
@@ -177,6 +178,73 @@ header label,
 .active-file-pill.direct-disk {
   border-color: var(--green);
   color: var(--green);
+}
+
+/* Schema Validation Status Badge */
+.schema-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  user-select: none;
+  cursor: default;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.schema-status-badge .schema-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.schema-status-badge[data-source="schemastore"] {
+  border-color: rgba(152, 195, 121, 0.4);
+  color: var(--green);
+}
+.schema-status-badge[data-source="schemastore"] .schema-status-dot {
+  background: var(--green);
+  box-shadow: 0 0 4px var(--green);
+}
+
+.schema-status-badge[data-source="cache"] {
+  border-color: rgba(97, 175, 239, 0.4);
+  color: var(--blue);
+}
+.schema-status-badge[data-source="cache"] .schema-status-dot {
+  background: var(--blue);
+}
+
+.schema-status-badge[data-source="bundled"] {
+  border-color: rgba(229, 192, 123, 0.4);
+  color: var(--yellow);
+}
+.schema-status-badge[data-source="bundled"] .schema-status-dot {
+  background: var(--yellow);
+}
+
+.schema-status-badge[data-status="error"] {
+  border-color: rgba(224, 108, 117, 0.4);
+  color: var(--red);
+}
+.schema-status-badge[data-status="error"] .schema-status-dot {
+  background: var(--red);
+}
+
+.schema-status-badge[data-status="updating"] .schema-status-dot {
+  animation: pulse-dot 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
 }
 
 /* Scope Selector in Header */
@@ -846,7 +914,7 @@ input[type=range].slider-input::-moz-range-thumb:hover {
 }
 
 /* Dynamic Editors */
-.model-item, .plugin-item, .env-item {
+.model-item, .plugin-item, .env-item, .model-override-item {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -855,6 +923,32 @@ input[type=range].slider-input::-moz-range-thumb:hover {
   border-radius: var(--radius);
   background: var(--bg-elevated);
   margin-bottom: 5px;
+  flex-wrap: wrap;
+}
+
+.model-override-key {
+  min-width: 180px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.model-override-arrow {
+  color: var(--accent);
+  font-weight: 700;
+  user-select: none;
+  padding: 0 4px;
+}
+
+.model-override-target {
+  min-width: 220px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.model-override-add-wrap {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
   flex-wrap: wrap;
 }
 
@@ -1281,6 +1375,16 @@ input[type=range].slider-input::-moz-range-thumb:hover {
   margin-top: 6px;
   min-height: 16px;
   font-family: var(--font-mono);
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+#json-error.valid {
+  color: var(--green);
+}
+
+#json-error.error {
+  color: var(--red);
 }
 
 /* Helper Utilities */
