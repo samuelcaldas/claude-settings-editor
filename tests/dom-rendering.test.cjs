@@ -119,3 +119,19 @@ test('subagent and gateway option checkboxes have distinct IDs, setting paths, a
     'app.js must target specific label matching input id'
   );
 });
+
+test('header actions do not contain load sample button and default file displays clean settings.json', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  assert.ok(!html.includes('id="btn-sample"'), 'index.html must NOT contain id="btn-sample"');
+  assert.ok(!html.includes('data-i18n="actions.loadSample"'), 'index.html must NOT contain data-i18n="actions.loadSample"');
+  assert.ok(!html.includes('data-i18n="file.activeSample"'), 'index.html must NOT contain data-i18n="file.activeSample"');
+  assert.ok(html.includes('<span id="active-file-name">settings.json</span>'), 'index.html must display clean settings.json by default');
+
+  const css = fs.readFileSync(path.join(__dirname, '..', 'css', 'app.css'), 'utf8');
+  assert.ok(!css.includes('#btn-sample'), 'css/app.css must NOT contain #btn-sample');
+
+  const appJs = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8');
+  assert.ok(appJs.includes('initCleanDocument()'), 'app.js must initialize a clean document on start');
+  assert.ok(appJs.includes("fileName: 'settings.json'"), "app.js state must default to settings.json");
+  assert.ok(appJs.includes('isSample: false'), 'app.js state must default to isSample: false');
+});

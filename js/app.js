@@ -11,8 +11,8 @@
     document: {},
     baseline: {},
     fileHandle: null,
-    fileName: 'sample.json',
-    isSample: true,
+    fileName: 'settings.json',
+    isSample: false,
     targetScope: 'user',
     jsonDraft: '',
     jsonError: '',
@@ -80,7 +80,7 @@
       const scopeSelect = getElement('scope-select');
       if (scopeSelect) scopeSelect.value = state.targetScope;
 
-      loadDefaultSample();
+      initCleanDocument();
     }
 
     window.addEventListener('popstate', onPopState);
@@ -465,6 +465,16 @@
     updateNavScrollControls();
   }
 
+  function initCleanDocument() {
+    state.fileHandle = null;
+    state.fileName = 'settings.json';
+    state.isSample = false;
+    setDocumentFromObject({}, 'status.initEmpty');
+    const urlParams = getUrlParams();
+    const tab = urlParams.tab || state.activeTab || 'general';
+    switchTab(tab, false);
+  }
+
   function loadDefaultSample() {
     fetch('./sample.json')
       .then(res => {
@@ -759,7 +769,6 @@
     getElement('btn-open')?.addEventListener('click', () => runHeaderAction(openFile));
     getElement('btn-save')?.addEventListener('click', () => saveFile());
     getElement('btn-save-as')?.addEventListener('click', () => runHeaderAction(saveFileAs));
-    getElement('btn-sample')?.addEventListener('click', () => runHeaderAction(loadDefaultSample));
     getElement('btn-undo')?.addEventListener('click', () => runHeaderAction(undo));
     getElement('btn-redo')?.addEventListener('click', () => runHeaderAction(redo));
     getElement('file-input')?.addEventListener('change', onFileSelected);

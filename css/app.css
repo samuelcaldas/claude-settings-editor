@@ -1409,7 +1409,6 @@ select option { background: var(--bg-elevated); color: var(--text-bright); }
 
   .secondary-actions .active-file-pill,
   .secondary-actions .lang-selector-wrap,
-  .secondary-actions #btn-sample,
   .secondary-actions #btn-open,
   .secondary-actions #btn-save-as {
     grid-column: 1 / -1;
