@@ -1051,6 +1051,11 @@ input[type=range].slider-input::-moz-range-thumb:hover {
   color: var(--blue);
 }
 
+.models-status-pill[data-state="empty"] .pill-dot,
+.models-status-pill[data-state="none"] .pill-dot {
+  color: var(--text-dim);
+}
+
 .models-status-pill[data-state="loaded"] {
   border-color: var(--green);
 }

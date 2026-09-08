@@ -538,6 +538,22 @@
     ];
   }
 
+  function hasApiUrlAndKey(doc) {
+    if (!doc || typeof doc !== 'object') return false;
+    const rawBaseUrl = getAtPath(doc, 'env.ANTHROPIC_BASE_URL');
+    const apiKey = getAtPath(doc, 'env.ANTHROPIC_API_KEY');
+    const authToken = getAtPath(doc, 'env.ANTHROPIC_AUTH_TOKEN');
+
+    const trimmedUrl = typeof rawBaseUrl === 'string' ? rawBaseUrl.trim() : '';
+    const trimmedApiKey = typeof apiKey === 'string' ? apiKey.trim() : '';
+    const trimmedAuthToken = typeof authToken === 'string' ? authToken.trim() : '';
+
+    const hasUrl = trimmedUrl.length > 0 && (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://'));
+    const hasKey = trimmedApiKey.length > 0 || trimmedAuthToken.length > 0;
+
+    return Boolean(hasUrl && hasKey);
+  }
+
   return {
     applyPatch: (doc, patch) => batchPatches(doc, [patch]),
     batchPatches,
@@ -548,6 +564,7 @@
     getAtPath,
     getCanonicalAnthropicModels,
     getDefaultKnownModels,
+    hasApiUrlAndKey,
     inspectSettings,
     moveAtPath,
     normalizePath,

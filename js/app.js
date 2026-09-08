@@ -23,8 +23,8 @@
     historyIdx: -1,
     envMasked: true,
     isSaving: false,
-    availableModels: model.getDefaultKnownModels ? model.getDefaultKnownModels() : [],
-    modelsSource: 'defaults',
+    availableModels: [],
+    modelsSource: 'none',
     isFetchingModels: false,
     modelsFetchError: '',
     schemaAdapter: null,
@@ -80,6 +80,7 @@
       const scopeSelect = getElement('scope-select');
       if (scopeSelect) scopeSelect.value = state.targetScope;
 
+      checkAndTriggerModelDiscovery(state.document);
       renderAll();
       switchTab(state.activeTab, false);
       syncUrl(state.activeTab, state.targetScope, false);
@@ -662,6 +663,7 @@
     state.historyIdx = 0;
     state.diagnostics = model.inspectSettings(state.document, state.targetScope, state.schemaAdapter);
 
+    checkAndTriggerModelDiscovery(state.document);
     renderAll();
     saveSessionState();
     if (statusMsgKey) setStatus(statusMsgKey, 'ok', statusParams);
@@ -842,6 +844,13 @@
       state.jsonDraft = model.serializeSettings(state.document);
       state.jsonError = '';
       state.diagnostics = model.inspectSettings(state.document, state.targetScope, state.schemaAdapter);
+
+      if (typeof patch.path === 'string' && (patch.path === 'env.ANTHROPIC_BASE_URL' || patch.path === 'env.ANTHROPIC_API_KEY' || patch.path === 'env.ANTHROPIC_AUTH_TOKEN')) {
+        if (!hasApiUrlAndKey(state.document)) {
+          state.availableModels = [];
+          state.modelsSource = 'none';
+        }
+      }
 
       renderAll();
       saveSessionState();
@@ -1165,10 +1174,6 @@
     getElement('btn-add-hook')?.addEventListener('click', addHookGroup);
     getElement('btn-add-hook-group')?.addEventListener('click', addHookGroup);
     getElement('btn-add-hook-url')?.addEventListener('click', addHookUrl);
-
-    document.querySelectorAll('.btn-fetch-models').forEach(btn => {
-      btn.addEventListener('click', () => fetchModelsFromEndpoint());
-    });
 
     getElement('btn-apply-json')?.addEventListener('click', applyJsonDraft);
     getElement('btn-discard-json')?.addEventListener('click', discardJsonDraft);
@@ -1830,9 +1835,7 @@
     const datalist = getElement('available-models-datalist');
     if (!datalist) return;
     datalist.replaceChildren();
-    const rawList = Array.isArray(modelsList) && modelsList.length > 0
-      ? modelsList
-      : (model.getDefaultKnownModels ? model.getDefaultKnownModels() : []);
+    const rawList = Array.isArray(modelsList) ? modelsList : [];
     const list = Array.from(new Set(rawList.filter(Boolean)));
     list.forEach(m => {
       const opt = document.createElement('option');
@@ -1841,22 +1844,42 @@
     });
   }
 
+  function hasApiUrlAndKey(doc) {
+    if (model.hasApiUrlAndKey) {
+      return model.hasApiUrlAndKey(doc);
+    }
+    if (!doc || typeof doc !== 'object') return false;
+    const rawBaseUrl = model.getAtPath(doc, 'env.ANTHROPIC_BASE_URL');
+    const apiKey = model.getAtPath(doc, 'env.ANTHROPIC_API_KEY');
+    const authToken = model.getAtPath(doc, 'env.ANTHROPIC_AUTH_TOKEN');
+
+    const trimmedUrl = typeof rawBaseUrl === 'string' ? rawBaseUrl.trim() : '';
+    const trimmedApiKey = typeof apiKey === 'string' ? apiKey.trim() : '';
+    const trimmedAuthToken = typeof authToken === 'string' ? authToken.trim() : '';
+
+    const hasUrl = trimmedUrl.length > 0 && (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://'));
+    const hasKey = trimmedApiKey.length > 0 || trimmedAuthToken.length > 0;
+
+    return Boolean(hasUrl && hasKey);
+  }
+
+  function checkAndTriggerModelDiscovery(doc) {
+    if (hasApiUrlAndKey(doc)) {
+      fetchModelsFromEndpoint();
+    } else {
+      state.availableModels = [];
+      state.modelsSource = 'none';
+      state.modelsFetchError = '';
+      renderModelDiscovery();
+    }
+  }
+
   function renderModelDiscovery() {
     populateModelsDatalist(state.availableModels);
 
     const pills = document.querySelectorAll('.models-status-pill');
     const counts = document.querySelectorAll('.models-status-count');
     const texts = document.querySelectorAll('.models-status-text');
-    const fetchBtns = document.querySelectorAll('.btn-fetch-models');
-
-    fetchBtns.forEach(btn => {
-      btn.disabled = state.isFetchingModels;
-      if (state.isFetchingModels) {
-        btn.textContent = i18n ? i18n.t('models.discovery.fetching') : 'Fetching models...';
-      } else {
-        btn.textContent = i18n ? i18n.t('models.discovery.fetchBtn') : '⚡ Fetch Models from API';
-      }
-    });
 
     pills.forEach(pill => {
       if (state.isFetchingModels) {
@@ -1866,16 +1889,18 @@
       } else if (state.modelsSource === 'error') {
         pill.setAttribute('data-state', 'error');
       } else {
-        pill.setAttribute('data-state', 'defaults');
+        pill.setAttribute('data-state', 'empty');
       }
     });
 
     counts.forEach(countEl => {
       const total = state.availableModels.length;
-      if (state.modelsSource === 'api') {
+      if (state.isFetchingModels) {
+        countEl.textContent = i18n ? i18n.t('models.discovery.fetching') : 'Fetching...';
+      } else if (state.modelsSource === 'api') {
         countEl.textContent = i18n ? i18n.t('models.discovery.badge.loaded', { count: total }) : `${total} models`;
       } else {
-        countEl.textContent = i18n ? i18n.t('models.discovery.badge.defaults', { count: total }) : `${total} defaults`;
+        countEl.textContent = i18n ? i18n.t('models.discovery.badge.empty') : '0 models';
       }
     });
 
@@ -1888,7 +1913,7 @@
       } else if (state.modelsSource === 'error') {
         textEl.textContent = i18n ? i18n.t('models.discovery.status.error', { error: state.modelsFetchError }) : `Failed: ${state.modelsFetchError}`;
       } else {
-        textEl.textContent = i18n ? i18n.t('models.discovery.status.defaults', { count: total }) : `Using ${total} default model suggestions.`;
+        textEl.textContent = i18n ? i18n.t('models.discovery.status.empty') : 'No API URL and key configured. Models list is empty.';
       }
     });
   }
@@ -1898,9 +1923,11 @@
     const apiKey = model.getAtPath(state.document, 'env.ANTHROPIC_API_KEY') || '';
     const authToken = model.getAtPath(state.document, 'env.ANTHROPIC_AUTH_TOKEN') || '';
 
-    const modelsUrl = model.buildOpenAiModelsUrl(rawBaseUrl || 'https://api.anthropic.com');
+    const modelsUrl = model.buildOpenAiModelsUrl ? model.buildOpenAiModelsUrl(rawBaseUrl) : '';
     if (!modelsUrl) {
-      notify('models.discovery.status.noCreds', 'warning');
+      state.availableModels = [];
+      state.modelsSource = 'none';
+      renderModelDiscovery();
       return;
     }
 
@@ -1927,6 +1954,7 @@
       state.modelsSource = 'api';
       notify('models.discovery.status.success', 'success', { count: discovered.length });
     } catch (err) {
+      state.availableModels = [];
       state.modelsSource = 'error';
       state.modelsFetchError = err.message || 'Network error';
       notify('models.discovery.status.error', 'error', { error: state.modelsFetchError });
