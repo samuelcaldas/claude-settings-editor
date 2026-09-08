@@ -156,7 +156,15 @@
   }
 
   function serializeSettings(value) {
-    return JSON.stringify(value || {}, null, 2) + '\n';
+    if (!value || typeof value !== 'object') {
+      return JSON.stringify(value || {}, null, 2) + '\n';
+    }
+    let output = value;
+    if (Array.isArray(value.fallbackModel) && value.fallbackModel.length > 3) {
+      output = clone(value);
+      output.fallbackModel = value.fallbackModel.slice(0, 3);
+    }
+    return JSON.stringify(output, null, 2) + '\n';
   }
 
   function invalidResult(message) {
@@ -216,6 +224,15 @@
       inspectHooks(value, diagnostics);
       inspectPermissions(value, diagnostics);
       inspectSandbox(value, diagnostics);
+    }
+
+    const fallbackList = getAtPath(value, 'fallbackModel');
+    if (Array.isArray(fallbackList) && fallbackList.length > 3) {
+      diagnostics.push({
+        severity: 'warning',
+        path: 'fallbackModel',
+        message: 'fallbackModel accepts a maximum of 3 models; additional entries are ignored.'
+      });
     }
 
     if (targetScope) {
@@ -572,6 +589,127 @@
     ];
   }
 
+  function cleanDescriptionText(text) {
+    if (!text || typeof text !== 'string') return '';
+    return text.trim().replace(/^["'`]+|["'`]+$/g, '').trim();
+  }
+
+  function extractChoiceContent(choices) {
+    if (!Array.isArray(choices) || choices.length === 0) return '';
+    const first = choices[0];
+    if (!first) return '';
+    if (first.message && typeof first.message.content === 'string') {
+      return first.message.content;
+    }
+    if (first.delta && typeof first.delta.content === 'string') {
+      return first.delta.content;
+    }
+    if (typeof first.text === 'string') return first.text;
+    return '';
+  }
+
+  function extractContentFromObject(obj) {
+    if (!obj || typeof obj !== 'object') return '';
+    const choiceContent = extractChoiceContent(obj.choices);
+    if (choiceContent) return choiceContent;
+    if (typeof obj.response === 'string') return obj.response;
+    if (typeof obj.text === 'string') return obj.text;
+    if (Array.isArray(obj.content) && obj.content.length > 0 && typeof obj.content[0].text === 'string') {
+      return obj.content[0].text;
+    }
+    return '';
+  }
+
+  function parseSseTextStream(raw) {
+    const lines = raw.split(/\r?\n/);
+    let accumulated = '';
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith('data:')) continue;
+      const payload = trimmed.slice(5).trim();
+      if (payload === '[DONE]') continue;
+      try {
+        const parsed = JSON.parse(payload);
+        const chunk = extractContentFromObject(parsed);
+        if (chunk) accumulated += chunk;
+      } catch (_) {}
+    }
+    return cleanDescriptionText(accumulated);
+  }
+
+  function parseOpenAiChatResponse(input) {
+    if (!input) return '';
+    if (typeof input === 'object') {
+      return cleanDescriptionText(extractContentFromObject(input));
+    }
+    if (typeof input !== 'string') return '';
+    const raw = input.trim();
+    if (!raw) return '';
+
+    if (raw.startsWith('data:') || raw.includes('\ndata:')) {
+      const sseText = parseSseTextStream(raw);
+      if (sseText) return sseText;
+    }
+
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        const content = extractContentFromObject(parsed);
+        if (content) return cleanDescriptionText(content);
+      }
+    } catch (_) {}
+
+    return cleanDescriptionText(raw);
+  }
+
+  function sanitizeModelName(name) {
+    if (!name || typeof name !== 'string') return '';
+    const trimmed = name.trim();
+    const stripped = trimmed.replace(/\[[^\]]*\]/g, '').trim();
+    if (stripped) return stripped;
+    return trimmed;
+  }
+
+  function findFastOrFirstDiscoveredModel(availableModels) {
+    if (!Array.isArray(availableModels) || availableModels.length === 0) return '';
+    const fast = availableModels.find(m => {
+      if (typeof m !== 'string') return false;
+      const lower = m.toLowerCase();
+      return lower.includes('haiku') || lower.includes('flash') || lower.includes('mini');
+    });
+    if (fast) return sanitizeModelName(fast);
+    if (typeof availableModels[0] === 'string' && availableModels[0].trim()) {
+      return sanitizeModelName(availableModels[0]);
+    }
+    return '';
+  }
+
+  function resolveGeneratorModel(doc, currentModelId, availableModels) {
+    const haiku = getAtPath(doc, 'env.ANTHROPIC_DEFAULT_HAIKU_MODEL');
+    if (typeof haiku === 'string' && haiku.trim()) {
+      return sanitizeModelName(haiku);
+    }
+
+    const sonnet = getAtPath(doc, 'env.ANTHROPIC_DEFAULT_SONNET_MODEL');
+    if (typeof sonnet === 'string' && sonnet.trim()) {
+      return sanitizeModelName(sonnet);
+    }
+
+    const fallbacks = getAtPath(doc, 'fallbackModel');
+    if (Array.isArray(fallbacks) && fallbacks.length > 0 && typeof fallbacks[0] === 'string' && fallbacks[0].trim()) {
+      return sanitizeModelName(fallbacks[0]);
+    }
+
+    if (typeof currentModelId === 'string' && currentModelId.trim()) {
+      return sanitizeModelName(currentModelId);
+    }
+
+    const discovered = findFastOrFirstDiscoveredModel(availableModels);
+    if (discovered) return discovered;
+
+    return 'claude-haiku-4-5-20251001';
+  }
+
   function hasApiUrlAndKey(doc) {
     if (!doc || typeof doc !== 'object') return false;
     const rawBaseUrl = getAtPath(doc, 'env.ANTHROPIC_BASE_URL');
@@ -593,6 +731,7 @@
     batchPatches,
     buildOpenAiChatCompletionsUrl,
     buildOpenAiModelsUrl,
+    cleanDescriptionText,
     clone,
     createDescriptionPrompt,
     deepEqual,
@@ -604,10 +743,13 @@
     inspectSettings,
     moveAtPath,
     normalizePath,
+    parseOpenAiChatResponse,
     parseOpenAiModelsResponse,
     parseSettingsJson,
     redactSecrets,
     renameKeyAtPath,
+    resolveGeneratorModel,
+    sanitizeModelName,
     serializeSettings,
     setAtPath,
     validateSettingsDocument

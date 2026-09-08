@@ -1203,6 +1203,32 @@ input[type=range].slider-input::-moz-range-thumb:hover {
   border-bottom: 1px solid var(--accent);
 }
 
+.fallback-cap-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.models-status-pill.cap-full {
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+
+.models-status-pill.cap-full .pill-dot {
+  color: var(--yellow);
+}
+
+.fallback-slot-badge {
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 28px;
+}
+
+.fallback-model-input {
+  flex: 1;
+  min-width: 200px;
+}
+
 .del-btn {
   background: none;
   border: none;

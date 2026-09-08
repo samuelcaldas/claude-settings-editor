@@ -610,6 +610,14 @@
       'models.fallback.placeholder': 'Model ID (e.g. claude-3-5-haiku-20241022)',
       'models.fallback.empty': 'No fallback models configured.',
 
+      'fallback.placeholder': 'Model ID (e.g. claude-sonnet-5, haiku, default)',
+      'fallback.add': '+ Add Fallback Model',
+      'fallback.notArray': 'fallbackModel is not an array; edit in Advanced JSON.',
+      'fallback.empty': 'No fallback models configured.',
+      'fallback.capReached': 'Maximum of 3 fallback models reached. Additional models are ignored by Claude Code.',
+      'fallback.capBadge': '{count}/3 models',
+      'fallback.slot': 'Slot #{slot}',
+
       'models.overrides.presets': 'Quick Presets:',
       'models.overrides.presetBedrock': '+ Bedrock Defaults',
       'models.overrides.sourcePlaceholder': 'Anthropic Model ID (e.g. claude-sonnet-5)',
@@ -1368,6 +1376,14 @@
       'models.fallback.add': '+ Adicionar Modelo de Fallback',
       'models.fallback.placeholder': 'ID do Modelo (ex.: claude-3-5-haiku-20241022)',
       'models.fallback.empty': 'Nenhum modelo de fallback configurado.',
+
+      'fallback.placeholder': 'ID do Modelo (ex.: claude-sonnet-5, haiku, default)',
+      'fallback.add': '+ Adicionar Modelo de Fallback',
+      'fallback.notArray': 'fallbackModel não é uma matriz; edite no JSON Avançado.',
+      'fallback.empty': 'Nenhum modelo de fallback configurado.',
+      'fallback.capReached': 'Limite máximo de 3 modelos de fallback atingido. Modelos adicionais são ignorados pelo Claude Code.',
+      'fallback.capBadge': '{count}/3 modelos',
+      'fallback.slot': 'Slot #{slot}',
 
       'models.overrides.presets': 'Predefinições Rápidas:',
       'models.overrides.presetBedrock': '+ Padrões Bedrock',

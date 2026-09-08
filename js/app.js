@@ -1629,17 +1629,48 @@
       return;
     }
 
+    const count = list.length;
+    const isMax = count >= 3;
+
+    // Cap status badge
+    const headerRow = document.createElement('div');
+    headerRow.className = 'fallback-cap-header';
+    const capBadge = document.createElement('span');
+    capBadge.className = `models-status-pill ${isMax ? 'cap-full' : ''}`;
+    const dot = document.createElement('span');
+    dot.className = 'pill-dot';
+    dot.textContent = '●';
+    const capTextEl = document.createElement('span');
+    capTextEl.className = 'fallback-cap-text';
+    capTextEl.textContent = i18n ? i18n.t('fallback.capBadge', { count }) : `${count}/3 models`;
+    capBadge.appendChild(dot);
+    capBadge.appendChild(capTextEl);
+    headerRow.appendChild(capBadge);
+    el.appendChild(headerRow);
+
+    if (count === 0) {
+      const emptyEl = document.createElement('div');
+      emptyEl.className = 'field-hint mt-xs';
+      emptyEl.textContent = i18n ? i18n.t('fallback.empty') : 'No fallback models configured.';
+      el.appendChild(emptyEl);
+    }
+
     list.forEach((m, idx) => {
       const row = document.createElement('div');
-      row.className = 'model-item';
+      row.className = 'model-item fallback-model-row';
 
       const badge = document.createElement('span');
-      badge.className = 'field-hint';
+      badge.className = 'field-hint fallback-slot-badge';
       badge.textContent = `#${idx + 1}`;
 
       const inp = document.createElement('input');
       inp.type = 'text';
+      inp.className = 'fallback-model-input';
+      inp.setAttribute('data-setting-path', `fallbackModel.${idx}`);
       inp.value = String(m);
+      inp.addEventListener('input', () => {
+        applyPatch({ op: 'set', path: `fallbackModel.${idx}`, value: inp.value.trim() });
+      });
       inp.addEventListener('change', () => {
         applyPatch({ op: 'set', path: `fallbackModel.${idx}`, value: inp.value.trim() });
       });
@@ -1680,6 +1711,25 @@
       row.appendChild(delBtn);
       el.appendChild(row);
     });
+
+    const addBtn = getElement('btn-add-fallback');
+    const newInp = getElement('new-model-input');
+    if (addBtn) {
+      addBtn.disabled = isMax;
+      if (isMax) {
+        addBtn.setAttribute('title', i18n ? i18n.t('fallback.capReached') : 'Maximum 3 fallback models reached');
+      } else {
+        addBtn.removeAttribute('title');
+      }
+    }
+    if (newInp) {
+      newInp.disabled = isMax;
+      if (isMax) {
+        newInp.placeholder = i18n ? i18n.t('fallback.capReached') : 'Maximum 3 fallback models reached';
+      } else {
+        newInp.placeholder = i18n ? i18n.t('fallback.placeholder') : 'Model ID (e.g. claude-sonnet-5, haiku, default)';
+      }
+    }
   }
 
   function addFallbackModel() {
@@ -1688,6 +1738,10 @@
     const val = inp.value.trim();
     if (!val) return;
     const current = model.getAtPath(state.document, 'fallbackModel') || [];
+    if (Array.isArray(current) && current.length >= 3) {
+      notify('fallback.capReached', 'warning');
+      return;
+    }
     if (Array.isArray(current)) {
       applyPatch({ op: 'set', path: `fallbackModel.${current.length}`, value: val });
     } else {
@@ -2007,10 +2061,9 @@
     const currentModelId = (modelIdPath ? model.getAtPath(state.document, modelIdPath) : '') || '';
     const currentName = (namePath ? model.getAtPath(state.document, namePath) : '') || '';
 
-    if (!currentModelId) {
+    const generatorModel = model.resolveGeneratorModel(state.document, currentModelId, state.availableModels);
+    if (!generatorModel) {
       notify('models.ai.noModel', 'error');
-      const inputEl = modelIdPath ? document.querySelector(`[data-setting-path="${modelIdPath}"]`) : null;
-      if (inputEl) inputEl.focus();
       return;
     }
 
@@ -2043,37 +2096,52 @@
         headers['x-api-key'] = apiKey;
       }
 
-      const promptPayload = model.createDescriptionPrompt(tierKey, currentModelId, currentName);
+      const targetModelId = currentModelId || currentName || tierKey;
+      const targetDisplayName = currentName || targetModelId;
+      const promptPayload = model.createDescriptionPrompt(tierKey, targetModelId, targetDisplayName);
+
       const requestBody = {
-        model: currentModelId,
+        model: generatorModel,
         messages: promptPayload.messages,
         max_tokens: promptPayload.max_tokens || 60,
-        temperature: promptPayload.temperature || 0.3
+        temperature: promptPayload.temperature !== undefined ? promptPayload.temperature : 0.3
       };
 
-      const res = await fetch(chatUrl, {
+      let res = await fetch(chatUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify(requestBody)
       });
 
+      // Handle HTTP 400 when endpoints reject system role or strict schemas
+      if (res.status === 400 && Array.isArray(requestBody.messages) && requestBody.messages.length > 1) {
+        const combinedContent = promptPayload.messages.map(m => m.content).join('\n\n');
+        const fallbackBody = {
+          model: generatorModel,
+          messages: [{ role: 'user', content: combinedContent }],
+          max_tokens: 60,
+          temperature: 0.3
+        };
+        const fallbackRes = await fetch(chatUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(fallbackBody)
+        });
+        if (fallbackRes.ok) {
+          res = fallbackRes;
+        }
+      }
+
       if (!res.ok) {
         throw new Error(`HTTP ${res.status} ${res.statusText}`);
       }
 
-      const resData = await res.json();
-      let generatedText = '';
-
-      if (resData && resData.choices && resData.choices.length > 0 && resData.choices[0].message) {
-        generatedText = (resData.choices[0].message.content || '').trim();
-      }
+      const resText = await res.text();
+      let generatedText = model.parseOpenAiChatResponse(resText);
 
       if (!generatedText) {
         throw new Error('No description returned by API');
       }
-
-      // Clean up any outer quotes or excess formatting
-      generatedText = generatedText.replace(/^["'`]+|["'`]+$/g, '').trim();
 
       applyPatch({ op: 'set', path: settingPath, value: generatedText });
       const targetInput = document.querySelector(`[data-setting-path="${settingPath}"]`);
@@ -2108,7 +2176,8 @@
       || path.startsWith('fallbackModel')
       || id === 'new-model-input'
       || id === 'new-override-target'
-      || input.classList.contains('model-override-target');
+      || input.classList.contains('model-override-target')
+      || input.classList.contains('fallback-model-input');
 
     return isKnownModelPath;
   }
