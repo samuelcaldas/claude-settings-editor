@@ -244,11 +244,11 @@ test('model integration: parseSettingsJson enforces schema validation when adapt
   assert.equal(parsedValid.diagnostics.length, 0);
 });
 
-test('i18n & HTML shell: schema status badge and all localization keys are present with parity', () => {
+test('i18n & HTML shell: schema status badge is removed from UI and localization keys maintain parity', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-  assert.ok(html.includes('id="schema-status-badge"'), 'index.html must contain #schema-status-badge');
-  assert.ok(html.includes('id="schema-status-label"'), 'index.html must contain #schema-status-label');
-  assert.ok(html.includes('class="schema-status-dot"'), 'index.html must contain .schema-status-dot');
+  assert.ok(!html.includes('id="schema-status-badge"'), 'index.html must not contain #schema-status-badge');
+  assert.ok(!html.includes('id="schema-status-label"'), 'index.html must not contain #schema-status-label');
+  assert.ok(!html.includes('class="schema-status-dot"'), 'index.html must not contain .schema-status-dot');
 
   const requiredKeys = [
     'status.invalidSchema',

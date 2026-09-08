@@ -305,31 +305,7 @@
   }
 
   function renderSchemaStatus() {
-    const badge = getElement('schema-status-badge');
-    const label = getElement('schema-status-label');
-    if (!badge || !label) return;
-
-    badge.setAttribute('data-source', state.schemaSource || 'none');
-    badge.setAttribute('data-status', state.schemaStatus || 'loading');
-    if (i18n) {
-      badge.title = i18n.t('schema.status.tooltip');
-    }
-
-    let textKey = 'schema.status.loading';
-    if (state.schemaStatus === 'updating') {
-      textKey = 'schema.status.updating';
-    } else if (state.schemaSource === 'schemastore') {
-      textKey = 'schema.status.online';
-    } else if (state.schemaSource === 'cache') {
-      textKey = 'schema.status.cached';
-    } else if (state.schemaSource === 'bundled') {
-      textKey = 'schema.status.bundled';
-    } else if (state.schemaStatus === 'error') {
-      textKey = 'schema.status.error';
-    }
-
-    label.textContent = i18n ? i18n.t(textKey) : textKey;
-    label.setAttribute('data-i18n', textKey);
+    // Schema status indicator removed from UI
   }
 
   async function initSchema() {
