@@ -29,7 +29,8 @@
     modelsFetchError: '',
     schemaAdapter: null,
     schemaSource: 'none',
-    schemaStatus: 'loading'
+    schemaStatus: 'loading',
+    rawSchema: null
   };
 
   const SESSION_STORAGE_KEY = 'claude_settings_editor_session_v1';
@@ -63,6 +64,7 @@
     initLocale();
     initResponsiveShell();
     initSchema();
+    populateClaudeEnvVarsDropdownAndDatalist();
     populateModelsDatalist(state.availableModels);
     populateCanonicalModelsDatalist();
     renderModelDiscovery();
@@ -270,12 +272,15 @@
     try {
       const adapter = schemaAdapterModule.createSchemaAdapter(rawSchema);
       state.schemaAdapter = adapter;
+      state.rawSchema = rawSchema;
       state.schemaSource = source;
       state.schemaStatus = status;
 
       if (catalog && typeof catalog.setSchemaAdapter === 'function') {
         catalog.setSchemaAdapter(adapter);
       }
+
+      populateClaudeEnvVarsDropdownAndDatalist(rawSchema);
 
       if (shouldCache && source === 'schemastore') {
         try {
@@ -391,6 +396,10 @@
       }
       renderSchemaStatus();
       enhanceFeatureHeaders();
+      const selectEnv = getElement('select-env-var');
+      if (selectEnv && selectEnv.firstElementChild) {
+        selectEnv.firstElementChild.textContent = i18n ? i18n.t('env.selectVar.placeholder') : '-- Choose a Claude CLI variable (340+ options) --';
+      }
       renderAll();
       requestAnimationFrame(() => {
         updateNavScrollControls();
@@ -1090,6 +1099,48 @@
     getElement('new-env-val')?.addEventListener('keydown', e => {
       if (e.key === 'Enter') addEnvVar();
     });
+
+    const selectEnvVar = getElement('select-env-var');
+    const newEnvKey = getElement('new-env-key');
+    const newEnvVal = getElement('new-env-val');
+    const newEnvDesc = getElement('new-env-desc');
+
+    function updateEnvDescHint(varName) {
+      if (!newEnvDesc) return;
+      const trimmed = (varName || '').trim();
+      const desc = trimmed && model.getClaudeEnvVarDescription ? model.getClaudeEnvVarDescription(trimmed, state.rawSchema) : '';
+      if (desc) {
+        newEnvDesc.textContent = desc;
+        newEnvDesc.style.display = 'block';
+      } else {
+        newEnvDesc.textContent = '';
+        newEnvDesc.style.display = 'none';
+      }
+    }
+
+    if (selectEnvVar) {
+      selectEnvVar.addEventListener('change', () => {
+        const chosen = selectEnvVar.value;
+        if (!chosen) return;
+        if (newEnvKey) {
+          newEnvKey.value = chosen;
+          updateEnvDescHint(chosen);
+        }
+        if (newEnvVal) {
+          newEnvVal.focus();
+        }
+      });
+    }
+
+    if (newEnvKey) {
+      newEnvKey.addEventListener('input', () => {
+        updateEnvDescHint(newEnvKey.value);
+      });
+      newEnvKey.addEventListener('change', () => {
+        updateEnvDescHint(newEnvKey.value);
+      });
+    }
+
     getElement('btn-mask-env')?.addEventListener('click', toggleEnvMask);
     getElement('btn-toggle-api-key')?.addEventListener('click', () => {
       const input = getElement('env_ANTHROPIC_API_KEY');
@@ -1519,6 +1570,11 @@
       const keyInp = document.createElement('input');
       keyInp.type = 'text';
       keyInp.value = key;
+      keyInp.setAttribute('list', 'claude-env-vars-datalist');
+      const desc = model.getClaudeEnvVarDescription ? model.getClaudeEnvVarDescription(key, state.rawSchema) : '';
+      if (desc) {
+        keyInp.title = desc;
+      }
       keyInp.addEventListener('change', () => {
         const newKey = keyInp.value.trim();
         if (newKey && newKey !== key) {
@@ -1582,6 +1638,15 @@
     applyPatch({ op: 'set', path: `env.${k}`, value: valInp.value });
     keyInp.value = '';
     valInp.value = '';
+    const newEnvDesc = getElement('new-env-desc');
+    if (newEnvDesc) {
+      newEnvDesc.textContent = '';
+      newEnvDesc.style.display = 'none';
+    }
+    const selectEnvVar = getElement('select-env-var');
+    if (selectEnvVar) {
+      selectEnvVar.value = '';
+    }
   }
 
   function toggleEnvMask() {
@@ -1880,6 +1945,55 @@
     });
   }
 
+  function populateClaudeEnvVarsDropdownAndDatalist(schemaObj) {
+    if (!model || !model.getKnownClaudeEnvVars) return;
+    const targetSchema = schemaObj || state.rawSchema;
+    const envVars = model.getKnownClaudeEnvVars(targetSchema);
+    if (!Array.isArray(envVars) || envVars.length === 0) return;
+
+    const datalist = getElement('claude-env-vars-datalist');
+    if (datalist) {
+      datalist.replaceChildren();
+      const df = document.createDocumentFragment();
+      envVars.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.name;
+        if (v.description) {
+          opt.label = v.description;
+        }
+        df.appendChild(opt);
+      });
+      datalist.appendChild(df);
+    }
+
+    const select = getElement('select-env-var');
+    if (select) {
+      const currentVal = select.value;
+      select.replaceChildren();
+
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.disabled = true;
+      placeholder.selected = !currentVal;
+      placeholder.setAttribute('data-i18n', 'env.selectVar.placeholder');
+      placeholder.textContent = i18n ? i18n.t('env.selectVar.placeholder') : '-- Choose a Claude CLI variable (340+ options) --';
+      select.appendChild(placeholder);
+
+      const df = document.createDocumentFragment();
+      envVars.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.name;
+        opt.textContent = v.description ? `${v.name} — ${v.description}` : v.name;
+        opt.title = v.description || v.name;
+        if (currentVal && currentVal === v.name) {
+          opt.selected = true;
+        }
+        df.appendChild(opt);
+      });
+      select.appendChild(df);
+    }
+  }
+
   function hasApiUrlAndKey(doc) {
     if (model.hasApiUrlAndKey) {
       return model.hasApiUrlAndKey(doc);
@@ -2168,6 +2282,46 @@
     }
   }
 
+  function positionActiveModelDropdown() {
+    if (!activeModelDropdown || !activeDropdownInput) return;
+    const inputRect = activeDropdownInput.getBoundingClientRect();
+
+    // Close dropdown if input has scrolled off-screen
+    if (inputRect.bottom < 0 || inputRect.top > window.innerHeight) {
+      closeModelDropdown();
+      return;
+    }
+
+    const navEl = document.querySelector('nav.settings-nav');
+    const navHeight = (navEl && window.innerWidth <= 768) ? (navEl.offsetHeight || 56) : 0;
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    const availableWidth = Math.max(240, Math.min(inputRect.width, viewportWidth - 24));
+    activeModelDropdown.style.width = `${availableWidth}px`;
+
+    // Horizontal placement keeping within viewport bounds (8px margins)
+    let left = inputRect.left;
+    if (left + availableWidth > viewportWidth - 8) {
+      left = Math.max(8, viewportWidth - availableWidth - 8);
+    }
+    activeModelDropdown.style.left = `${Math.max(8, left)}px`;
+
+    // Vertical placement: prefer below, flip above if constrained near bottom nav
+    const spaceBelow = viewportHeight - inputRect.bottom - navHeight - 8;
+    const spaceAbove = inputRect.top - 8;
+    const menuMaxHeight = Math.min(240, Math.max(120, Math.max(spaceBelow, spaceAbove)));
+    activeModelDropdown.style.maxHeight = `${menuMaxHeight}px`;
+
+    if (spaceBelow < 180 && spaceAbove > spaceBelow) {
+      activeModelDropdown.style.bottom = `${viewportHeight - inputRect.top + 4}px`;
+      activeModelDropdown.style.top = 'auto';
+    } else {
+      activeModelDropdown.style.top = `${inputRect.bottom + 4}px`;
+      activeModelDropdown.style.bottom = 'auto';
+    }
+  }
+
   function openModelDropdownForInput(input) {
     if (!input) return;
     // Dropdown strictly opens ONLY if models were discovered via API
@@ -2185,11 +2339,6 @@
     const menu = document.createElement('div');
     menu.className = 'model-dropdown-menu';
     menu.setAttribute('role', 'listbox');
-
-    const inputRect = input.getBoundingClientRect();
-    menu.style.width = `${Math.max(inputRect.width, 240)}px`;
-    menu.style.top = `${inputRect.bottom + window.scrollY + 4}px`;
-    menu.style.left = `${inputRect.left + window.scrollX}px`;
 
     const currentValue = input.value.trim();
 
@@ -2221,6 +2370,7 @@
     document.body.appendChild(menu);
     activeModelDropdown = menu;
     activeDropdownInput = input;
+    positionActiveModelDropdown();
   }
 
   function initModelDropdownManager() {
@@ -2276,14 +2426,12 @@
       }
     });
 
-    window.addEventListener('resize', closeModelDropdown);
-    window.addEventListener('scroll', () => {
-      if (activeModelDropdown && activeDropdownInput) {
-        const inputRect = activeDropdownInput.getBoundingClientRect();
-        activeModelDropdown.style.top = `${inputRect.bottom + window.scrollY + 4}px`;
-        activeModelDropdown.style.left = `${inputRect.left + window.scrollX}px`;
-      }
-    }, { passive: true });
+    window.addEventListener('resize', () => {
+      positionActiveModelDropdown();
+    });
+    document.addEventListener('scroll', () => {
+      positionActiveModelDropdown();
+    }, { passive: true, capture: true });
   }
 
   function renderPlugins() {

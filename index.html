@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Claude Config">
 <link rel="apple-touch-icon" href="icons/icon.svg">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="css/app.css?v=1.3">
+<link rel="stylesheet" href="css/app.css?v=1.4">
 <script defer src="js/i18n.js?v=1.3"></script>
 <script defer src="js/settings-schema.js?v=1.3"></script>
 <script defer src="js/settings-catalog.js?v=1.3"></script>
@@ -172,6 +172,7 @@
     </section>
     <datalist id="available-models-datalist"></datalist>
     <datalist id="canonical-anthropic-models-datalist"></datalist>
+    <datalist id="claude-env-vars-datalist"></datalist>
 
     <!-- TAB 1: General & UI -->
     <section id="tab-general" class="tab-panel active" role="tabpanel" aria-labelledby="tab-btn-general" aria-hidden="false">
@@ -599,8 +600,16 @@
 
       <div id="env-var-list" class="mt-md"></div>
 
-      <div class="input-wrap mt-md">
-        <input type="text" id="new-env-key" class="flex-1" placeholder="VARIABLE_NAME (e.g. OTEL_EXPORTER_OTLP_ENDPOINT)" data-i18n-placeholder="env.keyPlaceholder">
+      <div class="field-group mt-md">
+        <label class="field-label" for="select-env-var" data-i18n="env.selectVar.label">Select Claude CLI Variable:</label>
+        <select id="select-env-var" class="select-env-var" aria-label="Select Claude CLI environment variable">
+          <option value="" disabled selected data-i18n="env.selectVar.placeholder">-- Choose a Claude CLI variable (340+ options) --</option>
+        </select>
+        <div id="new-env-desc" class="field-hint mt-xs" style="display: none;"></div>
+      </div>
+
+      <div class="input-wrap mt-xs">
+        <input type="text" id="new-env-key" class="flex-1" placeholder="VARIABLE_NAME (e.g. OTEL_EXPORTER_OTLP_ENDPOINT)" data-i18n-placeholder="env.keyPlaceholder" list="claude-env-vars-datalist">
         <input type="text" id="new-env-val" class="flex-2" placeholder="Value (or empty to unset)" data-i18n-placeholder="env.valPlaceholder">
         <button id="btn-add-env-var" class="btn primary" data-i18n="env.addVar">+ Add Variable</button>
       </div>
