@@ -846,10 +846,7 @@
       state.diagnostics = model.inspectSettings(state.document, state.targetScope, state.schemaAdapter);
 
       if (typeof patch.path === 'string' && (patch.path === 'env.ANTHROPIC_BASE_URL' || patch.path === 'env.ANTHROPIC_API_KEY' || patch.path === 'env.ANTHROPIC_AUTH_TOKEN')) {
-        if (!hasApiUrlAndKey(state.document)) {
-          state.availableModels = [];
-          state.modelsSource = 'none';
-        }
+        checkAndTriggerModelDiscovery(state.document);
       }
 
       renderAll();
@@ -1174,6 +1171,17 @@
     getElement('btn-add-hook')?.addEventListener('click', addHookGroup);
     getElement('btn-add-hook-group')?.addEventListener('click', addHookGroup);
     getElement('btn-add-hook-url')?.addEventListener('click', addHookUrl);
+
+    document.querySelectorAll('.btn-ai-generate').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetPath = btn.getAttribute('data-target-path');
+        if (targetPath) {
+          generateModelDescriptionForField(targetPath, btn);
+        }
+      });
+    });
+
+    initModelDropdownManager();
 
     getElement('btn-apply-json')?.addEventListener('click', applyJsonDraft);
     getElement('btn-discard-json')?.addEventListener('click', discardJsonDraft);
@@ -1632,7 +1640,6 @@
       const inp = document.createElement('input');
       inp.type = 'text';
       inp.value = String(m);
-      inp.setAttribute('list', 'available-models-datalist');
       inp.addEventListener('change', () => {
         applyPatch({ op: 'set', path: `fallbackModel.${idx}`, value: inp.value.trim() });
       });
@@ -1748,7 +1755,6 @@
       targetInp.type = 'text';
       targetInp.className = 'model-override-target flex-2';
       targetInp.value = String(targetVal !== undefined ? targetVal : '');
-      targetInp.setAttribute('list', 'available-models-datalist');
       targetInp.setAttribute('aria-label', `Provider target for ${sourceModel}`);
       targetInp.addEventListener('change', () => {
         const newVal = targetInp.value.trim();
@@ -1962,6 +1968,277 @@
       state.isFetchingModels = false;
       renderModelDiscovery();
     }
+  }
+
+  // AI Model Description Generator
+  async function generateModelDescriptionForField(settingPath, buttonEl) {
+    if (!hasApiUrlAndKey(state.document)) {
+      notify('models.ai.noApi', 'error');
+      return;
+    }
+
+    // Determine corresponding model ID, display name, and tier key
+    let modelIdPath = '';
+    let namePath = '';
+    let tierKey = 'fable';
+
+    if (settingPath === 'env.ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION') {
+      modelIdPath = 'env.ANTHROPIC_DEFAULT_FABLE_MODEL';
+      namePath = 'env.ANTHROPIC_DEFAULT_FABLE_MODEL_NAME';
+      tierKey = 'fable';
+    } else if (settingPath === 'env.ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION') {
+      modelIdPath = 'env.ANTHROPIC_DEFAULT_OPUS_MODEL';
+      namePath = 'env.ANTHROPIC_DEFAULT_OPUS_MODEL_NAME';
+      tierKey = 'opus';
+    } else if (settingPath === 'env.ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION') {
+      modelIdPath = 'env.ANTHROPIC_DEFAULT_SONNET_MODEL';
+      namePath = 'env.ANTHROPIC_DEFAULT_SONNET_MODEL_NAME';
+      tierKey = 'sonnet';
+    } else if (settingPath === 'env.ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION') {
+      modelIdPath = 'env.ANTHROPIC_DEFAULT_HAIKU_MODEL';
+      namePath = 'env.ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME';
+      tierKey = 'haiku';
+    } else if (settingPath === 'env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION') {
+      modelIdPath = 'env.ANTHROPIC_CUSTOM_MODEL_OPTION';
+      namePath = 'env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME';
+      tierKey = 'custom-option';
+    }
+
+    const currentModelId = (modelIdPath ? model.getAtPath(state.document, modelIdPath) : '') || '';
+    const currentName = (namePath ? model.getAtPath(state.document, namePath) : '') || '';
+
+    if (!currentModelId) {
+      notify('models.ai.noModel', 'error');
+      const inputEl = modelIdPath ? document.querySelector(`[data-setting-path="${modelIdPath}"]`) : null;
+      if (inputEl) inputEl.focus();
+      return;
+    }
+
+    const rawBaseUrl = model.getAtPath(state.document, 'env.ANTHROPIC_BASE_URL') || '';
+    const apiKey = model.getAtPath(state.document, 'env.ANTHROPIC_API_KEY') || '';
+    const authToken = model.getAtPath(state.document, 'env.ANTHROPIC_AUTH_TOKEN') || '';
+
+    const chatUrl = model.buildOpenAiChatCompletionsUrl ? model.buildOpenAiChatCompletionsUrl(rawBaseUrl) : '';
+    if (!chatUrl) {
+      notify('models.ai.noApi', 'error');
+      return;
+    }
+
+    if (buttonEl) {
+      buttonEl.classList.add('loading');
+      buttonEl.disabled = true;
+    }
+
+    notify('models.ai.generating', 'info');
+
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      } else if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+        headers['x-api-key'] = apiKey;
+      }
+
+      const promptPayload = model.createDescriptionPrompt(tierKey, currentModelId, currentName);
+      const requestBody = {
+        model: currentModelId,
+        messages: promptPayload.messages,
+        max_tokens: promptPayload.max_tokens || 60,
+        temperature: promptPayload.temperature || 0.3
+      };
+
+      const res = await fetch(chatUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      }
+
+      const resData = await res.json();
+      let generatedText = '';
+
+      if (resData && resData.choices && resData.choices.length > 0 && resData.choices[0].message) {
+        generatedText = (resData.choices[0].message.content || '').trim();
+      }
+
+      if (!generatedText) {
+        throw new Error('No description returned by API');
+      }
+
+      // Clean up any outer quotes or excess formatting
+      generatedText = generatedText.replace(/^["'`]+|["'`]+$/g, '').trim();
+
+      applyPatch({ op: 'set', path: settingPath, value: generatedText });
+      const targetInput = document.querySelector(`[data-setting-path="${settingPath}"]`);
+      if (targetInput) {
+        targetInput.value = generatedText;
+      }
+      notify('models.ai.success', 'success');
+    } catch (err) {
+      notify('models.ai.error', 'error', { error: err.message || 'Request failed' });
+    } finally {
+      if (buttonEl) {
+        buttonEl.classList.remove('loading');
+        buttonEl.disabled = false;
+      }
+    }
+  }
+
+  // Reusable Unfiltered Custom Model Dropdown Controller
+  let activeModelDropdown = null;
+  let activeDropdownInput = null;
+
+  function isModelInput(input) {
+    if (!input || input.tagName !== 'INPUT' || input.type !== 'text') return false;
+    const path = input.getAttribute('data-setting-path') || '';
+    const id = input.id || '';
+    const isKnownModelPath = (
+      path.startsWith('env.ANTHROPIC_DEFAULT_') && path.endsWith('_MODEL')
+    ) || path === 'env.ANTHROPIC_CUSTOM_MODEL_OPTION'
+      || path === 'env.CLAUDE_CODE_SUBAGENT_MODEL'
+      || path === 'model'
+      || path === 'advisorModel'
+      || path.startsWith('fallbackModel')
+      || id === 'new-model-input'
+      || id === 'new-override-target'
+      || input.classList.contains('model-override-target');
+
+    return isKnownModelPath;
+  }
+
+  function closeModelDropdown() {
+    if (activeModelDropdown) {
+      if (activeModelDropdown.parentNode) {
+        activeModelDropdown.parentNode.removeChild(activeModelDropdown);
+      }
+      activeModelDropdown = null;
+      activeDropdownInput = null;
+    }
+  }
+
+  function openModelDropdownForInput(input) {
+    if (!input) return;
+    // Dropdown strictly opens ONLY if models were discovered via API
+    if (!state.availableModels || state.availableModels.length === 0 || state.modelsSource !== 'api') {
+      closeModelDropdown();
+      return;
+    }
+
+    if (activeDropdownInput === input && activeModelDropdown) {
+      return;
+    }
+
+    closeModelDropdown();
+
+    const menu = document.createElement('div');
+    menu.className = 'model-dropdown-menu';
+    menu.setAttribute('role', 'listbox');
+
+    const inputRect = input.getBoundingClientRect();
+    menu.style.width = `${Math.max(inputRect.width, 240)}px`;
+    menu.style.top = `${inputRect.bottom + window.scrollY + 4}px`;
+    menu.style.left = `${inputRect.left + window.scrollX}px`;
+
+    const currentValue = input.value.trim();
+
+    state.availableModels.forEach((m, idx) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'model-dropdown-item';
+      item.setAttribute('role', 'option');
+      item.textContent = m;
+      if (m === currentValue) {
+        item.classList.add('selected');
+      }
+
+      item.addEventListener('mousedown', e => {
+        e.preventDefault(); // Prevent blur before value is selected
+      });
+
+      item.addEventListener('click', () => {
+        input.value = m;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        closeModelDropdown();
+        input.focus();
+      });
+
+      menu.appendChild(item);
+    });
+
+    document.body.appendChild(menu);
+    activeModelDropdown = menu;
+    activeDropdownInput = input;
+  }
+
+  function initModelDropdownManager() {
+    document.addEventListener('focusin', e => {
+      if (isModelInput(e.target)) {
+        openModelDropdownForInput(e.target);
+      } else if (activeModelDropdown && !activeModelDropdown.contains(e.target)) {
+        closeModelDropdown();
+      }
+    });
+
+    document.addEventListener('click', e => {
+      if (isModelInput(e.target)) {
+        openModelDropdownForInput(e.target);
+      } else if (activeModelDropdown && !activeModelDropdown.contains(e.target)) {
+        closeModelDropdown();
+      }
+    });
+
+    document.addEventListener('keydown', e => {
+      if (!activeModelDropdown || !activeDropdownInput) {
+        if (isModelInput(e.target) && (e.key === 'ArrowDown' || e.key === 'Down')) {
+          openModelDropdownForInput(e.target);
+        }
+        return;
+      }
+
+      if (e.key === 'Escape' || e.key === 'Tab') {
+        closeModelDropdown();
+        return;
+      }
+
+      const items = Array.from(activeModelDropdown.querySelectorAll('.model-dropdown-item'));
+      if (items.length === 0) return;
+
+      const activeIdx = items.findIndex(item => item.classList.contains('active') || document.activeElement === item);
+
+      if (e.key === 'ArrowDown' || e.key === 'Down') {
+        e.preventDefault();
+        const nextIdx = (activeIdx + 1) % items.length;
+        items.forEach((item, i) => item.classList.toggle('active', i === nextIdx));
+        items[nextIdx].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'ArrowUp' || e.key === 'Up') {
+        e.preventDefault();
+        const prevIdx = (activeIdx - 1 + items.length) % items.length;
+        items.forEach((item, i) => item.classList.toggle('active', i === prevIdx));
+        items[prevIdx].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        if (activeIdx >= 0 && items[activeIdx]) {
+          e.preventDefault();
+          items[activeIdx].click();
+        }
+      }
+    });
+
+    window.addEventListener('resize', closeModelDropdown);
+    window.addEventListener('scroll', () => {
+      if (activeModelDropdown && activeDropdownInput) {
+        const inputRect = activeDropdownInput.getBoundingClientRect();
+        activeModelDropdown.style.top = `${inputRect.bottom + window.scrollY + 4}px`;
+        activeModelDropdown.style.left = `${inputRect.left + window.scrollX}px`;
+      }
+    }, { passive: true });
   }
 
   function renderPlugins() {

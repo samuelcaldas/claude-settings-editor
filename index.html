@@ -649,7 +649,7 @@
               <label class="field-label" for="env_ANTHROPIC_DEFAULT_FABLE_MODEL" data-i18n="models.field.modelId">Model ID / Mapping</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_DEFAULT_FABLE_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL" placeholder="e.g. claude-sonnet-4-6[1m]" list="available-models-datalist">
+            <input type="text" id="env_ANTHROPIC_DEFAULT_FABLE_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL" placeholder="e.g. claude-sonnet-4-6[1m]">
           </div>
           <div class="field-group">
             <div class="field-header">
@@ -663,7 +663,12 @@
               <label class="field-label" for="env_ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION" data-i18n="models.field.desc">Description</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION" data-setting-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION" placeholder="e.g. Highly capable model via gateway">
+            <div class="ai-input-wrap">
+              <input type="text" id="env_ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION" data-setting-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION" placeholder="e.g. Highly capable model via gateway">
+              <button type="button" class="btn-ai-generate" data-target-path="env.ANTHROPIC_DEFAULT_FABLE_MODEL_DESCRIPTION" data-i18n-title="models.ai.generateTitle" title="Generate description with AI using configured API">
+                <span class="ai-sparkle">✨</span><span class="ai-btn-text" data-i18n="models.ai.generateBtn">AI</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -678,7 +683,7 @@
               <label class="field-label" for="env_ANTHROPIC_DEFAULT_OPUS_MODEL" data-i18n="models.field.modelId">Model ID / Mapping</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_DEFAULT_OPUS_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL" placeholder="e.g. gemini-3.7-flash-high[1m]" list="available-models-datalist">
+            <input type="text" id="env_ANTHROPIC_DEFAULT_OPUS_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL" placeholder="e.g. gemini-3.7-flash-high[1m]">
           </div>
           <div class="field-group">
             <div class="field-header">
@@ -692,7 +697,12 @@
               <label class="field-label" for="env_ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION" data-i18n="models.field.desc">Description</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION" data-setting-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION" placeholder="e.g. High-reasoning gateway variant">
+            <div class="ai-input-wrap">
+              <input type="text" id="env_ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION" data-setting-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION" placeholder="e.g. High-reasoning gateway variant">
+              <button type="button" class="btn-ai-generate" data-target-path="env.ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION" data-i18n-title="models.ai.generateTitle" title="Generate description with AI using configured API">
+                <span class="ai-sparkle">✨</span><span class="ai-btn-text" data-i18n="models.ai.generateBtn">AI</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -707,7 +717,7 @@
               <label class="field-label" for="env_ANTHROPIC_DEFAULT_SONNET_MODEL" data-i18n="models.field.modelId">Model ID / Mapping</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_DEFAULT_SONNET_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL" placeholder="e.g. gemini-3.7-flash-medium[1m]" list="available-models-datalist">
+            <input type="text" id="env_ANTHROPIC_DEFAULT_SONNET_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL" placeholder="e.g. gemini-3.7-flash-medium[1m]">
           </div>
           <div class="field-group">
             <div class="field-header">
@@ -721,7 +731,12 @@
               <label class="field-label" for="env_ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION" data-i18n="models.field.desc">Description</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION" data-setting-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION" placeholder="e.g. Balanced model via gateway">
+            <div class="ai-input-wrap">
+              <input type="text" id="env_ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION" data-setting-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION" placeholder="e.g. Balanced model via gateway">
+              <button type="button" class="btn-ai-generate" data-target-path="env.ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION" data-i18n-title="models.ai.generateTitle" title="Generate description with AI using configured API">
+                <span class="ai-sparkle">✨</span><span class="ai-btn-text" data-i18n="models.ai.generateBtn">AI</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -736,7 +751,7 @@
               <label class="field-label" for="env_ANTHROPIC_DEFAULT_HAIKU_MODEL" data-i18n="models.field.modelId">Model ID / Mapping</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_DEFAULT_HAIKU_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL" placeholder="e.g. gemini-3.7-flash-low[1m]" list="available-models-datalist">
+            <input type="text" id="env_ANTHROPIC_DEFAULT_HAIKU_MODEL" data-setting-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL" placeholder="e.g. gemini-3.7-flash-low[1m]">
           </div>
           <div class="field-group">
             <div class="field-header">
@@ -750,7 +765,12 @@
               <label class="field-label" for="env_ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION" data-i18n="models.field.desc">Description</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION" data-setting-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION" placeholder="e.g. Low-latency gateway variant">
+            <div class="ai-input-wrap">
+              <input type="text" id="env_ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION" data-setting-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION" placeholder="e.g. Low-latency gateway variant">
+              <button type="button" class="btn-ai-generate" data-target-path="env.ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION" data-i18n-title="models.ai.generateTitle" title="Generate description with AI using configured API">
+                <span class="ai-sparkle">✨</span><span class="ai-btn-text" data-i18n="models.ai.generateBtn">AI</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -765,7 +785,7 @@
               <label class="field-label" for="env_ANTHROPIC_CUSTOM_MODEL_OPTION" data-i18n="models.field.modelId">Model ID / Mapping</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION" data-setting-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION" placeholder="e.g. gemini-3.7-flash-high[1m]" list="available-models-datalist">
+            <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION" data-setting-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION" placeholder="e.g. gemini-3.7-flash-high[1m]">
           </div>
           <div class="field-group">
             <div class="field-header">
@@ -779,7 +799,12 @@
               <label class="field-label" for="env_ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" data-i18n="models.field.desc">Description</label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" data-setting-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" placeholder="e.g. High-reasoning gateway variant">
+            <div class="ai-input-wrap">
+              <input type="text" id="env_ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" data-setting-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" placeholder="e.g. High-reasoning gateway variant">
+              <button type="button" class="btn-ai-generate" data-target-path="env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION" data-i18n-title="models.ai.generateTitle" title="Generate description with AI using configured API">
+                <span class="ai-sparkle">✨</span><span class="ai-btn-text" data-i18n="models.ai.generateBtn">AI</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -794,7 +819,7 @@
               <label class="field-label" for="env_CLAUDE_CODE_SUBAGENT_MODEL" data-i18n="models.field.subagent">Subagent Model Override</label>
               <button class="unset-btn" data-unset-path="env.CLAUDE_CODE_SUBAGENT_MODEL" data-i18n="actions.unset">unset</button>
             </div>
-            <input type="text" id="env_CLAUDE_CODE_SUBAGENT_MODEL" data-setting-path="env.CLAUDE_CODE_SUBAGENT_MODEL" placeholder="e.g. gpt-5.6-sol[1m]" list="available-models-datalist">
+            <input type="text" id="env_CLAUDE_CODE_SUBAGENT_MODEL" data-setting-path="env.CLAUDE_CODE_SUBAGENT_MODEL" placeholder="e.g. gpt-5.6-sol[1m]">
           </div>
           <div class="field-group field-group-checkbox">
             <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-checkbox-true="1"><label for="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"><code>env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY</code> — <span data-i18n="toggle.enableGatewayModelDiscovery">Gateway model discovery</span></label></div>
@@ -822,7 +847,7 @@
 
         <div class="input-wrap mt-md model-override-add-wrap">
           <input type="text" id="new-override-source" class="flex-1" placeholder="Anthropic Model ID (e.g. claude-sonnet-5)" data-i18n-placeholder="models.overrides.sourcePlaceholder" list="canonical-anthropic-models-datalist" aria-label="Source model ID">
-          <input type="text" id="new-override-target" class="flex-2" placeholder="Provider Model ID / ARN (e.g. arn:aws:bedrock:...)" data-i18n-placeholder="models.overrides.targetPlaceholder" list="available-models-datalist" aria-label="Target provider model ID or ARN">
+          <input type="text" id="new-override-target" class="flex-2" placeholder="Provider Model ID / ARN (e.g. arn:aws:bedrock:...)" data-i18n-placeholder="models.overrides.targetPlaceholder" aria-label="Target provider model ID or ARN">
           <button type="button" id="btn-add-model-override" class="btn primary small" data-i18n="models.overrides.add">+ Add Override</button>
         </div>
       </div>
@@ -835,7 +860,7 @@
             <label class="field-label" for="model"><code>model</code> — <span data-i18n="field.model.label">Primary Model</span></label>
             <button class="unset-btn" data-unset-path="model" data-i18n="actions.unset">unset</button>
           </div>
-          <input type="text" id="model" data-setting-path="model" placeholder="e.g. claude-sonnet-5, opus" data-i18n-placeholder="field.model.placeholder" list="available-models-datalist">
+          <input type="text" id="model" data-setting-path="model" placeholder="e.g. claude-sonnet-5, opus" data-i18n-placeholder="field.model.placeholder">
           <div class="field-hint" data-i18n="field.model.hint">Restart required when modified. Mid-session switch via <code>/model</code>.</div>
         </div>
 
@@ -844,7 +869,7 @@
             <label class="field-label" for="advisorModel"><code>advisorModel</code> — <span data-i18n="field.advisorModel.label">Advisor Model</span></label>
             <button class="unset-btn" data-unset-path="advisorModel" data-i18n="actions.unset">unset</button>
           </div>
-          <input type="text" id="advisorModel" data-setting-path="advisorModel" placeholder="fable, opus, or sonnet" data-i18n-placeholder="field.advisorModel.placeholder" list="available-models-datalist">
+          <input type="text" id="advisorModel" data-setting-path="advisorModel" placeholder="fable, opus, or sonnet" data-i18n-placeholder="field.advisorModel.placeholder">
         </div>
 
         <div class="field-group">
@@ -908,7 +933,7 @@
       <div class="section-desc" data-i18n="sections.models.fallbackDesc">Ordered list of fallback models (capped at 3 models). Replaces entire chain across settings files.</div>
       <div id="fallback-list"></div>
       <div class="input-wrap mt-md">
-        <input type="text" id="new-model-input" placeholder="Model ID (e.g. claude-sonnet-5, haiku, default)" data-i18n-placeholder="fallback.placeholder" list="available-models-datalist">
+        <input type="text" id="new-model-input" placeholder="Model ID (e.g. claude-sonnet-5, haiku, default)" data-i18n-placeholder="fallback.placeholder">
         <button id="btn-add-fallback" class="btn primary" data-i18n="fallback.add">+ Add Fallback Model</button>
       </div>
     </section>

@@ -485,6 +485,40 @@
     return cleanBase + '/v1/models';
   }
 
+  function buildOpenAiChatCompletionsUrl(baseUrl) {
+    if (!baseUrl || typeof baseUrl !== 'string') return '';
+    const trimmed = baseUrl.trim();
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) return '';
+    let cleanBase = trimmed.replace(/\/+$/, '');
+    if (cleanBase.endsWith('/chat/completions')) return cleanBase;
+    if (cleanBase.endsWith('/models')) {
+      cleanBase = cleanBase.slice(0, -'/models'.length);
+    }
+    if (cleanBase.endsWith('/v1')) return cleanBase + '/chat/completions';
+    return cleanBase + '/v1/chat/completions';
+  }
+
+  function createDescriptionPrompt(tierKey, modelId, displayName) {
+    const tier = tierKey || 'custom';
+    const id = modelId || tier;
+    const name = displayName || id;
+
+    return {
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a concise technical assistant describing AI models for Claude Code settings. Return ONLY a single concise, punchy sentence (under 70 characters) describing the model strengths and tier role. Do not use quotes, prefixes, or markdown.'
+        },
+        {
+          role: 'user',
+          content: `Generate a 1-sentence description for model "${id}" (${name}) in the ${tier} tier.`
+        }
+      ],
+      max_tokens: 60,
+      temperature: 0.3
+    };
+  }
+
   function parseOpenAiModelsResponse(input) {
     if (!input) return [];
     let json = input;
@@ -557,8 +591,10 @@
   return {
     applyPatch: (doc, patch) => batchPatches(doc, [patch]),
     batchPatches,
+    buildOpenAiChatCompletionsUrl,
     buildOpenAiModelsUrl,
     clone,
+    createDescriptionPrompt,
     deepEqual,
     deleteAtPath,
     getAtPath,
