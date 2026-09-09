@@ -904,6 +904,53 @@ input[type=range].slider-input::-moz-range-thumb:hover {
   flex-wrap: wrap;
 }
 
+/* Environment Variable Boolean Controls */
+.env-bool-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--font-size-sm);
+  padding: 4px 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-height: 32px;
+}
+
+.env-bool-checkbox {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.env-bool-badge {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--accent);
+  border: 1px solid var(--border);
+}
+
+optgroup {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  background: var(--bg-surface);
+  color: var(--accent);
+}
+
+optgroup option {
+  font-weight: 400;
+  color: var(--text);
+  background: var(--bg);
+  padding: 2px 4px;
+}
+
 .model-tier-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);

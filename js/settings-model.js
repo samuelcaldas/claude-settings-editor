@@ -10,10 +10,11 @@
   if (!catalog && root && root.SettingsCatalog) {
     catalog = root.SettingsCatalog;
   }
-  const api = factory(catalog);
+  const envCatalog = typeof require === 'function' ? require('./env-var-catalog.js') : root.EnvVarCatalog;
+  const api = factory(catalog, envCatalog);
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.SettingsModel = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function createSettingsModel(catalogModule) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function createSettingsModel(catalogModule, envCatalog) {
   'use strict';
 
   const UNSAFE_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
@@ -917,28 +918,25 @@
   "VERTEX_REGION_CLAUDE_HAIKU_4_5": "Override the Vertex AI region for Claude Haiku 4.5 (used when CLOUD_ML_REGION=global). See https://code.claude.com/docs/en/env-vars"
 });
 
+  /** Return complete discovery metadata, merging partial schemas with bundled references. */
   function getKnownClaudeEnvVars(schemaObj) {
-    const props = schemaObj && schemaObj.properties && schemaObj.properties.env && schemaObj.properties.env.properties
-      ? schemaObj.properties.env.properties
-      : KNOWN_CLAUDE_ENV_VARS;
-    return Object.keys(props).sort().map(name => {
-      const def = props[name];
-      const desc = typeof def === "string" ? def : (def && def.description ? def.description : "");
-      return {
-        name,
-        description: desc
-      };
-    });
+    return envCatalog.resolveAll(schemaObj, KNOWN_CLAUDE_ENV_VARS);
   }
 
+  /** Look up an exact environment name without treating catalog membership as validation. */
+  function getClaudeEnvVarMetadata(varName, schemaObj) {
+    return envCatalog.resolve(varName, schemaObj, KNOWN_CLAUDE_ENV_VARS);
+  }
+
+  /** Return the attributed description for a known name, or an empty string for custom names. */
   function getClaudeEnvVarDescription(varName, schemaObj) {
-    if (!varName) return "";
-    const props = schemaObj && schemaObj.properties && schemaObj.properties.env && schemaObj.properties.env.properties
-      ? schemaObj.properties.env.properties
-      : KNOWN_CLAUDE_ENV_VARS;
-    const def = props[varName];
-    if (!def) return "";
-    return typeof def === "string" ? def : (def.description || "");
+    const metadata = getClaudeEnvVarMetadata(varName, schemaObj);
+    return metadata ? metadata.description : '';
+  }
+
+  /** Filter curated suggestions by search, category, opt-in, and target scope. */
+  function getSuggestedClaudeEnvVars(schemaObj, options) {
+    return envCatalog.suggest(getKnownClaudeEnvVars(schemaObj), options);
   }
 
   function getCanonicalAnthropicModels() {
@@ -1105,7 +1103,9 @@
     deleteAtPath,
     getAtPath,
     getClaudeEnvVarDescription,
+    getClaudeEnvVarMetadata,
     getKnownClaudeEnvVars,
+    getSuggestedClaudeEnvVars,
     getCanonicalAnthropicModels,
     getDefaultKnownModels,
     hasApiUrlAndKey,

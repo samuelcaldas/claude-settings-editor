@@ -44,6 +44,9 @@ js/i18n.js                     Declarative i18n translation dictionary & DOM bin
 js/settings-schema.js          Pure JSON Schema adapter ($ref resolution, normalization & traversal)
 js/settings-catalog.js         Declarative presentation metadata, scopes, and editor registry
 js/settings-model.js           Pure settings parser, immutable path operations & validation
+js/env-var-catalog.js          Curated environment variable catalog, source provenance & suggestions
+js/env-var-help.js             Safe metadata, source attribution, caveats & provenance link renderer
+js/env-editor.js               Additional environment variables controller & safe patch manager
 js/toast.js                    Accessible toast notification manager
 js/app.js                      Browser controller, scope inspection & dynamic collection builders
 sample.json                    Sample configuration fixture with placeholder credentials
@@ -53,6 +56,7 @@ sw.js                          PWA service worker for offline caching
 manifest.json                  PWA manifest
 docs/claude-code-settings.json Authoritative JSON Schema from SchemaStore
 docs/settings.md               Authoritative reference documentation for Claude Code settings
+docs/environment-variables.md  Reference documentation for environment variable discovery & scopes
 ```
 
 ## Schema Enforcement & Automated Audit

@@ -10,6 +10,9 @@ css/app.css                    Terminal monospace styles, theme variables, and r
 js/i18n.js                     Declarative i18n translation dictionary & DOM binder
 js/settings-catalog.js         Declarative settings catalog, enums, categories, and scope metadata
 js/settings-model.js           Pure settings model, parser, immutable path ops, validation & diagnostics
+js/env-var-catalog.js          Curated environment variable catalog, source provenance & suggestions
+js/env-var-help.js             Safe metadata, source attribution, caveats & provenance link renderer
+js/env-editor.js               Additional environment variables controller & safe patch manager
 js/app.js                      DOM event bindings, scope inspection, history management, and dynamic builders
 sample.json                    Public sample settings fixture with safe placeholders
 sw.js                          Service Worker for offline PWA caching
@@ -17,6 +20,7 @@ manifest.json                  PWA web app manifest
 tests/                         Automated test suite using Node.js built-in runner
 docs/claude-code-settings.json Authoritative JSON Schema from SchemaStore (https://json.schemastore.org/claude-code-settings.json)
 docs/settings.md               Authoritative reference documentation for Claude Code settings
+docs/environment-variables.md  Reference documentation for environment variable discovery & scopes
 ```
 
 ## Architecture & Data Flow

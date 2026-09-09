@@ -16,7 +16,10 @@
 <script defer src="js/i18n.js?v=1.3"></script>
 <script defer src="js/settings-schema.js?v=1.3"></script>
 <script defer src="js/settings-catalog.js?v=1.3"></script>
-<script defer src="js/settings-model.js?v=1.3"></script>
+<script defer src="js/env-var-catalog.js"></script>
+<script defer src="js/settings-model.js?v=1.4"></script>
+<script defer src="js/env-var-help.js"></script>
+<script defer src="js/env-editor.js"></script>
 <script defer src="js/toast.js?v=1.3"></script>
 <script defer src="js/app.js?v=1.3"></script>
 </head>
@@ -349,7 +352,7 @@
           <div class="checkbox-row"><input type="checkbox" id="wheelScrollAccelerationEnabled" data-setting-path="wheelScrollAccelerationEnabled"><label for="wheelScrollAccelerationEnabled"><code>wheelScrollAccelerationEnabled</code> — <span data-i18n="toggle.wheelScrollAccelerationEnabled">Mouse wheel acceleration</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="fileCheckpointingEnabled" data-setting-path="fileCheckpointingEnabled"><label for="fileCheckpointingEnabled"><code>fileCheckpointingEnabled</code> — <span data-i18n="toggle.fileCheckpointingEnabled">Snapshot files for /rewind</span></label></div>
           <div class="checkbox-row"><input type="checkbox" id="verbose" data-setting-path="verbose"><label for="verbose"><code>verbose</code> — <span data-i18n="toggle.verbose">Show full tool output</span></label></div>
-          <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_USE_POWERSHELL_TOOL" data-setting-path="env.CLAUDE_CODE_USE_POWERSHELL_TOOL" data-checkbox-true="1"><label for="env_CLAUDE_CODE_USE_POWERSHELL_TOOL"><code>env.CLAUDE_CODE_USE_POWERSHELL_TOOL</code> — <span data-i18n="toggle.usePowerShellTool">Enable PowerShell tool (pwsh / PSRemoting on Linux/macOS/Windows)</span></label></div>
+          <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_USE_POWERSHELL_TOOL" data-setting-path="env.CLAUDE_CODE_USE_POWERSHELL_TOOL" data-checkbox-true="1"><label for="env_CLAUDE_CODE_USE_POWERSHELL_TOOL"><code>CLAUDE_CODE_USE_POWERSHELL_TOOL</code> — <span data-i18n="toggle.usePowerShellTool">Enable PowerShell tool (pwsh / PSRemoting on Linux/macOS/Windows)</span></label></div>
         </div>
       </div>
     </section>
@@ -542,7 +545,7 @@
         <div class="grid-2">
           <div class="field-group">
             <div class="field-header">
-              <label class="field-label" for="env_ANTHROPIC_API_KEY"><code>env.ANTHROPIC_API_KEY</code> — <span data-i18n="env.apiKey.label">Anthropic API Key</span></label>
+              <label class="field-label" for="env_ANTHROPIC_API_KEY"><code>ANTHROPIC_API_KEY</code> — <span data-i18n="env.apiKey.label">Anthropic API Key</span></label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_API_KEY" data-i18n="actions.unset">unset</button>
             </div>
             <div class="secret-input-wrap">
@@ -554,7 +557,7 @@
 
           <div class="field-group">
             <div class="field-header">
-              <label class="field-label" for="env_ANTHROPIC_BASE_URL"><code>env.ANTHROPIC_BASE_URL</code> — <span data-i18n="env.baseUrl.label">API Base URL</span></label>
+              <label class="field-label" for="env_ANTHROPIC_BASE_URL"><code>ANTHROPIC_BASE_URL</code> — <span data-i18n="env.baseUrl.label">API Base URL</span></label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_BASE_URL" data-i18n="actions.unset">unset</button>
             </div>
             <input type="text" id="env_ANTHROPIC_BASE_URL" data-setting-path="env.ANTHROPIC_BASE_URL" placeholder="https://api.anthropic.com" data-i18n-placeholder="env.baseUrl.placeholder">
@@ -563,7 +566,7 @@
 
           <div class="field-group">
             <div class="field-header">
-              <label class="field-label" for="env_ANTHROPIC_AUTH_TOKEN"><code>env.ANTHROPIC_AUTH_TOKEN</code> — <span data-i18n="env.authToken.label">Authorization Token</span></label>
+              <label class="field-label" for="env_ANTHROPIC_AUTH_TOKEN"><code>ANTHROPIC_AUTH_TOKEN</code> — <span data-i18n="env.authToken.label">Authorization Token</span></label>
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_AUTH_TOKEN" data-i18n="actions.unset">unset</button>
             </div>
             <div class="secret-input-wrap">
@@ -600,18 +603,52 @@
 
       <div id="env-var-list" class="mt-md"></div>
 
-      <div class="field-group mt-md">
-        <label class="field-label" for="select-env-var" data-i18n="env.selectVar.label">Select Claude CLI Variable:</label>
-        <select id="select-env-var" class="select-env-var" aria-label="Select Claude CLI environment variable">
-          <option value="" disabled selected data-i18n="env.selectVar.placeholder">-- Choose a Claude CLI variable (340+ options) --</option>
-        </select>
-        <div id="new-env-desc" class="field-hint mt-xs" style="display: none;"></div>
+      <div class="env-discovery mt-md">
+        <div class="env-search-controls">
+          <div class="field-group">
+            <label class="field-label" for="env-search" data-i18n="env.search">Search names and descriptions</label>
+            <input id="env-search" type="search" autocomplete="off" aria-controls="select-env-var">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="env-category" data-i18n="env.category">Category</label>
+            <select id="env-category">
+              <option value="" data-i18n="env.category.all">All categories</option>
+              <option value="behavior" data-i18n="env.category.behavior">Behavior</option>
+              <option value="tools" data-i18n="env.category.tools">Tools and shell</option>
+              <option value="network" data-i18n="env.category.network">Networking and providers</option>
+              <option value="telemetry" data-i18n="env.category.telemetry">Telemetry and diagnostics</option>
+              <option value="performance" data-i18n="env.category.performance">Performance and limits</option>
+              <option value="managed" data-i18n="env.category.managed">Managed and enterprise policies</option>
+            </select>
+          </div>
+        </div>
+        <label class="env-advanced-toggle"><input type="checkbox" id="env-include-unofficial"><span data-i18n="env.includeUnofficial">Include useful unofficial variables</span></label>
+        <p class="field-hint" data-i18n="env.discoveryHint">A reviewed selection, not a complete list. Custom variables remain editable.</p>
+        <p id="env-result-count" class="field-hint" role="status" aria-live="polite"></p>
+        <p id="env-no-results" class="field-hint" data-i18n="env.noResults" hidden>No suggestions match. Clear the filters or enter a custom name below.</p>
+        <div class="field-group">
+          <label class="field-label" for="select-env-var" data-i18n="env.selectVar.label">Select Claude CLI Variable</label>
+          <select id="select-env-var" class="select-env-var" aria-describedby="env-result-count">
+            <option value="" disabled selected data-i18n="env.selectVar.placeholder">Choose a reviewed variable</option>
+          </select>
+        </div>
+        <div id="new-env-desc" class="env-help-content field-hint" hidden></div>
       </div>
-
-      <div class="input-wrap mt-xs">
-        <input type="text" id="new-env-key" class="flex-1" placeholder="VARIABLE_NAME (e.g. OTEL_EXPORTER_OTLP_ENDPOINT)" data-i18n-placeholder="env.keyPlaceholder" list="claude-env-vars-datalist">
-        <input type="text" id="new-env-val" class="flex-2" placeholder="Value (or empty to unset)" data-i18n-placeholder="env.valPlaceholder">
+      <div class="env-add-controls mt-md">
+        <div class="field-group">
+          <label class="field-label" for="new-env-key" data-i18n="env.name">Variable name</label>
+          <input type="text" id="new-env-key" placeholder="VARIABLE_NAME" data-i18n-placeholder="env.keyPlaceholder" list="claude-env-vars-datalist" aria-describedby="new-env-desc env-add-error" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="new-env-val" data-i18n="env.value">String value</label>
+          <input type="password" id="new-env-val" data-i18n-placeholder="env.valPlaceholder" aria-describedby="env-empty-hint env-add-error" autocomplete="off">
+        </div>
+      </div>
+      <p id="env-empty-hint" class="field-hint" data-i18n="env.emptyHint">Empty stores an empty string; removing the variable is a separate action. Restart Claude Code to apply removals.</p>
+      <p id="env-add-error" class="env-caution" role="alert" hidden></p>
+      <div class="env-presets-toolbar mt-sm">
         <button id="btn-add-env-var" class="btn primary" data-i18n="env.addVar">+ Add Variable</button>
+        <button id="btn-mask-env" class="btn" type="button" aria-pressed="false" data-i18n="env.mask.show">Show values</button>
       </div>
 
       <div class="section-title mt-xl" data-i18n="sections.env.helpers">Telemetry Helper Command</div>
@@ -638,8 +675,8 @@
       </div>
 
       <!-- Section: Gateway Model Tiers & Family Aliases (First-class UI) -->
-      <div class="section-title mt-lg" data-i18n="sections.models.tiers.title">Gateway Model Tiers &amp; Family Aliases (env.ANTHROPIC_DEFAULT_*)</div>
-      <div class="section-desc" data-i18n="sections.models.tiers.desc">Configure family-level default model mappings and aliases (stored in <code>env.ANTHROPIC_DEFAULT_*</code>) to route entire model families (fable, opus, sonnet, haiku) through gateway endpoints.</div>
+      <div class="section-title mt-lg" data-i18n="sections.models.tiers.title">Gateway Model Tiers &amp; Family Aliases (ANTHROPIC_DEFAULT_*)</div>
+      <div class="section-desc" data-i18n="sections.models.tiers.desc">Configure family-level default model mappings and aliases (stored in <code>ANTHROPIC_DEFAULT_*</code>) to route entire model families (fable, opus, sonnet, haiku) through gateway endpoints.</div>
 
       <div class="grid-2 mt-md">
         <!-- Fable Tier Card -->
@@ -826,8 +863,8 @@
             <input type="text" id="env_CLAUDE_CODE_SUBAGENT_MODEL" data-setting-path="env.CLAUDE_CODE_SUBAGENT_MODEL" placeholder="e.g. gpt-5.6-sol[1m]">
           </div>
           <div class="field-group field-group-checkbox">
-            <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-checkbox-true="1"><label for="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"><code>env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY</code> — <span data-i18n="toggle.enableGatewayModelDiscovery">Gateway model discovery</span></label></div>
-            <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-setting-path="env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-checkbox-true="1"><label for="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL"><code>env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL</code> — <span data-i18n="toggle.disableAdvisorTool">Disable server-side advisor tool</span></label></div>
+            <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-checkbox-true="1"><label for="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"><code>CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY</code> — <span data-i18n="toggle.enableGatewayModelDiscovery">Gateway model discovery</span></label></div>
+            <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-setting-path="env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-checkbox-true="1"><label for="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL"><code>CLAUDE_CODE_DISABLE_ADVISOR_TOOL</code> — <span data-i18n="toggle.disableAdvisorTool">Disable server-side advisor tool</span></label></div>
           </div>
         </div>
       </div>

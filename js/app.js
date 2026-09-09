@@ -33,6 +33,21 @@
     rawSchema: null
   };
 
+  const envEditor = window.EnvEditor.create({
+    model, catalog, state, patch: applyPatch,
+    translate: (key, params) => i18n.t(key, params),
+    navigate: navigateEnvField, help: window.EnvVarHelp
+  });
+
+  function navigateEnvField(name) {
+    if (!name) return switchTab('advanced');
+    const field = Array.from(document.querySelectorAll('[data-setting-path]')).find(element => element.dataset.settingPath === `env.${name}`);
+    if (!field) return;
+    switchTab(field.closest('.tab-panel').id.replace('tab-', ''));
+    field.focus();
+    field.scrollIntoView({ block: 'center' });
+  }
+
   const SESSION_STORAGE_KEY = 'claude_settings_editor_session_v1';
   const SCHEMA_CACHE_KEY = 'claude_settings_schema_cache';
   const SCHEMA_PRIMARY_URL = 'https://www.schemastore.org/claude-code-settings.json';
@@ -398,7 +413,7 @@
       enhanceFeatureHeaders();
       const selectEnv = getElement('select-env-var');
       if (selectEnv && selectEnv.firstElementChild) {
-        selectEnv.firstElementChild.textContent = i18n ? i18n.t('env.selectVar.placeholder') : '-- Choose a Claude CLI variable (340+ options) --';
+        selectEnv.firstElementChild.textContent = i18n ? i18n.t('env.selectVar.placeholder') : '-- Choose a Claude CLI variable --';
       }
       renderAll();
       requestAnimationFrame(() => {
@@ -808,6 +823,7 @@
   }
 
   function applyPatch(patch) {
+    let accepted = false;
     try {
       const next = model.setAtPath
         ? model.applyPatch
@@ -830,7 +846,8 @@
       state.jsonError = '';
       state.diagnostics = model.inspectSettings(state.document, state.targetScope, state.schemaAdapter);
 
-      if (typeof patch.path === 'string' && (patch.path === 'env.ANTHROPIC_BASE_URL' || patch.path === 'env.ANTHROPIC_API_KEY' || patch.path === 'env.ANTHROPIC_AUTH_TOKEN')) {
+      accepted = true;
+      if (window.EnvEditor.isCredentialPath(patch.path)) {
         checkAndTriggerModelDiscovery(state.document);
       }
 
@@ -839,6 +856,7 @@
     } catch (err) {
       notify('status.editFailed', 'error', { error: err.message });
     }
+    return accepted;
   }
 
   function batchPatches(patches) {
@@ -1100,48 +1118,7 @@
       if (e.key === 'Enter') addEnvVar();
     });
 
-    const selectEnvVar = getElement('select-env-var');
-    const newEnvKey = getElement('new-env-key');
-    const newEnvVal = getElement('new-env-val');
-    const newEnvDesc = getElement('new-env-desc');
-
-    function updateEnvDescHint(varName) {
-      if (!newEnvDesc) return;
-      const trimmed = (varName || '').trim();
-      const desc = trimmed && model.getClaudeEnvVarDescription ? model.getClaudeEnvVarDescription(trimmed, state.rawSchema) : '';
-      if (desc) {
-        newEnvDesc.textContent = desc;
-        newEnvDesc.style.display = 'block';
-      } else {
-        newEnvDesc.textContent = '';
-        newEnvDesc.style.display = 'none';
-      }
-    }
-
-    if (selectEnvVar) {
-      selectEnvVar.addEventListener('change', () => {
-        const chosen = selectEnvVar.value;
-        if (!chosen) return;
-        if (newEnvKey) {
-          newEnvKey.value = chosen;
-          updateEnvDescHint(chosen);
-        }
-        if (newEnvVal) {
-          newEnvVal.focus();
-        }
-      });
-    }
-
-    if (newEnvKey) {
-      newEnvKey.addEventListener('input', () => {
-        updateEnvDescHint(newEnvKey.value);
-      });
-      newEnvKey.addEventListener('change', () => {
-        updateEnvDescHint(newEnvKey.value);
-      });
-    }
-
-    getElement('btn-mask-env')?.addEventListener('click', toggleEnvMask);
+    envEditor.bind();
     getElement('btn-toggle-api-key')?.addEventListener('click', () => {
       const input = getElement('env_ANTHROPIC_API_KEY');
       const btn = getElement('btn-toggle-api-key');
@@ -1536,73 +1513,7 @@
   }
 
   function renderEnvVars() {
-    const el = getElement('list-env') || getElement('env-var-list');
-    if (!el) return;
-    el.replaceChildren();
-
-    renderEnvPresets();
-
-    const envObj = model.getAtPath(state.document, 'env') || {};
-    if (typeof envObj !== 'object' || Array.isArray(envObj)) {
-      const err = document.createElement('div');
-      err.className = 'field-hint';
-      err.textContent = i18n ? i18n.t('env.notObject') : 'env is not an object; edit in Advanced JSON.';
-      el.appendChild(err);
-      return;
-    }
-
-    const allKeys = Object.keys(envObj);
-    const keys = allKeys.filter(k => !(catalog && catalog.isDedicatedEnvKey ? catalog.isDedicatedEnvKey(k) : false));
-
-    if (keys.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'field-hint';
-      empty.textContent = i18n ? i18n.t('env.empty') : 'No additional environment variables configured.';
-      el.appendChild(empty);
-      return;
-    }
-
-    keys.forEach(key => {
-      const val = envObj[key];
-      const row = document.createElement('div');
-      row.className = 'env-item';
-
-      const keyInp = document.createElement('input');
-      keyInp.type = 'text';
-      keyInp.value = key;
-      keyInp.setAttribute('list', 'claude-env-vars-datalist');
-      const desc = model.getClaudeEnvVarDescription ? model.getClaudeEnvVarDescription(key, state.rawSchema) : '';
-      if (desc) {
-        keyInp.title = desc;
-      }
-      keyInp.addEventListener('change', () => {
-        const newKey = keyInp.value.trim();
-        if (newKey && newKey !== key) {
-          applyPatch({ op: 'rename_key', path: 'env', fromKey: key, toKey: newKey });
-        }
-      });
-
-      const valInp = document.createElement('input');
-      valInp.type = state.envMasked ? 'password' : 'text';
-      valInp.value = String(val);
-      valInp.addEventListener('change', () => {
-        applyPatch({ op: 'set', path: `env.${key}`, value: valInp.value });
-      });
-
-      const delBtn = document.createElement('button');
-      delBtn.className = 'del-btn';
-      delBtn.setAttribute('data-i18n-title', 'actions.remove');
-      delBtn.title = i18n ? i18n.t('actions.remove') : 'Remove';
-      delBtn.textContent = '×';
-      delBtn.addEventListener('click', () => {
-        applyPatch({ op: 'delete', path: `env.${key}` });
-      });
-
-      row.appendChild(keyInp);
-      row.appendChild(valInp);
-      row.appendChild(delBtn);
-      el.appendChild(row);
-    });
+    envEditor.render();
   }
 
   function renderEnvPresets() {
@@ -1630,30 +1541,7 @@
   }
 
   function addEnvVar() {
-    const keyInp = getElement('new-env-key');
-    const valInp = getElement('new-env-val');
-    if (!keyInp || !valInp) return;
-    const k = keyInp.value.trim();
-    if (!k) return;
-    applyPatch({ op: 'set', path: `env.${k}`, value: valInp.value });
-    keyInp.value = '';
-    valInp.value = '';
-    const newEnvDesc = getElement('new-env-desc');
-    if (newEnvDesc) {
-      newEnvDesc.textContent = '';
-      newEnvDesc.style.display = 'none';
-    }
-    const selectEnvVar = getElement('select-env-var');
-    if (selectEnvVar) {
-      selectEnvVar.value = '';
-    }
-  }
-
-  function toggleEnvMask() {
-    state.envMasked = !state.envMasked;
-    const btn = getElement('btn-mask-env');
-    if (btn) btn.textContent = state.envMasked ? '👁 Show' : '🔒 Hide';
-    renderEnvVars();
+    envEditor.add();
   }
 
   function renderFallbackModels() {
@@ -1946,52 +1834,7 @@
   }
 
   function populateClaudeEnvVarsDropdownAndDatalist(schemaObj) {
-    if (!model || !model.getKnownClaudeEnvVars) return;
-    const targetSchema = schemaObj || state.rawSchema;
-    const envVars = model.getKnownClaudeEnvVars(targetSchema);
-    if (!Array.isArray(envVars) || envVars.length === 0) return;
-
-    const datalist = getElement('claude-env-vars-datalist');
-    if (datalist) {
-      datalist.replaceChildren();
-      const df = document.createDocumentFragment();
-      envVars.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v.name;
-        if (v.description) {
-          opt.label = v.description;
-        }
-        df.appendChild(opt);
-      });
-      datalist.appendChild(df);
-    }
-
-    const select = getElement('select-env-var');
-    if (select) {
-      const currentVal = select.value;
-      select.replaceChildren();
-
-      const placeholder = document.createElement('option');
-      placeholder.value = '';
-      placeholder.disabled = true;
-      placeholder.selected = !currentVal;
-      placeholder.setAttribute('data-i18n', 'env.selectVar.placeholder');
-      placeholder.textContent = i18n ? i18n.t('env.selectVar.placeholder') : '-- Choose a Claude CLI variable (340+ options) --';
-      select.appendChild(placeholder);
-
-      const df = document.createDocumentFragment();
-      envVars.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v.name;
-        opt.textContent = v.description ? `${v.name} — ${v.description}` : v.name;
-        opt.title = v.description || v.name;
-        if (currentVal && currentVal === v.name) {
-          opt.selected = true;
-        }
-        df.appendChild(opt);
-      });
-      select.appendChild(df);
-    }
+    envEditor.refresh(schemaObj);
   }
 
   function hasApiUrlAndKey(doc) {

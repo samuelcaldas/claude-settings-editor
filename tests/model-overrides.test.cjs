@@ -169,5 +169,5 @@ test('index.html contains expected model overrides markup and datalist', () => {
   assert.ok(html.includes('id="btn-add-model-override"'), 'Must include add override button');
   assert.ok(html.includes('id="btn-preset-bedrock"'), 'Must include bedrock preset button');
   assert.ok(html.includes('id="btn-unset-model-overrides"'), 'Must include unset model overrides button');
-  assert.ok(html.includes('Gateway Model Tiers &amp; Family Aliases (env.ANTHROPIC_DEFAULT_*)'), 'Must include refined section heading');
+  assert.ok(html.includes('Gateway Model Tiers &amp; Family Aliases (ANTHROPIC_DEFAULT_*)'), 'Must include refined section heading');
 });
