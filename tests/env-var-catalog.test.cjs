@@ -178,3 +178,47 @@ test('settings-model exports getClaudeEnvVarMetadata and getSuggestedClaudeEnvVa
   assert.ok(Array.isArray(suggested));
   assert.ok(suggested.every(e => e.category === 'telemetry'));
 });
+
+test('suggest excludes configured variables matching options.exclude (Array, Set, Object)', () => {
+  const entries = catalog.resolveAll(rawSchema, {});
+  const baseSuggestions = catalog.suggest(entries, {});
+  const sampleVar1 = 'CLAUDE_CODE_PROMPT_CACHE_TTL';
+  const sampleVar2 = 'API_TIMEOUT_MS';
+
+  assert.ok(baseSuggestions.some(e => e.name === sampleVar1));
+  assert.ok(baseSuggestions.some(e => e.name === sampleVar2));
+
+  // 1. Exclude as Array
+  const excludedArray = catalog.suggest(entries, { exclude: [sampleVar1, sampleVar2] });
+  assert.ok(!excludedArray.some(e => e.name === sampleVar1));
+  assert.ok(!excludedArray.some(e => e.name === sampleVar2));
+  assert.equal(excludedArray.length, baseSuggestions.length - 2);
+
+  // 2. Exclude as Set
+  const excludedSet = catalog.suggest(entries, { exclude: new Set([sampleVar1]) });
+  assert.ok(!excludedSet.some(e => e.name === sampleVar1));
+  assert.ok(excludedSet.some(e => e.name === sampleVar2));
+  assert.equal(excludedSet.length, baseSuggestions.length - 1);
+
+  // 3. Exclude as Object / Dictionary
+  const excludedObj = catalog.suggest(entries, { exclude: { [sampleVar1]: '5m', [sampleVar2]: '60000' } });
+  assert.ok(!excludedObj.some(e => e.name === sampleVar1));
+  assert.ok(!excludedObj.some(e => e.name === sampleVar2));
+  assert.equal(excludedObj.length, baseSuggestions.length - 2);
+
+  // 4. Combined with category and query
+  const combined = catalog.suggest(entries, {
+    category: 'performance',
+    query: 'timeout',
+    exclude: [sampleVar2]
+  });
+  assert.ok(!combined.some(e => e.name === sampleVar2));
+  assert.ok(combined.some(e => e.name === 'BASH_DEFAULT_TIMEOUT_MS'));
+
+  // 5. Empty, null, or undefined exclude does not remove entries
+  assert.equal(catalog.suggest(entries, { exclude: [] }).length, baseSuggestions.length);
+  assert.equal(catalog.suggest(entries, { exclude: new Set() }).length, baseSuggestions.length);
+  assert.equal(catalog.suggest(entries, { exclude: {} }).length, baseSuggestions.length);
+  assert.equal(catalog.suggest(entries, { exclude: null }).length, baseSuggestions.length);
+  assert.equal(catalog.suggest(entries, { exclude: undefined }).length, baseSuggestions.length);
+});

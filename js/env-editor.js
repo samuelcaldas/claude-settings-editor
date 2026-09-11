@@ -64,11 +64,14 @@
     }
 
     function options() {
+      const env = environment();
+      const configuredKeys = env && typeof env === 'object' && !Array.isArray(env) ? Object.keys(env) : [];
       return {
         query: get('env-search').value,
         category: get('env-category').value,
         includeUnofficial: get('env-include-unofficial').checked,
-        scope: state.targetScope
+        scope: state.targetScope,
+        exclude: configuredKeys
       };
     }
 
@@ -384,7 +387,7 @@
       get('btn-mask-env').addEventListener('click', () => { state.envMasked = !state.envMasked; render(); });
     }
 
-    return { bind, render, refresh, add };
+    return { bind, render, refresh, add, options };
   }
 
   return { create, keyError, isCredentialPath, isBooleanChecked, getBooleanString };

@@ -250,3 +250,207 @@ test('index.html renders canonical variable names without redundant env. prefix 
   assert.ok(!html.includes('<code>env.ANTHROPIC_BASE_URL</code>'), 'Must not have <code>env.ANTHROPIC_BASE_URL</code>');
   assert.ok(!html.includes('(env.ANTHROPIC_DEFAULT_*)'), 'Section title must not have env. prefix');
 });
+
+test('env-editor dynamically excludes configured env vars from select and datalist, and restores on removal', () => {
+  const envEditor = require('../js/env-editor.js');
+  const catalog = require('../js/settings-catalog.js');
+  const envVarHelp = require('../js/env-var-help.js');
+
+  class FakeNode {
+    constructor(tagName = 'div', id = '') {
+      this.tagName = tagName.toUpperCase();
+      this.id = id;
+      this.value = '';
+      this.checked = false;
+      this.hidden = false;
+      this.textContent = '';
+      this.style = {};
+      this.dataset = {};
+      this.children = [];
+      this.attributes = new Map();
+      this.listeners = new Map();
+      this.offsetParent = null;
+    }
+
+    get firstElementChild() {
+      return this.children[0] || null;
+    }
+
+    replaceChildren(...items) {
+      this.children = [...items];
+      for (const item of items) {
+        if (item && typeof item === 'object') item.parentNode = this;
+      }
+    }
+
+    appendChild(child) {
+      this.children.push(child);
+      if (child && typeof child === 'object') child.parentNode = this;
+      return child;
+    }
+
+    append(...items) {
+      for (const item of items) {
+        this.appendChild(item);
+      }
+    }
+
+    setAttribute(name, val) {
+      this.attributes.set(name, String(val));
+    }
+
+    getAttribute(name) {
+      return this.attributes.get(name);
+    }
+
+    addEventListener(event, fn) {
+      if (!this.listeners.has(event)) this.listeners.set(event, []);
+      this.listeners.get(event).push(fn);
+    }
+
+    querySelector(selector) {
+      if (selector === '.env-row-error') return new FakeNode('p');
+      if (selector === '.env-help-content') return new FakeNode('div');
+      return null;
+    }
+
+    querySelectorAll(selector) {
+      return [];
+    }
+
+    focus() {}
+  }
+
+  const elements = new Map();
+  function getOrCreate(id, tag = 'div') {
+    if (!elements.has(id)) {
+      elements.set(id, new FakeNode(tag, id));
+    }
+    return elements.get(id);
+  }
+
+  const requiredIds = [
+    'env-search', 'env-category', 'env-include-unofficial',
+    'select-env-var', 'claude-env-vars-datalist',
+    'env-result-count', 'env-no-results',
+    'new-env-key', 'new-env-val', 'new-env-desc',
+    'env-add-error', 'env-var-list', 'btn-mask-env'
+  ];
+  for (const id of requiredIds) {
+    getOrCreate(id);
+  }
+
+  const prevDoc = global.document;
+  global.document = {
+    getElementById: id => getOrCreate(id),
+    createElement: tag => new FakeNode(tag)
+  };
+
+  try {
+    const state = {
+      document: {
+        env: {
+          CLAUDE_CODE_PROMPT_CACHE_TTL: '5m'
+        }
+      },
+      rawSchema,
+      targetScope: 'user',
+      envMasked: false
+    };
+
+    let lastPatch = null;
+    const patch = p => {
+      lastPatch = p;
+      if (p.op === 'set') {
+        const key = p.path[1];
+        state.document.env = state.document.env || {};
+        state.document.env[key] = p.value;
+      } else if (p.op === 'delete') {
+        const key = p.path[1];
+        if (state.document.env) delete state.document.env[key];
+      }
+      editor.render();
+      return true;
+    };
+
+    const editor = envEditor.create({
+      model,
+      catalog,
+      state,
+      patch,
+      translate: (key, params) => {
+        if (params && params.count !== undefined) return `${key}:${params.count}`;
+        return key;
+      },
+      navigate: () => {},
+      help: envVarHelp
+    });
+
+    // 1. Verify options() includes configured keys in exclude
+    const optsInitial = editor.options();
+    assert.ok(Array.isArray(optsInitial.exclude));
+    assert.ok(optsInitial.exclude.includes('CLAUDE_CODE_PROMPT_CACHE_TTL'));
+
+    // 2. Render and refresh initial state
+    editor.render();
+
+    const select = getOrCreate('select-env-var');
+    const datalist = getOrCreate('claude-env-vars-datalist');
+
+    function getSelectOptionValues() {
+      const values = [];
+      for (const group of select.children) {
+        for (const opt of group.children || []) {
+          values.push(opt.value);
+        }
+      }
+      return values;
+    }
+
+    function getDatalistValues() {
+      return datalist.children.map(opt => opt.value);
+    }
+
+    // CLAUDE_CODE_PROMPT_CACHE_TTL must be excluded
+    assert.ok(!getSelectOptionValues().includes('CLAUDE_CODE_PROMPT_CACHE_TTL'));
+    assert.ok(!getDatalistValues().includes('CLAUDE_CODE_PROMPT_CACHE_TTL'));
+
+    // API_TIMEOUT_MS is unconfigured, so it must be present
+    assert.ok(getSelectOptionValues().includes('API_TIMEOUT_MS'));
+    assert.ok(getDatalistValues().includes('API_TIMEOUT_MS'));
+
+    // 3. Add API_TIMEOUT_MS via add()
+    getOrCreate('new-env-key').value = 'API_TIMEOUT_MS';
+    getOrCreate('new-env-val').value = '600000';
+    editor.add();
+
+    assert.equal(lastPatch.op, 'set');
+    assert.equal(lastPatch.path[1], 'API_TIMEOUT_MS');
+
+    // Both variables must now be excluded
+    assert.ok(!getSelectOptionValues().includes('CLAUDE_CODE_PROMPT_CACHE_TTL'));
+    assert.ok(!getSelectOptionValues().includes('API_TIMEOUT_MS'));
+    assert.ok(!getDatalistValues().includes('CLAUDE_CODE_PROMPT_CACHE_TTL'));
+    assert.ok(!getDatalistValues().includes('API_TIMEOUT_MS'));
+
+    // 4. Remove CLAUDE_CODE_PROMPT_CACHE_TTL
+    patch({ op: 'delete', path: ['env', 'CLAUDE_CODE_PROMPT_CACHE_TTL'] });
+
+    // CLAUDE_CODE_PROMPT_CACHE_TTL must be restored, API_TIMEOUT_MS still excluded
+    assert.ok(getSelectOptionValues().includes('CLAUDE_CODE_PROMPT_CACHE_TTL'));
+    assert.ok(getDatalistValues().includes('CLAUDE_CODE_PROMPT_CACHE_TTL'));
+    assert.ok(!getSelectOptionValues().includes('API_TIMEOUT_MS'));
+    assert.ok(!getDatalistValues().includes('API_TIMEOUT_MS'));
+
+    // 5. Search query matching only an excluded variable shows 0 results
+    patch({ op: 'set', path: ['env', 'ANTHROPIC_BEDROCK_REGION_PREFIX'], value: 'us-east-1' });
+    getOrCreate('env-search').value = 'ANTHROPIC_BEDROCK_REGION_PREFIX';
+    editor.refresh();
+    assert.equal(getSelectOptionValues().length, 0);
+    assert.equal(getDatalistValues().length, 0);
+    assert.equal(getOrCreate('env-no-results').hidden, false);
+
+  } finally {
+    global.document = prevDoc;
+  }
+});

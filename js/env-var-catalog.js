@@ -2486,7 +2486,16 @@
     return resolveEntry(name, schemaProperties(schema), fallback);
   }
 
+  function isExcluded(name, exclude) {
+    if (!exclude) return false;
+    if (Array.isArray(exclude)) return exclude.includes(name);
+    if (exclude instanceof Set) return exclude.has(name);
+    if (typeof exclude === 'object') return Object.prototype.hasOwnProperty.call(exclude, name);
+    return false;
+  }
+
   function eligible(entry, options) {
+    if (isExcluded(entry.name, options.exclude)) return false;
     if (entry.documentationStatus === 'unclassified') return false;
     if (entry.documentationStatus === 'unofficial' && !options.includeUnofficial) return false;
     if (entry.applicability === 'launch' || entry.applicability === 'ignored') return false;
