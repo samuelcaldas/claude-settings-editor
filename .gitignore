@@ -4,3 +4,4 @@ node_modules/
 artifacts/
 plans/
 .playwright-mcp/
+.worktrees/
