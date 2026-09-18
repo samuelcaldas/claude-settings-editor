@@ -363,3 +363,61 @@ test('schema validation: CLAUDE_CODE_SUBAGENT_MODEL_FORCE accepts "0" and "1", r
   assert.ok(invalidTypeRes.errors.some(e => e.path === 'env.CLAUDE_CODE_SUBAGENT_MODEL_FORCE'));
 });
 
+test('schema validation: CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT accepts "0" and "1", rejects invalid types and enums', () => {
+  const validOne = { env: { CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT: '1' } };
+  const resOne = adapter.validate(validOne);
+  assert.equal(resOne.valid, true);
+
+  const validZero = { env: { CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT: '0' } };
+  const resZero = adapter.validate(validZero);
+  assert.equal(resZero.valid, true);
+
+  const invalidEnum = { env: { CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT: 'yes' } };
+  const resEnum = adapter.validate(invalidEnum);
+  assert.equal(resEnum.valid, false);
+  assert.ok(resEnum.errors.some(e => e.path === 'env.CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT'));
+});
+
+test('schema validation: CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS accepts string values, rejects non-string', () => {
+  const valid = { env: { CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS: '60000' } };
+  const res = adapter.validate(valid);
+  assert.equal(res.valid, true);
+
+  const invalid = { env: { CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS: 60000 } };
+  const resInv = adapter.validate(invalid);
+  assert.equal(resInv.valid, false);
+  assert.ok(resInv.errors.some(e => e.path === 'env.CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS'));
+});
+
+test('schema validation: validates entire Alanwo gateway payload with 100% schema conformance', () => {
+  const gatewayDoc = {
+    env: {
+      ANTHROPIC_AUTH_TOKEN: 'samuel-p9sYY8k3RdqcYbCi4uFF9fJGtEKjy2XXLQGLcvWAwb1XI8jS',
+      ANTHROPIC_BASE_URL: 'https://api.alanwo.com.br/',
+      ANTHROPIC_API_KEY: '',
+      CLAUDE_CODE_ATTRIBUTION_HEADER: '0',
+      CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: '1',
+      CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT: '1',
+      CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS: '60000',
+      ANTHROPIC_DEFAULT_FABLE_MODEL: 'gpt-6-astra',
+      ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-opus-4-6-thinking',
+      ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-sonnet-4-6',
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: 'gpt-5.6-luna',
+      CLAUDE_CODE_SUBAGENT_MODEL: 'gpt-5.6-luna',
+      CLAUDE_CODE_SUBAGENT_MODEL_FORCE: '1'
+    },
+    modelOverrides: {
+      'claude-haiku-4-5-20251001': 'gpt-5.6-luna',
+      'claude-3-5-haiku-20241022': 'gpt-5.6-luna',
+      'claude-sonnet-5': 'claude-sonnet-4-6',
+      'claude-3-5-sonnet-20241022': 'claude-sonnet-4-6',
+      'claude-fable-5': 'gpt-6-astra',
+      'claude-fable-5-1': 'gpt-6-astra'
+    }
+  };
+
+  const res = adapter.validate(gatewayDoc);
+  assert.equal(res.valid, true, 'Gateway configuration must be valid against schema');
+  assert.equal(res.errors.length, 0, 'Gateway configuration must have 0 schema errors');
+});
+

@@ -823,6 +823,11 @@
           "description": "Force-disable extended thinking",
           "enum": ["0", "1"]
         },
+        "CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT": {
+          "type": "string",
+          "description": "Set to 1 to skip proactive auto-compaction when Claude Code does not recognize the model ID. Requires Claude Code v2.1.223 or later. See https://code.claude.com/docs/en/env-vars",
+          "enum": ["0", "1"]
+        },
         "CLAUDE_CODE_DISABLE_VIRTUAL_SCROLL": {
           "type": "string",
           "description": "Disable virtual scrolling in fullscreen mode",
@@ -1389,6 +1394,10 @@
         "CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX": {
           "type": "string",
           "description": "Prefix for auto-generated Remote Control session names when no explicit name is set. Defaults to the machine hostname, producing names like myhost-graceful-unicorn. See https://code.claude.com/docs/en/remote-control#start-a-remote-control-session"
+        },
+        "CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS": {
+          "type": "string",
+          "description": "Deadline in milliseconds for the first response byte of a streaming request. Requires Claude Code v2.1.242 or later. See https://code.claude.com/docs/en/env-vars"
         },
         "CLAUDE_STREAM_IDLE_TIMEOUT_MS": {
           "type": "string",

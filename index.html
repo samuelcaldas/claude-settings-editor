@@ -549,7 +549,7 @@
               <button class="unset-btn" data-unset-path="env.ANTHROPIC_API_KEY" data-i18n="actions.unset">unset</button>
             </div>
             <div class="secret-input-wrap">
-              <input type="password" id="env_ANTHROPIC_API_KEY" data-setting-path="env.ANTHROPIC_API_KEY" placeholder="sk-ant-..." data-i18n-placeholder="env.apiKey.placeholder">
+              <input type="password" id="env_ANTHROPIC_API_KEY" data-setting-path="env.ANTHROPIC_API_KEY" placeholder="sk-ant-..." data-i18n-placeholder="env.apiKey.placeholder" data-allow-empty="true">
               <button type="button" class="toggle-visibility-btn" id="btn-toggle-api-key" data-i18n="env.apiKey.show">Show</button>
             </div>
             <div class="field-hint" data-i18n="env.apiKey.hint">Primary API key for Anthropic or compatible gateway service.</div>
@@ -677,6 +677,11 @@
       <!-- Section: Gateway Model Tiers & Family Aliases (First-class UI) -->
       <div class="section-title mt-lg" data-i18n="sections.models.tiers.title">Gateway Model Tiers &amp; Family Aliases (ANTHROPIC_DEFAULT_*)</div>
       <div class="section-desc" data-i18n="sections.models.tiers.desc">Configure family-level default model mappings and aliases (stored in <code>ANTHROPIC_DEFAULT_*</code>) to route entire model families (fable, opus, sonnet, haiku) through gateway endpoints.</div>
+
+      <div class="env-presets-toolbar mt-sm mb-sm">
+        <span class="field-label" data-i18n="models.tiers.presets">Quick Presets:</span>
+        <button type="button" class="btn small" id="btn-preset-alanwo-gateway" data-i18n="models.tiers.presetAlanwo">+ Alanwo Gateway</button>
+      </div>
 
       <div class="grid-2 mt-md">
         <!-- Fable Tier Card -->
@@ -862,9 +867,19 @@
             </div>
             <input type="text" id="env_CLAUDE_CODE_SUBAGENT_MODEL" data-setting-path="env.CLAUDE_CODE_SUBAGENT_MODEL" placeholder="e.g. gpt-5.6-sol[1m]">
           </div>
+          <div class="field-group">
+            <div class="field-header">
+              <label class="field-label" for="env_CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS"><code>CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS</code> — <span data-i18n="models.field.streamFirstByteTimeout">First Byte Stream Timeout (ms)</span></label>
+              <button class="unset-btn" data-unset-path="env.CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS" data-i18n="actions.unset">unset</button>
+            </div>
+            <input type="text" id="env_CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS" data-setting-path="env.CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS" placeholder="e.g. 60000" data-i18n-placeholder="models.placeholder.streamFirstByteTimeout">
+            <div class="field-hint" data-i18n="models.hint.streamFirstByteTimeout">Deadline in ms for the first response byte of a streaming request (e.g. 60000 for gateways).</div>
+          </div>
           <div class="field-group field-group-checkbox">
             <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_SUBAGENT_MODEL_FORCE" data-setting-path="env.CLAUDE_CODE_SUBAGENT_MODEL_FORCE" data-checkbox-true="1"><label for="env_CLAUDE_CODE_SUBAGENT_MODEL_FORCE"><code>CLAUDE_CODE_SUBAGENT_MODEL_FORCE</code> — <span data-i18n="toggle.subagentModelForce">Force subagent model across all subagents</span></label></div>
             <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-checkbox-true="1"><label for="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"><code>CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY</code> — <span data-i18n="toggle.enableGatewayModelDiscovery">Gateway model discovery</span></label></div>
+            <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT" data-setting-path="env.CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT" data-checkbox-true="1"><label for="env_CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT"><code>CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT</code> — <span data-i18n="toggle.disableUnknownModelWindowEnforcement">Skip auto-compaction for unknown gateway model IDs</span></label></div>
+            <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_ATTRIBUTION_HEADER" data-setting-path="env.CLAUDE_CODE_ATTRIBUTION_HEADER" data-checkbox-true="0"><label for="env_CLAUDE_CODE_ATTRIBUTION_HEADER"><code>CLAUDE_CODE_ATTRIBUTION_HEADER="0"</code> — <span data-i18n="toggle.attributionHeaderZero">Omit system prompt attribution header (gateway caching)</span></label></div>
             <div class="checkbox-row"><input type="checkbox" id="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-setting-path="env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL" data-checkbox-true="1"><label for="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL"><code>CLAUDE_CODE_DISABLE_ADVISOR_TOOL</code> — <span data-i18n="toggle.disableAdvisorTool">Disable server-side advisor tool</span></label></div>
           </div>
         </div>
@@ -883,6 +898,7 @@
         <div class="env-presets-toolbar mt-sm">
           <span class="field-label" data-i18n="models.overrides.presets">Quick Presets:</span>
           <button type="button" class="btn small" id="btn-preset-bedrock" data-i18n="models.overrides.presetBedrock">+ Bedrock Defaults</button>
+          <button type="button" class="btn small" id="btn-preset-gateway-overrides" data-i18n="models.overrides.presetGateway">+ Gateway Defaults</button>
         </div>
 
         <div id="model-overrides-list" class="mt-md"></div>

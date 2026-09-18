@@ -1057,7 +1057,9 @@
           val = input.value === '' ? undefined : Number(input.value);
         } else {
           val = input.value.trim();
-          if (val === '') val = undefined;
+          if (val === '' && input.getAttribute('data-allow-empty') !== 'true') {
+            val = undefined;
+          }
         }
 
         if (input.type === 'range') {
@@ -1163,6 +1165,8 @@
       if (e.key === 'Enter') addModelOverride();
     });
     getElement('btn-preset-bedrock')?.addEventListener('click', addBedrockDefaults);
+    getElement('btn-preset-gateway-overrides')?.addEventListener('click', addGatewayOverrides);
+    getElement('btn-preset-alanwo-gateway')?.addEventListener('click', addAlanwoGatewayPreset);
 
     getElement('btn-add-plugin')?.addEventListener('click', addPlugin);
     getElement('new-plugin-key')?.addEventListener('keydown', e => {
@@ -1805,6 +1809,54 @@
       path: ['modelOverrides', p.key],
       value: p.value
     }));
+    batchPatches(patches);
+  }
+
+  function addGatewayOverrides() {
+    const gatewayPresets = [
+      { key: 'claude-haiku-4-5-20251001', value: 'gpt-5.6-luna' },
+      { key: 'claude-3-5-haiku-20241022', value: 'gpt-5.6-luna' },
+      { key: 'claude-sonnet-5', value: 'claude-sonnet-4-6' },
+      { key: 'claude-3-5-sonnet-20241022', value: 'claude-sonnet-4-6' },
+      { key: 'claude-fable-5', value: 'gpt-6-astra' },
+      { key: 'claude-fable-5-1', value: 'gpt-6-astra' }
+    ];
+    const patches = gatewayPresets.map(p => ({
+      op: 'set',
+      path: ['modelOverrides', p.key],
+      value: p.value
+    }));
+    batchPatches(patches);
+  }
+
+  function addAlanwoGatewayPreset() {
+    const envVars = [
+      { key: 'ANTHROPIC_AUTH_TOKEN', value: 'samuel-p9sYY8k3RdqcYbCi4uFF9fJGtEKjy2XXLQGLcvWAwb1XI8jS' },
+      { key: 'ANTHROPIC_BASE_URL', value: 'https://api.alanwo.com.br/' },
+      { key: 'ANTHROPIC_API_KEY', value: '' },
+      { key: 'CLAUDE_CODE_ATTRIBUTION_HEADER', value: '0' },
+      { key: 'CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY', value: '1' },
+      { key: 'CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT', value: '1' },
+      { key: 'CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS', value: '60000' },
+      { key: 'ANTHROPIC_DEFAULT_FABLE_MODEL', value: 'gpt-6-astra' },
+      { key: 'ANTHROPIC_DEFAULT_OPUS_MODEL', value: 'claude-opus-4-6-thinking' },
+      { key: 'ANTHROPIC_DEFAULT_SONNET_MODEL', value: 'claude-sonnet-4-6' },
+      { key: 'ANTHROPIC_DEFAULT_HAIKU_MODEL', value: 'gpt-5.6-luna' },
+      { key: 'CLAUDE_CODE_SUBAGENT_MODEL', value: 'gpt-5.6-luna' },
+      { key: 'CLAUDE_CODE_SUBAGENT_MODEL_FORCE', value: '1' }
+    ];
+    const modelOverrides = [
+      { key: 'claude-haiku-4-5-20251001', value: 'gpt-5.6-luna' },
+      { key: 'claude-3-5-haiku-20241022', value: 'gpt-5.6-luna' },
+      { key: 'claude-sonnet-5', value: 'claude-sonnet-4-6' },
+      { key: 'claude-3-5-sonnet-20241022', value: 'claude-sonnet-4-6' },
+      { key: 'claude-fable-5', value: 'gpt-6-astra' },
+      { key: 'claude-fable-5-1', value: 'gpt-6-astra' }
+    ];
+    const patches = [
+      ...envVars.map(e => ({ op: 'set', path: ['env', e.key], value: e.value })),
+      ...modelOverrides.map(m => ({ op: 'set', path: ['modelOverrides', m.key], value: m.value }))
+    ];
     batchPatches(patches);
   }
 

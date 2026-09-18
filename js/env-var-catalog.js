@@ -492,6 +492,7 @@
     "category": "behavior",
     "isBoolean": true,
     "boolType": "0_1",
+    "isDedicated": true,
     "description": "Set to `0` to omit the attribution block, which carries the client version and a prompt fingerprint, from the start of the system prompt. Caching on a direct connection to the Anthropic API is unaffected either way. In some direct-connection setups, Claude Code keeps the block on auto mode classifier requests even when you set `0`. In System prompt attribution block, check which connections and credentials this covers. Before v2.1.181 the block included a per-request token on custom base URLs and Microsoft Foundry connections, so on those versions set it to `0` when your LLM gateway caches on the request body or forwards requests to a third-party provider, or when you connect to Microsoft Foundry directly"
   },
   {
@@ -856,6 +857,7 @@
     "category": "behavior",
     "isBoolean": true,
     "boolType": "0_1",
+    "isDedicated": true,
     "minVersion": "2.1.223",
     "description": "Set to `1` to skip proactive auto-compaction when Claude Code doesn't recognize the model ID, such as an LLM gateway alias. Without this variable, Claude Code compacts at the context window it assumes for the ID. `CLAUDE_CODE_MAX_CONTEXT_TOKENS` can correct the assumed window instead; see Correct the window for a gateway or custom model ID for when each variable applies. Requires Claude Code v2.1.223 or later"
   },
@@ -1795,6 +1797,7 @@
   {
     "name": "CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS",
     "category": "behavior",
+    "isDedicated": true,
     "minVersion": "2.1.242",
     "description": "Deadline in milliseconds for the first response byte of a streaming request, on the connections where the first-byte deadline runs. For how Claude Code clamps it, the extra time it adds for large request bodies, and how it picks the deadline when you leave this unset, see No response from API. Requires Claude Code v2.1.242 or later"
   },

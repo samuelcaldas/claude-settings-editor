@@ -32,6 +32,9 @@ test('model.getKnownClaudeEnvVars returns all authoritative Claude CLI environme
     'CLAUDE_CODE_USE_POWERSHELL_TOOL',
     'CLAUDE_CODE_SUBAGENT_MODEL',
     'CLAUDE_CODE_SUBAGENT_MODEL_FORCE',
+    'CLAUDE_CODE_ATTRIBUTION_HEADER',
+    'CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT',
+    'CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS',
     'OTEL_EXPORTER_OTLP_ENDPOINT',
     'BASH_MAX_TIMEOUT_MS',
     'VERTEX_REGION_CLAUDE_FABLE_5'
@@ -246,6 +249,9 @@ test('index.html renders canonical variable names without redundant env. prefix 
   assert.ok(html.includes('<code>CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY</code>'), 'Must display bare CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY');
   assert.ok(html.includes('<code>CLAUDE_CODE_DISABLE_ADVISOR_TOOL</code>'), 'Must display bare CLAUDE_CODE_DISABLE_ADVISOR_TOOL');
   assert.ok(html.includes('<code>CLAUDE_CODE_SUBAGENT_MODEL_FORCE</code>'), 'Must display bare CLAUDE_CODE_SUBAGENT_MODEL_FORCE');
+  assert.ok(html.includes('<code>CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT</code>'), 'Must display bare CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT');
+  assert.ok(html.includes('<code>CLAUDE_CODE_ATTRIBUTION_HEADER="0"</code>'), 'Must display bare CLAUDE_CODE_ATTRIBUTION_HEADER="0"');
+  assert.ok(html.includes('<code>CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS</code>'), 'Must display bare CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS');
 
   // Ensure redundant prefixes do not appear in code tags or section title
   assert.ok(!html.includes('<code>env.ANTHROPIC_API_KEY</code>'), 'Must not have <code>env.ANTHROPIC_API_KEY</code>');

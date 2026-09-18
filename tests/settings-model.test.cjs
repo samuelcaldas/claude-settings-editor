@@ -214,6 +214,9 @@ test('settings catalog contains full schema paths, gateway tier definitions and 
   assert.equal(catalog.isDedicatedEnvKey('CLAUDE_CODE_DISABLE_ADVISOR_TOOL'), true);
   assert.equal(catalog.isDedicatedEnvKey('CLAUDE_CODE_SUBAGENT_MODEL_FORCE'), true);
   assert.equal(catalog.isDedicatedEnvKey('CLAUDE_CODE_USE_POWERSHELL_TOOL'), true);
+  assert.equal(catalog.isDedicatedEnvKey('CLAUDE_CODE_ATTRIBUTION_HEADER'), true);
+  assert.equal(catalog.isDedicatedEnvKey('CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT'), true);
+  assert.equal(catalog.isDedicatedEnvKey('CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS'), true);
   assert.equal(catalog.isDedicatedEnvKey('CLAUDE_CODE_ENABLE_EXPERIMENTAL_ADVISOR_TOOL'), false);
   assert.equal(catalog.isDedicatedEnvKey('CUSTOM_UNTRACKED_VAR'), false);
   assert.equal(catalog.isSettingSupportedInScope('allowManagedPermissionRulesOnly', 'user'), false);
@@ -259,4 +262,31 @@ test('inspectSettings returns diagnostics array directly', () => {
   const diagnostics = model.inspectSettings(doc);
   assert.ok(Array.isArray(diagnostics));
   assert.equal(diagnostics.some(d => d.path === 'theme'), true);
+});
+
+test('model operations preserve empty string on ANTHROPIC_API_KEY and apply gateway presets cleanly', () => {
+  const doc = {};
+  const docWithEmptyKey = model.setAtPath(doc, ['env', 'ANTHROPIC_API_KEY'], '');
+  assert.equal(docWithEmptyKey.env.ANTHROPIC_API_KEY, '');
+
+  const serialized = model.serializeSettings(docWithEmptyKey);
+  const parsed = model.parseSettingsJson(serialized);
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.value.env.ANTHROPIC_API_KEY, '');
+
+  const gatewayPatches = [
+    { op: 'set', path: ['env', 'ANTHROPIC_BASE_URL'], value: 'https://api.alanwo.com.br/' },
+    { op: 'set', path: ['env', 'ANTHROPIC_API_KEY'], value: '' },
+    { op: 'set', path: ['env', 'CLAUDE_CODE_ATTRIBUTION_HEADER'], value: '0' },
+    { op: 'set', path: ['env', 'CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT'], value: '1' },
+    { op: 'set', path: ['env', 'CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS'], value: '60000' },
+    { op: 'set', path: ['modelOverrides', 'claude-haiku-4-5-20251001'], value: 'gpt-5.6-luna' }
+  ];
+  const patched = model.batchPatches(doc, gatewayPatches);
+  assert.equal(patched.env.ANTHROPIC_BASE_URL, 'https://api.alanwo.com.br/');
+  assert.equal(patched.env.ANTHROPIC_API_KEY, '');
+  assert.equal(patched.env.CLAUDE_CODE_ATTRIBUTION_HEADER, '0');
+  assert.equal(patched.env.CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT, '1');
+  assert.equal(patched.env.CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS, '60000');
+  assert.equal(patched.modelOverrides['claude-haiku-4-5-20251001'], 'gpt-5.6-luna');
 });

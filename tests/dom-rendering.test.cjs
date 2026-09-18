@@ -77,6 +77,30 @@ test('boolean and 0/1 settings are represented as accessible checkbox inputs in 
     'env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL must be a checkbox with data-checkbox-true="1"'
   );
   assert.ok(
+    html.includes('type="checkbox" id="env_CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT" data-setting-path="env.CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT" data-checkbox-true="1"'),
+    'env.CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT must be a checkbox with data-checkbox-true="1"'
+  );
+  assert.ok(
+    html.includes('type="checkbox" id="env_CLAUDE_CODE_ATTRIBUTION_HEADER" data-setting-path="env.CLAUDE_CODE_ATTRIBUTION_HEADER" data-checkbox-true="0"'),
+    'env.CLAUDE_CODE_ATTRIBUTION_HEADER must be a checkbox with data-checkbox-true="0"'
+  );
+  assert.ok(
+    html.includes('id="env_CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS" data-setting-path="env.CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS"'),
+    'env.CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS must exist with data-setting-path'
+  );
+  assert.ok(
+    html.includes('id="env_ANTHROPIC_API_KEY" data-setting-path="env.ANTHROPIC_API_KEY" placeholder="sk-ant-..." data-i18n-placeholder="env.apiKey.placeholder" data-allow-empty="true"'),
+    'env_ANTHROPIC_API_KEY must have data-allow-empty="true"'
+  );
+  assert.ok(
+    html.includes('id="btn-preset-gateway-overrides"'),
+    'index.html must include btn-preset-gateway-overrides preset button'
+  );
+  assert.ok(
+    html.includes('id="btn-preset-alanwo-gateway"'),
+    'index.html must include btn-preset-alanwo-gateway preset button'
+  );
+  assert.ok(
     html.includes('type="checkbox" id="env_CLAUDE_CODE_USE_POWERSHELL_TOOL" data-setting-path="env.CLAUDE_CODE_USE_POWERSHELL_TOOL" data-checkbox-true="1"'),
     'env.CLAUDE_CODE_USE_POWERSHELL_TOOL must be a checkbox with data-checkbox-true="1"'
   );
@@ -103,16 +127,22 @@ test('subagent and gateway option checkboxes have distinct IDs, setting paths, a
   // Verify distinct inputs
   assert.ok(html.includes('id="env_CLAUDE_CODE_SUBAGENT_MODEL_FORCE"'));
   assert.ok(html.includes('id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"'));
+  assert.ok(html.includes('id="env_CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT"'));
+  assert.ok(html.includes('id="env_CLAUDE_CODE_ATTRIBUTION_HEADER"'));
   assert.ok(html.includes('id="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL"'));
 
   // Verify distinct label for associations
   assert.ok(html.includes('for="env_CLAUDE_CODE_SUBAGENT_MODEL_FORCE"'));
   assert.ok(html.includes('for="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"'));
+  assert.ok(html.includes('for="env_CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT"'));
+  assert.ok(html.includes('for="env_CLAUDE_CODE_ATTRIBUTION_HEADER"'));
   assert.ok(html.includes('for="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL"'));
 
   // Verify setting paths are distinct
   assert.ok(html.includes('data-setting-path="env.CLAUDE_CODE_SUBAGENT_MODEL_FORCE"'));
   assert.ok(html.includes('data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"'));
+  assert.ok(html.includes('data-setting-path="env.CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT"'));
+  assert.ok(html.includes('data-setting-path="env.CLAUDE_CODE_ATTRIBUTION_HEADER"'));
   assert.ok(html.includes('data-setting-path="env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL"'));
 
   // Verify app.js uses innermost container (.checkbox-row) or explicit label[for] matching
