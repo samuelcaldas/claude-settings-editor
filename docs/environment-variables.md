@@ -107,6 +107,38 @@ Per the official settings reference, certain variables are ignored when defined 
 
 ---
 
+## Custom LLM Gateway & Subagent Isolation Architecture
+
+When configuring Claude Code behind custom LLM gateways and reverse proxies (such as LiteLLM, Kong, or `api.alanwo.com.br`), specific settings prevent common production failure modes:
+
+### 1. Attribution Header & Prompt Caching (`CLAUDE_CODE_ATTRIBUTION_HEADER="0"`)
+Claude Code includes an attribution and fingerprint block at the start of system prompts by default. Gateways forwarding to multi-tenant backends or caching prompts frequently reject these headers with HTTP 400 or suffer cache misses. Setting `CLAUDE_CODE_ATTRIBUTION_HEADER="0"` strips this header block, preserving upstream cache hit ratios.
+
+### 2. Authorization Header Collision Avoidance (`ANTHROPIC_API_KEY=""`)
+When using `ANTHROPIC_AUTH_TOKEN` for Bearer token authentication against a gateway, an existing `ANTHROPIC_API_KEY` in the environment can collide with the Authorization header. Explicitly setting `"ANTHROPIC_API_KEY": ""` eliminates header conflicts.
+
+### 3. Background Micro-Tasks & Session Titles (`ANTHROPIC_DEFAULT_HAIKU_MODEL`)
+Background operations (such as silent session title generation via `generate_session_title` or explorer subagents) invoke `ANTHROPIC_DEFAULT_HAIKU_MODEL`. Routing this to a non-standard or unsupported model causes `[claude-code:unrecognized_model]` warnings and empty thinking blocks with proprietary provider signatures that corrupt Claude Code's SSE parser. Using a fully tool-calling compatible alias (such as `gpt-5.6-luna`) produces clean, immediate completions without warnings.
+
+### 4. Subagent "Inertia" & Silent 429 Retry Suppression
+Under heavy prompts (system instructions, memory entries, MCP tool definitions, and project rules exceeding tens of thousands of tokens), heavy models on shared gateway pools easily exhaust per-minute rate limits:
+```
+API Error: Request rejected (429) · All credentials for model ... are cooling down
+```
+In asynchronous subagents (`status: "async_launched"`), Claude Code does **not** surface HTTP 429 errors in the main UI. Instead, it enters a silent exponential backoff loop (`retryAttempt: 1 to 10`) with delays up to 5 minutes, making the subagent appear completely frozen or "inert".
+
+**Solution**:
+- Configure `CLAUDE_CODE_SUBAGENT_MODEL="gpt-5.6-luna"` (or another independent quota backend).
+- Enforce `CLAUDE_CODE_SUBAGENT_MODEL_FORCE="1"` to override hardcoded model spawn arguments in the Claude Code binary, ensuring every child agent, teammate, and agent tool execution runs on the dedicated model backend.
+
+### 5. Custom Subagent Best Practices & V8 Process Isolation
+To avoid V8 engine CPU saturation (`JsonStringifier::Serialize_` at 100% CPU) during agent state serialization:
+1. **Declare `context: fork`**: In `~/.claude/agents/<name>.md`, always specify `context: fork` to ensure full process-level memory isolation.
+2. **Bound `tools`**: Explicitly restrict the `tools` list for each subagent (e.g. `tools: [Read, Grep, Glob]`), preventing unnecessary MCP tool schemas from polluting subagent context.
+3. **Live Network Diagnostics**: Inspect full HTTP request/response payloads in real time by launching Claude with `ANTHROPIC_LOG=debug claude`.
+
+---
+
 ## Curated Unofficial Variables (Opt-in)
 
 Checking **Include useful unofficial variables** exposes reviewed unofficial entries discovered in the CLI v2.1.202 reference gist:
