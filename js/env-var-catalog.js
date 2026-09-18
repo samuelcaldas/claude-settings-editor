@@ -1560,6 +1560,7 @@
     "category": "tools",
     "isBoolean": true,
     "boolType": "0_1",
+    "isDedicated": true,
     "minVersion": "2.1.257",
     "description": "Set to `1` to force one model onto subagents, teammates, and workflow agents. Run every subagent on one model says which model that is. Requires Claude Code v2.1.257 or later"
   },

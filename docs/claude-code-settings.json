@@ -1252,6 +1252,11 @@
           "type": "string",
           "description": "Override model used by subagents"
         },
+        "CLAUDE_CODE_SUBAGENT_MODEL_FORCE": {
+          "type": "string",
+          "description": "Set to 1 to force one model onto subagents, teammates, and workflow agents. Requires Claude Code v2.1.257 or later. See https://code.claude.com/docs/en/env-vars",
+          "enum": ["0", "1"]
+        },
         "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": {
           "type": "string",
           "description": "Strip credentials from subprocess environments",

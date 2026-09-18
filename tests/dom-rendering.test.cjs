@@ -65,6 +65,10 @@ test('boolean and 0/1 settings are represented as accessible checkbox inputs in 
 
   // Check model and shell environment 0/1 flags converted from text inputs
   assert.ok(
+    html.includes('type="checkbox" id="env_CLAUDE_CODE_SUBAGENT_MODEL_FORCE" data-setting-path="env.CLAUDE_CODE_SUBAGENT_MODEL_FORCE" data-checkbox-true="1"'),
+    'env.CLAUDE_CODE_SUBAGENT_MODEL_FORCE must be a checkbox with data-checkbox-true="1"'
+  );
+  assert.ok(
     html.includes('type="checkbox" id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY" data-checkbox-true="1"'),
     'env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY must be a checkbox with data-checkbox-true="1"'
   );
@@ -97,14 +101,17 @@ test('subagent and gateway option checkboxes have distinct IDs, setting paths, a
   const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 
   // Verify distinct inputs
+  assert.ok(html.includes('id="env_CLAUDE_CODE_SUBAGENT_MODEL_FORCE"'));
   assert.ok(html.includes('id="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"'));
   assert.ok(html.includes('id="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL"'));
 
   // Verify distinct label for associations
+  assert.ok(html.includes('for="env_CLAUDE_CODE_SUBAGENT_MODEL_FORCE"'));
   assert.ok(html.includes('for="env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"'));
   assert.ok(html.includes('for="env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL"'));
 
   // Verify setting paths are distinct
+  assert.ok(html.includes('data-setting-path="env.CLAUDE_CODE_SUBAGENT_MODEL_FORCE"'));
   assert.ok(html.includes('data-setting-path="env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"'));
   assert.ok(html.includes('data-setting-path="env.CLAUDE_CODE_DISABLE_ADVISOR_TOOL"'));
 

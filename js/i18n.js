@@ -263,6 +263,7 @@
       'setting.env_ANTHROPIC_CUSTOM_MODEL_OPTION_NAME.label': 'Custom Model Option Name',
       'setting.env_ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION.label': 'Custom Model Option Description',
       'setting.env_CLAUDE_CODE_SUBAGENT_MODEL.label': 'Subagent Model Override',
+      'setting.env_CLAUDE_CODE_SUBAGENT_MODEL_FORCE.label': 'Force Subagent Model Override',
       'setting.env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY.label': 'Gateway Model Discovery',
       'setting.env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL.label': 'Disable Advisor Tool',
       'setting.env_CLAUDE_CODE_USE_POWERSHELL_TOOL.label': 'PowerShell Tool (pwsh / PSRemoting)',
@@ -660,6 +661,7 @@
       'toggle.fastMode': 'Enable fast mode (Opus Fast Mode)',
       'toggle.fastModeOptIn': 'Per-session opt-in required for fast mode',
       'toggle.autoCompact': 'Auto-compact context window when full',
+      'toggle.subagentModelForce': 'Force subagent model across all subagents',
       'toggle.enableGatewayModelDiscovery': 'Enable gateway model discovery',
       'toggle.disableAdvisorTool': 'Disable server-side advisor tool',
 
@@ -1087,6 +1089,7 @@
       'setting.env_ANTHROPIC_CUSTOM_MODEL_OPTION_NAME.label': 'Nome da Opção de Modelo Personalizada',
       'setting.env_ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION.label': 'Descrição da Opção de Modelo Personalizada',
       'setting.env_CLAUDE_CODE_SUBAGENT_MODEL.label': 'Sobrescrita de Modelo para Subagentes',
+      'setting.env_CLAUDE_CODE_SUBAGENT_MODEL_FORCE.label': 'Forçar Sobrescrita de Modelo para Subagentes',
       'setting.env_CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY.label': 'Descoberta de Modelos do Gateway',
       'setting.env_CLAUDE_CODE_DISABLE_ADVISOR_TOOL.label': 'Desativar Ferramenta Advisor',
       'setting.env_CLAUDE_CODE_USE_POWERSHELL_TOOL.label': 'Ferramenta PowerShell (pwsh / PSRemoting)',
@@ -1484,6 +1487,7 @@
       'toggle.fastMode': 'Habilitar modo rápido (Opus Fast Mode)',
       'toggle.fastModeOptIn': 'Exigir escolha por sessão para modo rápido',
       'toggle.autoCompact': 'Compactar contexto automaticamente ao aproximar do limite',
+      'toggle.subagentModelForce': 'Forçar modelo de subagente em todos os subagentes',
       'toggle.enableGatewayModelDiscovery': 'Habilitar descoberta de modelos do gateway',
       'toggle.disableAdvisorTool': 'Desativar ferramenta Advisor no servidor',
 

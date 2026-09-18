@@ -780,6 +780,7 @@
   "CLAUDE_CODE_SKIP_VERTEX_AUTH": "Skip Google authentication for Google Cloud's Agent Platform",
   "CLAUDE_CODE_STOP_HOOK_BLOCK_CAP": "Override the default maximum consecutive Stop hook blocks (default: 8) before the turn ends with a warning. Raise this when a stop hook legitimately needs more than 8 iterations to converge. See https://code.claude.com/docs/en/hooks-guide",
   "CLAUDE_CODE_SUBAGENT_MODEL": "Override model used by subagents",
+  "CLAUDE_CODE_SUBAGENT_MODEL_FORCE": "Set to 1 to force one model onto subagents, teammates, and workflow agents (requires v2.1.257+)",
   "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "Strip credentials from subprocess environments",
   "CLAUDE_CODE_SYNC_PLUGIN_INSTALL": "Wait synchronously for plugin installation",
   "CLAUDE_CODE_SYNC_PLUGIN_INSTALL_TIMEOUT_MS": "Timeout in milliseconds for synchronous plugin installation",

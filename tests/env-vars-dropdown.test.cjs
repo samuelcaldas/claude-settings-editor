@@ -31,6 +31,7 @@ test('model.getKnownClaudeEnvVars returns all authoritative Claude CLI environme
     'ANTHROPIC_DEFAULT_HAIKU_MODEL',
     'CLAUDE_CODE_USE_POWERSHELL_TOOL',
     'CLAUDE_CODE_SUBAGENT_MODEL',
+    'CLAUDE_CODE_SUBAGENT_MODEL_FORCE',
     'OTEL_EXPORTER_OTLP_ENDPOINT',
     'BASH_MAX_TIMEOUT_MS',
     'VERTEX_REGION_CLAUDE_FABLE_5'
@@ -244,6 +245,7 @@ test('index.html renders canonical variable names without redundant env. prefix 
   assert.ok(html.includes('<code>CLAUDE_CODE_USE_POWERSHELL_TOOL</code>'), 'Must display bare CLAUDE_CODE_USE_POWERSHELL_TOOL');
   assert.ok(html.includes('<code>CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY</code>'), 'Must display bare CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY');
   assert.ok(html.includes('<code>CLAUDE_CODE_DISABLE_ADVISOR_TOOL</code>'), 'Must display bare CLAUDE_CODE_DISABLE_ADVISOR_TOOL');
+  assert.ok(html.includes('<code>CLAUDE_CODE_SUBAGENT_MODEL_FORCE</code>'), 'Must display bare CLAUDE_CODE_SUBAGENT_MODEL_FORCE');
 
   // Ensure redundant prefixes do not appear in code tags or section title
   assert.ok(!html.includes('<code>env.ANTHROPIC_API_KEY</code>'), 'Must not have <code>env.ANTHROPIC_API_KEY</code>');

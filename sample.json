@@ -63,7 +63,8 @@
   "env": {
     "ANTHROPIC_API_KEY": "sk-ant-sample-placeholder-key",
     "ANTHROPIC_BASE_URL": "https://api.anthropic.com",
-    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5-20251001"
+    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-4-5-20251001",
+    "CLAUDE_CODE_SUBAGENT_MODEL_FORCE": "1"
   },
   "hooks": {
     "UserPromptSubmit": [

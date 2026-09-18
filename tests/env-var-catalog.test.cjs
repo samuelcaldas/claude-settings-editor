@@ -222,3 +222,15 @@ test('suggest excludes configured variables matching options.exclude (Array, Set
   assert.equal(catalog.suggest(entries, { exclude: null }).length, baseSuggestions.length);
   assert.equal(catalog.suggest(entries, { exclude: undefined }).length, baseSuggestions.length);
 });
+
+test('CLAUDE_CODE_SUBAGENT_MODEL_FORCE resolves with correct dedicated boolean metadata', () => {
+  const meta = catalog.resolve('CLAUDE_CODE_SUBAGENT_MODEL_FORCE', rawSchema, {});
+  assert.ok(meta, 'Metadata for CLAUDE_CODE_SUBAGENT_MODEL_FORCE must resolve');
+  assert.equal(meta.name, 'CLAUDE_CODE_SUBAGENT_MODEL_FORCE');
+  assert.equal(meta.isDedicated, true);
+  assert.equal(meta.isBoolean, true);
+  assert.equal(meta.boolType, '0_1');
+  assert.equal(meta.minVersion, '2.1.257');
+  assert.equal(meta.category, 'tools');
+});
+

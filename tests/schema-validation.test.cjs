@@ -324,3 +324,42 @@ test('offline fallback lifecycle: localStorage caching and schema adapter initia
   const res = cachedAdapter.validate(sampleSettings);
   assert.equal(res.valid, true);
 });
+
+test('schema validation: CLAUDE_CODE_SUBAGENT_MODEL_FORCE accepts "0" and "1", rejects invalid types and enums', () => {
+  const validForceDoc = {
+    env: {
+      CLAUDE_CODE_SUBAGENT_MODEL: 'claude-3-7-sonnet-20250219',
+      CLAUDE_CODE_SUBAGENT_MODEL_FORCE: '1'
+    }
+  };
+  const validRes = adapter.validate(validForceDoc);
+  assert.equal(validRes.valid, true, 'CLAUDE_CODE_SUBAGENT_MODEL_FORCE: "1" must be valid');
+  assert.equal(validRes.errors.length, 0);
+
+  const validZeroDoc = {
+    env: {
+      CLAUDE_CODE_SUBAGENT_MODEL_FORCE: '0'
+    }
+  };
+  const zeroRes = adapter.validate(validZeroDoc);
+  assert.equal(zeroRes.valid, true, 'CLAUDE_CODE_SUBAGENT_MODEL_FORCE: "0" must be valid');
+
+  const invalidEnumDoc = {
+    env: {
+      CLAUDE_CODE_SUBAGENT_MODEL_FORCE: '2'
+    }
+  };
+  const invalidEnumRes = adapter.validate(invalidEnumDoc);
+  assert.equal(invalidEnumRes.valid, false, 'Value "2" must be rejected by enum check');
+  assert.ok(invalidEnumRes.errors.some(e => e.path === 'env.CLAUDE_CODE_SUBAGENT_MODEL_FORCE'));
+
+  const invalidTypeDoc = {
+    env: {
+      CLAUDE_CODE_SUBAGENT_MODEL_FORCE: 1
+    }
+  };
+  const invalidTypeRes = adapter.validate(invalidTypeDoc);
+  assert.equal(invalidTypeRes.valid, false, 'Numeric 1 must be rejected by type string check');
+  assert.ok(invalidTypeRes.errors.some(e => e.path === 'env.CLAUDE_CODE_SUBAGENT_MODEL_FORCE'));
+});
+
