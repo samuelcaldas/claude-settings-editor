@@ -30,10 +30,10 @@ detect_dialog
 # ---------------------------------------------------------------------------
 # Messaging helpers
 # ---------------------------------------------------------------------------
-die()  { printf '%s%s%s\n' "$C_RED" "$*" "$C_RESET" >&2; exit 1; }
-warn() { printf '%s%s%s\n' "$C_YELLOW" "$*" "$C_RESET" >&2; }
-info() { printf '%s%s%s\n' "$C_GREEN" "$*" "$C_RESET" >&2; }
-dim()  { printf '%s%s%s\n' "$C_DIM" "$*" "$C_RESET" >&2; }
+die()  { printf '%s%b%s\n' "$C_RED" "$*" "$C_RESET" >&2; exit 1; }
+warn() { printf '%s%b%s\n' "$C_YELLOW" "$*" "$C_RESET" >&2; }
+info() { printf '%s%b%s\n' "$C_GREEN" "$*" "$C_RESET" >&2; }
+dim()  { printf '%s%b%s\n' "$C_DIM" "$*" "$C_RESET" >&2; }
 
 require_jq() {
   command -v jq >/dev/null 2>&1 || die "jq is required but not found. Install it: https://jqlang.github.io/jq/"
@@ -371,7 +371,7 @@ validate_settings() {
   env_type="$(printf '%s' "$json" | jq -r '.env | type' 2>/dev/null)"
   if [[ "$env_type" != "null" ]] && [[ "$env_type" != "object" ]]; then
     printf '%senv must be an object, got: %s%s\n' "$C_RED" "$env_type" "$C_RESET"
-    ((errors++))
+    ((errors++)) || true
   fi
 
   if [[ "$env_type" == "object" ]]; then
@@ -389,7 +389,7 @@ validate_settings() {
   fb_count="$(printf '%s' "$json" | jq '.fallbackModel | if type == "array" then length else 0 end' 2>/dev/null)"
   if [[ "$fb_count" -gt 3 ]]; then
     printf '%sfallbackModel has %d items (max 3)%s\n' "$C_RED" "$fb_count" "$C_RESET"
-    ((errors++))
+    ((errors++)) || true
   fi
 
   if [[ $errors -gt 0 ]]; then
@@ -981,18 +981,21 @@ TUI_FILE=""
 
 tui_require_dialog() {
   [[ -n "$DIALOG_CMD" ]] || die "TUI mode requires 'dialog' or 'whiptail'. Install one:\n  apt install dialog  OR  apt install whiptail"
+  if [[ ! -t 0 ]] || [[ ! -t 1 ]] || [[ "${TERM:-dumb}" == "dumb" ]]; then
+    die "TUI mode requires an interactive terminal (TTY) with a supported TERM.\nRun with a command or --help, e.g.:\n  $SCRIPT_NAME show\n  $SCRIPT_NAME --help"
+  fi
 }
 
 tui_dims() {
   local rows cols
   rows="$(tput lines 2>/dev/null || printf 24)"
   cols="$(tput cols 2>/dev/null || printf 80)"
-  [[ "$rows" -lt 24 ]] && rows=24
-  [[ "$cols" -lt 80 ]] && cols=80
+  if [[ "$rows" -lt 24 ]]; then rows=24; fi
+  if [[ "$cols" -lt 80 ]]; then cols=80; fi
   DIALOG_HEIGHT=$((rows - 4))
   DIALOG_WIDTH=$((cols - 4))
   DIALOG_MENU_HEIGHT=$((DIALOG_HEIGHT - 8))
-  [[ "$DIALOG_MENU_HEIGHT" -lt 5 ]] && DIALOG_MENU_HEIGHT=5
+  if [[ "$DIALOG_MENU_HEIGHT" -lt 5 ]]; then DIALOG_MENU_HEIGHT=5; fi
 }
 
 tui_backtitle() {
@@ -1039,7 +1042,9 @@ RCEOF
 }
 
 tui_cleanup_dialogrc() {
-  [[ -n "${DIALOGRC:-}" ]] && [[ -f "${DIALOGRC:-}" ]] && rm -f "$DIALOGRC"
+  if [[ -n "${DIALOGRC:-}" ]] && [[ -f "$DIALOGRC" ]]; then
+    rm -f "$DIALOGRC"
+  fi
 }
 
 tui_load() {
@@ -1064,7 +1069,9 @@ tui_count_category() {
     [[ "${CATALOG_CATEGORY[$path]}" != "$cat" ]] && continue
     local val
     val="$(get_at_path "$TUI_JSON" "$path")"
-    [[ "$val" != "null" ]] && ((count++))
+    if [[ "$val" != "null" ]]; then
+      count=$((count + 1))
+    fi
   done
   printf '%d' "$count"
 }
@@ -1221,7 +1228,7 @@ tui_edit_array() {
       local val
       val="$(printf '%s' "$arr" | jq -r ".[$i] | if type == \"string\" then . else tostring end")"
       items+=("$i" "$val" "")
-    ((i++))
+      i=$((i + 1))
     done
 
     tui_dims
@@ -1354,9 +1361,13 @@ tui_category_view() {
   while true; do
     local sorted_paths=()
     for p in "${!CATALOG_CATEGORY[@]}"; do
-      [[ "${CATALOG_CATEGORY[$p]}" == "$category" ]] && sorted_paths+=("$p")
+      if [[ "${CATALOG_CATEGORY[$p]}" == "$category" ]]; then
+        sorted_paths+=("$p")
+      fi
     done
-    mapfile -t sorted_paths < <(printf '%s\n' "${sorted_paths[@]}" | sort)
+    if [[ ${#sorted_paths[@]} -gt 0 ]]; then
+      mapfile -t sorted_paths < <(printf '%s\n' "${sorted_paths[@]}" | sort)
+    fi
 
     local items=()
     for path in "${sorted_paths[@]}"; do
@@ -1805,7 +1816,14 @@ main() {
     esac
   done
 
-  local cmd="${positional[0]:-tui}"
+  local cmd="${positional[0]:-}"
+  if [[ -z "$cmd" ]]; then
+    if [[ -t 0 ]] && [[ -t 1 ]] && [[ "${TERM:-dumb}" != "dumb" ]]; then
+      cmd="tui"
+    else
+      cmd="show"
+    fi
+  fi
   case "$cmd" in
     tui)        cmd_tui ;;
     show)       cmd_show ;;
