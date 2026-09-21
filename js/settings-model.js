@@ -516,6 +516,15 @@
     return cleanBase + '/v1/chat/completions';
   }
 
+  function buildAnthropicMessagesUrl(baseUrl) {
+    const raw = typeof baseUrl === 'string' && baseUrl.trim() ? baseUrl.trim() : 'https://api.anthropic.com';
+    if (!raw.startsWith('http://') && !raw.startsWith('https://')) return 'https://api.anthropic.com/v1/messages';
+    const cleanBase = raw.replace(/\/+$/, '');
+    if (cleanBase.endsWith('/messages')) return cleanBase;
+    if (cleanBase.endsWith('/v1')) return cleanBase + '/messages';
+    return cleanBase + '/v1/messages';
+  }
+
   function createDescriptionPrompt(tierKey, modelId, displayName) {
     const tier = tierKey || 'custom';
     const id = modelId || tier;
@@ -1088,15 +1097,20 @@
     const trimmedApiKey = typeof apiKey === 'string' ? apiKey.trim() : '';
     const trimmedAuthToken = typeof authToken === 'string' ? authToken.trim() : '';
 
-    const hasUrl = trimmedUrl.length > 0 && (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://'));
-    const hasKey = trimmedApiKey.length > 0 || trimmedAuthToken.length > 0;
+    // If a custom URL is provided, it must use http:// or https://
+    if (trimmedUrl.length > 0 && !trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
+      return false;
+    }
 
-    return Boolean(hasUrl && hasKey);
+    // A valid API key or auth token credential must be present
+    const hasKey = trimmedApiKey.length > 0 || trimmedAuthToken.length > 0;
+    return hasKey;
   }
 
   return {
     applyPatch: (doc, patch) => batchPatches(doc, [patch]),
     batchPatches,
+    buildAnthropicMessagesUrl,
     buildOpenAiChatCompletionsUrl,
     buildOpenAiModelsUrl,
     cleanDescriptionText,

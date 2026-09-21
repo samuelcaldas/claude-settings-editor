@@ -1125,16 +1125,17 @@ tui_cleanup_dialogrc() {
 }
 
 tui_enable_mouse() {
-  if [[ "$DIALOG_CMD" == "dialog" ]] && [[ -t 1 ]]; then
-    # Enable DEC 1000 (normal tracking), 1002 (button-event tracking), 1006 (SGR extended mouse tracking)
-    printf '\033[?1000h\033[?1002h\033[?1006h'
-  fi
+  # Dialog natively handles ncurses mouse support via dialogrc when compiled with gpm/xterm mouse.
+  # Do not emit raw DEC 1000/1002/1006 escape sequences into the terminal, because unhandled
+  # escape codes on stdin are interpreted by dialog/whiptail as the ESC key (exit code 255),
+  # causing any mouse click to terminate the TUI instantly.
+  :
 }
 
 tui_disable_mouse() {
-  if [[ "$DIALOG_CMD" == "dialog" ]] && [[ -t 1 ]]; then
-    # Cleanly restore terminal mouse tracking
-    printf '\033[?1006l\033[?1002l\033[?1000l'
+  if [[ -t 1 ]]; then
+    # Cleanly restore terminal mouse tracking and reset any lingering mouse modes
+    printf '\033[?1006l\033[?1002l\033[?1000l' 2>/dev/null || true
   fi
 }
 
