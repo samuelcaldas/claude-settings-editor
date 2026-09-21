@@ -3,8 +3,18 @@ const assert = require('node:assert/strict');
 const { execFileSync, spawnSync } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
 
 const scriptPath = path.resolve(__dirname, '..', 'claude-settings.sh');
+
+// Hermetic test fixture for CI environments without pre-existing ~/.claude/settings.json
+const testConfigDir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-settings-test-'));
+const samplePath = path.resolve(__dirname, '..', 'sample.json');
+fs.copyFileSync(samplePath, path.join(testConfigDir, 'settings.json'));
+
+test.after(() => {
+  fs.rmSync(testConfigDir, { recursive: true, force: true });
+});
 
 test('claude-settings.sh --help outputs usage information', () => {
   const result = execFileSync(scriptPath, ['--help'], { encoding: 'utf8' });
@@ -22,11 +32,25 @@ test('claude-settings.sh --version outputs version 1.0.0', () => {
 test('claude-settings.sh defaults to show in non-interactive environment without crashing', () => {
   const result = spawnSync(scriptPath, [], {
     encoding: 'utf8',
-    env: { ...process.env, TERM: 'dumb' }
+    env: { ...process.env, CLAUDE_CONFIG_DIR: testConfigDir, TERM: 'dumb' }
   });
   assert.equal(result.status, 0);
   assert.match(result.stdout, /Scope: user/);
-  assert.match(result.stdout, /"cleanupPeriodDays":/);
+  assert.match(result.stdout, /"theme":/);
+});
+
+test('claude-settings.sh defaults to empty json when settings file does not exist', () => {
+  const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-empty-test-'));
+  try {
+    const result = spawnSync(scriptPath, [], {
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_CONFIG_DIR: emptyDir, TERM: 'dumb' }
+    });
+    assert.equal(result.status, 0);
+    assert.equal(result.stdout.trim(), '{}');
+  } finally {
+    fs.rmSync(emptyDir, { recursive: true, force: true });
+  }
 });
 
 test('claude-settings.sh tui fails gracefully with actionable message when no TTY is available', () => {
@@ -56,13 +80,19 @@ test('claude-settings.sh list --category permissions filters settings', () => {
 });
 
 test('claude-settings.sh env list displays environment variables safely', () => {
-  const result = execFileSync(scriptPath, ['env', 'list'], { encoding: 'utf8' });
+  const result = execFileSync(scriptPath, ['env', 'list'], {
+    encoding: 'utf8',
+    env: { ...process.env, CLAUDE_CONFIG_DIR: testConfigDir }
+  });
   assert.match(result, /Environment variables/);
   assert.match(result, /ANTHROPIC_BASE_URL/);
 });
 
 test('claude-settings.sh validate succeeds on valid settings', () => {
-  const result = spawnSync(scriptPath, ['validate'], { encoding: 'utf8' });
+  const result = spawnSync(scriptPath, ['validate'], {
+    encoding: 'utf8',
+    env: { ...process.env, CLAUDE_CONFIG_DIR: testConfigDir }
+  });
   assert.equal(result.status, 0);
   const combined = result.stdout + result.stderr;
   assert.match(combined, /Settings valid/);
