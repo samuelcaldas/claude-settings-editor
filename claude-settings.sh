@@ -988,14 +988,88 @@ tui_require_dialog() {
 
 tui_dims() {
   local rows cols
-  rows="$(tput lines 2>/dev/null || printf 24)"
-  cols="$(tput cols 2>/dev/null || printf 80)"
-  if [[ "$rows" -lt 24 ]]; then rows=24; fi
-  if [[ "$cols" -lt 80 ]]; then cols=80; fi
-  DIALOG_HEIGHT=$((rows - 4))
-  DIALOG_WIDTH=$((cols - 4))
-  DIALOG_MENU_HEIGHT=$((DIALOG_HEIGHT - 8))
-  if [[ "$DIALOG_MENU_HEIGHT" -lt 5 ]]; then DIALOG_MENU_HEIGHT=5; fi
+  rows="$(tput lines 2>/dev/null || printf '%s' "${LINES:-24}")"
+  cols="$(tput cols 2>/dev/null || printf '%s' "${COLUMNS:-80}")"
+  [[ "$rows" =~ ^[0-9]+$ ]] || rows=24
+  [[ "$cols" =~ ^[0-9]+$ ]] || cols=80
+
+  # Responsive width: small screens utilize full width; ultrawide screens capped
+  if (( cols < 80 )); then
+    DIALOG_WIDTH=$(( cols > 26 ? cols - 2 : cols ))
+  elif (( cols <= 110 )); then
+    DIALOG_WIDTH=$(( cols - 4 ))
+  else
+    DIALOG_WIDTH=104
+  fi
+
+  # Responsive height
+  if (( rows < 14 )); then
+    DIALOG_HEIGHT=$(( rows > 2 ? rows - 1 : rows ))
+  elif (( rows < 24 )); then
+    DIALOG_HEIGHT=$(( rows - 2 ))
+  elif (( rows <= 40 )); then
+    DIALOG_HEIGHT=$(( rows - 4 ))
+  else
+    DIALOG_HEIGHT=36
+  fi
+
+  # Dynamic menu list height
+  DIALOG_MENU_HEIGHT=$(( DIALOG_HEIGHT - 8 ))
+  if (( DIALOG_MENU_HEIGHT < 3 )); then
+    DIALOG_MENU_HEIGHT=3
+  fi
+}
+
+tui_box_w() {
+  local desired="${1:-60}"
+  if (( desired > DIALOG_WIDTH )); then
+    printf '%d' "$DIALOG_WIDTH"
+  else
+    printf '%d' "$desired"
+  fi
+}
+
+tui_box_h() {
+  local desired="${1:-10}"
+  if (( desired > DIALOG_HEIGHT )); then
+    printf '%d' "$DIALOG_HEIGHT"
+  else
+    printf '%d' "$desired"
+  fi
+}
+
+tui_msgbox() {
+  local title="$1" text="$2" h="${3:-8}" w="${4:-50}"
+  local actual_w actual_h
+  actual_w="$(tui_box_w "$w")"
+  actual_h="$(tui_box_h "$h")"
+  "$DIALOG_CMD" --backtitle "$(tui_backtitle)" --title "$title" --msgbox "$text" "$actual_h" "$actual_w"
+}
+
+tui_yesno() {
+  local title="$1" prompt="$2" h="${3:-10}" w="${4:-50}"
+  local actual_w actual_h
+  actual_w="$(tui_box_w "$w")"
+  actual_h="$(tui_box_h "$h")"
+  "$DIALOG_CMD" --backtitle "$(tui_backtitle)" --title "$title" --yesno "$prompt" "$actual_h" "$actual_w" 3>&1 1>&2 2>&3
+}
+
+tui_inputbox() {
+  local title="$1" prompt="$2" init="${3:-}" h="${4:-10}" w="${5:-60}"
+  local actual_w actual_h
+  actual_w="$(tui_box_w "$w")"
+  actual_h="$(tui_box_h "$h")"
+  "$DIALOG_CMD" --backtitle "$(tui_backtitle)" --title "$title" --inputbox "$prompt" "$actual_h" "$actual_w" "$init" 3>&1 1>&2 2>&3
+}
+
+tui_truncate_path() {
+  local p="$1" max_len="${2:-35}"
+  if (( ${#p} > max_len && max_len > 10 )); then
+    local keep=$(( max_len - 4 ))
+    printf '...%s' "${p: -keep}"
+  else
+    printf '%s' "$p"
+  fi
 }
 
 tui_backtitle() {
@@ -1009,6 +1083,9 @@ tui_setup_dialogrc() {
     cat > "$DIALOGRC" << 'RCEOF'
 use_shadow = OFF
 use_colors = ON
+use_scrollbar = ON
+visit_items = ON
+tab_len = 2
 screen_color = (CYAN,BLACK,ON)
 dialog_color = (BLACK,WHITE,OFF)
 title_color = (CYAN,WHITE,ON)
@@ -1045,6 +1122,29 @@ tui_cleanup_dialogrc() {
   if [[ -n "${DIALOGRC:-}" ]] && [[ -f "$DIALOGRC" ]]; then
     rm -f "$DIALOGRC"
   fi
+}
+
+tui_enable_mouse() {
+  if [[ "$DIALOG_CMD" == "dialog" ]] && [[ -t 1 ]]; then
+    # Enable DEC 1000 (normal tracking), 1002 (button-event tracking), 1006 (SGR extended mouse tracking)
+    printf '\033[?1000h\033[?1002h\033[?1006h'
+  fi
+}
+
+tui_disable_mouse() {
+  if [[ "$DIALOG_CMD" == "dialog" ]] && [[ -t 1 ]]; then
+    # Cleanly restore terminal mouse tracking
+    printf '\033[?1006l\033[?1002l\033[?1000l'
+  fi
+}
+
+tui_handle_winch() {
+  tui_dims
+}
+
+tui_cleanup() {
+  tui_disable_mouse
+  tui_cleanup_dialogrc
 }
 
 tui_load() {
@@ -1087,15 +1187,23 @@ tui_select_scope() {
   local_file="$(resolve_file local 2>/dev/null || printf '(not in git repo)')"
   managed_file="$(resolve_file managed)"
 
+  local max_path_len=$(( DIALOG_WIDTH - 16 ))
+  if (( max_path_len < 15 )); then max_path_len=15; fi
+  local disp_user disp_proj disp_local disp_managed
+  disp_user="$(tui_truncate_path "$user_file" "$max_path_len")"
+  disp_proj="$(tui_truncate_path "$project_file" "$max_path_len")"
+  disp_local="$(tui_truncate_path "$local_file" "$max_path_len")"
+  disp_managed="$(tui_truncate_path "$managed_file" "$max_path_len")"
+
   local result
   result="$("$DIALOG_CMD" --backtitle "Claude Code Settings Editor" \
     --title "Select Scope" \
     --radiolist "Choose the settings scope to edit:\n\nUse SPACE to select, ENTER to confirm." \
     "$DIALOG_HEIGHT" "$DIALOG_WIDTH" 4 \
-    "user"    "$user_file"    "$([ "$SCOPE" = "user" ] && printf ON || printf OFF)" \
-    "project" "$project_file" "$([ "$SCOPE" = "project" ] && printf ON || printf OFF)" \
-    "local"   "$local_file"   "$([ "$SCOPE" = "local" ] && printf ON || printf OFF)" \
-    "managed" "$managed_file" "$([ "$SCOPE" = "managed" ] && printf ON || printf OFF)" \
+    "user"    "$disp_user"    "$([ "$SCOPE" = "user" ] && printf ON || printf OFF)" \
+    "project" "$disp_proj" "$([ "$SCOPE" = "project" ] && printf ON || printf OFF)" \
+    "local"   "$disp_local"   "$([ "$SCOPE" = "local" ] && printf ON || printf OFF)" \
+    "managed" "$disp_managed" "$([ "$SCOPE" = "managed" ] && printf ON || printf OFF)" \
     3>&1 1>&2 2>&3)" || return 1
 
   [[ -n "$result" ]] && SCOPE="$result"
@@ -1117,7 +1225,7 @@ tui_edit_boolean() {
     --title "$path" \
     $default_btn \
     --yesno "$desc\n\nCurrent: ${current}\n\nSet to true?" \
-    "$DIALOG_HEIGHT" "$DIALOG_WIDTH" 3>&1 1>&2 2>&3; then
+    "$(tui_box_h 12)" "$(tui_box_w 60)" 3>&1 1>&2 2>&3; then
     TUI_JSON="$(printf '%s' "$TUI_JSON" | jq "$(printf 'setpath(%s; true)' "$(path_to_jq_array "$path")")")"
     TUI_DIRTY=true
   else
@@ -1172,11 +1280,7 @@ tui_edit_string() {
 
   tui_dims
   local result
-  result="$("$DIALOG_CMD" --backtitle "$(tui_backtitle)" \
-    --title "$path" \
-    --inputbox "$desc" \
-    "$DIALOG_HEIGHT" "$DIALOG_WIDTH" "$current" \
-    3>&1 1>&2 2>&3)" || return 0
+  result="$(tui_inputbox "$path" "$desc" "$current" 10 60)" || return 0
 
   TUI_JSON="$(set_at_path "$TUI_JSON" "$path" "$result")"
   TUI_DIRTY=true
@@ -1193,14 +1297,10 @@ tui_edit_number() {
 
   tui_dims
   local result
-  result="$("$DIALOG_CMD" --backtitle "$(tui_backtitle)" \
-    --title "$path" \
-    --inputbox "$desc\n\nEnter a number:" \
-    "$DIALOG_HEIGHT" "$DIALOG_WIDTH" "$current" \
-    3>&1 1>&2 2>&3)" || return 0
+  result="$(tui_inputbox "$path" "$desc\n\nEnter a number:" "$current" 10 60)" || return 0
 
   if ! [[ "$result" =~ ^-?[0-9]*\.?[0-9]+$ ]]; then
-    "$DIALOG_CMD" --backtitle "$(tui_backtitle)" --title "Error" --msgbox "Invalid number: $result" 8 40
+    tui_msgbox "Error" "Invalid number: $result" 8 40
     return 0
   fi
   TUI_JSON="$(set_at_path "$TUI_JSON" "$path" "$result")"
@@ -1242,11 +1342,7 @@ tui_edit_array() {
 
     if [[ "$choice" == "ADD" ]]; then
       local new_val
-      new_val="$("$DIALOG_CMD" --backtitle "$(tui_backtitle)" \
-        --title "Add to $path" \
-        --inputbox "Enter new value:" \
-        "$DIALOG_HEIGHT" "$DIALOG_WIDTH" "" \
-        3>&1 1>&2 2>&3)" || continue
+      new_val="$(tui_inputbox "Add to $path" "Enter new value:" "" 10 60)" || continue
       if [[ -n "$new_val" ]]; then
         local typed_val
         typed_val="$(auto_type_value "$new_val")"
@@ -1256,9 +1352,7 @@ tui_edit_array() {
     else
       local item_val
       item_val="$(printf '%s' "$arr" | jq -r ".[$choice]")"
-      if "$DIALOG_CMD" --backtitle "$(tui_backtitle)" \
-        --title "Remove item" \
-        --yesno "Remove: $item_val ?" 8 60 3>&1 1>&2 2>&3; then
+      if tui_yesno "Remove item" "Remove: $item_val ?" 8 60; then
         TUI_JSON="$(printf '%s' "$TUI_JSON" | jq "setpath($jq_path; (getpath($jq_path) | del(.[$choice])))")"
         TUI_DIRTY=true
       fi
@@ -1286,7 +1380,7 @@ tui_edit_object() {
   if [[ -f "$tmpfile" ]]; then
     local new_obj
     new_obj="$(jq '.' "$tmpfile" 2>/dev/null)" || {
-      "$DIALOG_CMD" --backtitle "$(tui_backtitle)" --title "Error" --msgbox "Invalid JSON — changes discarded." 8 50
+      tui_msgbox "Error" "Invalid JSON — changes discarded." 8 50
       rm -f "$tmpfile"
       return 0
     }
@@ -1330,9 +1424,7 @@ tui_unset_setting() {
   if [[ "$current" == "null" ]]; then
     return 0
   fi
-  if "$DIALOG_CMD" --backtitle "$(tui_backtitle)" \
-    --title "Unset $path" \
-    --yesno "Remove this setting?\n\nCurrent value: $current" 10 60 3>&1 1>&2 2>&3; then
+  if tui_yesno "Unset $path" "Remove this setting?\n\nCurrent value: $current" 10 60; then
     TUI_JSON="$(delete_at_path "$TUI_JSON" "$path")"
     TUI_DIRTY=true
   fi
@@ -1369,6 +1461,9 @@ tui_category_view() {
       mapfile -t sorted_paths < <(printf '%s\n' "${sorted_paths[@]}" | sort)
     fi
 
+    local max_desc_len=$(( DIALOG_WIDTH - 36 ))
+    if (( max_desc_len < 12 )); then max_desc_len=12; fi
+
     local items=()
     for path in "${sorted_paths[@]}"; do
       local val
@@ -1378,14 +1473,14 @@ tui_category_view() {
         display="[not set]"
       else
         display="$(printf '%s' "$val" | jq -r 'if type == "string" then . elif type == "array" then "\(length) items" elif type == "object" then "\(length) keys" else tostring end' 2>/dev/null)"
-        [[ ${#display} -gt 40 ]] && display="${display:0:37}..."
+        [[ ${#display} -gt $max_desc_len ]] && display="${display:0:$((max_desc_len - 3))}..."
       fi
       local type_hint="${CATALOG_TYPE[$path]:-}"
       items+=("$path" "($type_hint) $display")
     done
 
     [[ ${#items[@]} -eq 0 ]] && {
-      "$DIALOG_CMD" --backtitle "$(tui_backtitle)" --title "$cat_label" --msgbox "No settings in this category." 8 50
+      tui_msgbox "$cat_label" "No settings in this category." 8 50
       return
     }
 
@@ -1476,24 +1571,16 @@ tui_env_editor() {
 
     if [[ "$choice" == "ADD" ]]; then
       local new_name
-      new_name="$("$DIALOG_CMD" --backtitle "$(tui_backtitle)" \
-        --title "Add Environment Variable" \
-        --inputbox "Variable name (UPPER_CASE):" \
-        10 60 "" \
-        3>&1 1>&2 2>&3)" || continue
+      new_name="$(tui_inputbox "Add Environment Variable" "Variable name (UPPER_CASE):" "" 10 60)" || continue
       if [[ -z "$new_name" ]]; then
         continue
       fi
       if ! printf '%s' "$new_name" | grep -qE '^[A-Z_][A-Z0-9_]*$'; then
-        "$DIALOG_CMD" --backtitle "$(tui_backtitle)" --title "Error" --msgbox "Invalid name. Must match ^[A-Z_][A-Z0-9_]*\$" 8 50
+        tui_msgbox "Error" "Invalid name. Must match ^[A-Z_][A-Z0-9_]*\$" 8 50
         continue
       fi
       local new_val
-      new_val="$("$DIALOG_CMD" --backtitle "$(tui_backtitle)" \
-        --title "Set $new_name" \
-        --inputbox "Value:" \
-        10 60 "" \
-        3>&1 1>&2 2>&3)" || continue
+      new_val="$(tui_inputbox "Set $new_name" "Value:" "" 10 60)" || continue
       TUI_JSON="$(printf '%s' "$TUI_JSON" | jq --arg k "$new_name" --arg v "$new_val" '.env = ((.env // {}) + {($k): $v})')"
       TUI_DIRTY=true
     else
@@ -1505,7 +1592,7 @@ tui_env_editor() {
       action="$("$DIALOG_CMD" --backtitle "$(tui_backtitle)" \
         --title "$choice" \
         --menu "Current: $(mask_value "$choice" "$current_val")" \
-        10 60 3 \
+        "$(tui_box_h 12)" "$(tui_box_w 60)" 3 \
         "edit"   "Edit value" \
         "show"   "Show full value" \
         "delete" "Remove variable" \
@@ -1514,21 +1601,15 @@ tui_env_editor() {
       case "$action" in
         edit)
           local new_val
-          new_val="$("$DIALOG_CMD" --backtitle "$(tui_backtitle)" \
-            --title "Edit $choice" \
-            --inputbox "New value:" \
-            10 60 "$current_val" \
-            3>&1 1>&2 2>&3)" || continue
+          new_val="$(tui_inputbox "Edit $choice" "New value:" "$current_val" 10 60)" || continue
           TUI_JSON="$(printf '%s' "$TUI_JSON" | jq --arg k "$choice" --arg v "$new_val" '.env[$k] = $v')"
           TUI_DIRTY=true
           ;;
         show)
-          "$DIALOG_CMD" --backtitle "$(tui_backtitle)" --title "$choice" --msgbox "$current_val" 8 70
+          tui_msgbox "$choice" "$current_val" 10 70
           ;;
         delete)
-          if "$DIALOG_CMD" --backtitle "$(tui_backtitle)" \
-            --title "Delete $choice" \
-            --yesno "Remove $choice from environment variables?" 8 50 3>&1 1>&2 2>&3; then
+          if tui_yesno "Delete $choice" "Remove $choice from environment variables?" 8 50; then
             TUI_JSON="$(printf '%s' "$TUI_JSON" | jq --arg k "$choice" 'if .env then .env |= del(.[$k]) else . end')"
             TUI_DIRTY=true
           fi
@@ -1546,10 +1627,7 @@ tui_confirm_save() {
     return 0
   fi
   tui_dims
-  "$DIALOG_CMD" --backtitle "$(tui_backtitle)" \
-    --title "Unsaved Changes" \
-    --yesno "You have unsaved changes.\n\nSave before exiting?" \
-    10 50 3>&1 1>&2 2>&3
+  tui_yesno "Unsaved Changes" "You have unsaved changes.\n\nSave before exiting?" 10 50
   local exit_code=$?
   case $exit_code in
     0) tui_save ;;
@@ -1625,15 +1703,11 @@ tui_main_menu() {
         ;;
       import)
         local import_path
-        import_path="$("$DIALOG_CMD" --backtitle "$(tui_backtitle)" \
-          --title "Import Settings" \
-          --inputbox "Path to JSON file:" \
-          10 60 "" \
-          3>&1 1>&2 2>&3)" || continue
+        import_path="$(tui_inputbox "Import Settings" "Path to JSON file:" "" 10 60)" || continue
         if [[ -n "$import_path" ]] && [[ -f "$import_path" ]]; then
           local imported
           imported="$(jq '.' "$import_path" 2>/dev/null)" || {
-            "$DIALOG_CMD" --title "Error" --msgbox "Invalid JSON file" 8 40
+            tui_msgbox "Error" "Invalid JSON file" 8 40
             continue
           }
           TUI_JSON="$imported"
@@ -1645,12 +1719,12 @@ tui_main_menu() {
         ;;
       backup)
         ensure_backup "$TUI_FILE"
-        "$DIALOG_CMD" --backtitle "$(tui_backtitle)" --title "Backup" --msgbox "Backup created." 8 40
+        tui_msgbox "Backup" "Backup created." 8 40
         ;;
       validate)
         local val_output
         val_output="$(validate_settings "$TUI_JSON" 2>&1)" || true
-        "$DIALOG_CMD" --backtitle "$(tui_backtitle)" --title "Validation" --msgbox "$val_output" 15 70
+        tui_msgbox "Validation" "$val_output" 15 70
         ;;
       editor)
         tui_save
@@ -1670,14 +1744,19 @@ cmd_tui() {
   tui_require_dialog
   tui_dims
   tui_setup_dialogrc
-  trap tui_cleanup_dialogrc EXIT
+  tui_enable_mouse
+
+  trap tui_cleanup EXIT INT TERM
+  trap 'tui_handle_winch' WINCH
 
   tui_select_scope || {
-    tui_cleanup_dialogrc
+    tui_cleanup
+    trap - EXIT INT TERM WINCH
     return 0
   }
   tui_main_menu
-  tui_cleanup_dialogrc
+  tui_cleanup
+  trap - EXIT INT TERM WINCH
 }
 
 # ===========================================================================

@@ -67,3 +67,82 @@ test('claude-settings.sh validate succeeds on valid settings', () => {
   const combined = result.stdout + result.stderr;
   assert.match(combined, /Settings valid/);
 });
+
+test('tui_dims dynamically adapts to compact / mobile viewports', () => {
+  const cmd = `source <(grep -v "^main " "${scriptPath}"); LINES=18 COLUMNS=50 tui_dims; echo "$DIALOG_WIDTH $DIALOG_HEIGHT $DIALOG_MENU_HEIGHT"`;
+  const result = spawnSync('bash', ['-c', cmd], { encoding: 'utf8' });
+  assert.equal(result.status, 0);
+  const [w, h, m] = result.stdout.trim().split(' ').map(Number);
+  assert.ok(w <= 48, `DIALOG_WIDTH (${w}) must not exceed 48 on 50-col terminal`);
+  assert.ok(h <= 16, `DIALOG_HEIGHT (${h}) must not exceed 16 on 18-line terminal`);
+  assert.ok(m >= 3, `DIALOG_MENU_HEIGHT (${m}) must be at least 3`);
+});
+
+test('tui_dims caps dimensions on ultrawide viewports for ergonomic readability', () => {
+  const cmd = `source <(grep -v "^main " "${scriptPath}"); LINES=60 COLUMNS=200 tui_dims; echo "$DIALOG_WIDTH $DIALOG_HEIGHT"`;
+  const result = spawnSync('bash', ['-c', cmd], { encoding: 'utf8' });
+  assert.equal(result.status, 0);
+  const [w, h] = result.stdout.trim().split(' ').map(Number);
+  assert.equal(w, 104, 'DIALOG_WIDTH should be capped at 104 on 200-col terminal');
+  assert.equal(h, 36, 'DIALOG_HEIGHT should be capped at 36 on 60-line terminal');
+});
+
+test('tui_box_w and tui_box_h clamp dialog popups to active viewport bounds', () => {
+  const cmd = `source <(grep -v "^main " "${scriptPath}"); LINES=18 COLUMNS=50 tui_dims; echo "$(tui_box_w 70) $(tui_box_h 25)"`;
+  const result = spawnSync('bash', ['-c', cmd], { encoding: 'utf8' });
+  assert.equal(result.status, 0);
+  const [w, h] = result.stdout.trim().split(' ').map(Number);
+  assert.equal(w, 48, 'Desired width 70 must be clamped to DIALOG_WIDTH (48)');
+  assert.equal(h, 16, 'Desired height 25 must be clamped to DIALOG_HEIGHT (16)');
+});
+
+test('tui_truncate_path truncates long paths from the left with ellipsis', () => {
+  const cmd = `source <(grep -v "^main " "${scriptPath}"); tui_truncate_path "/home/user/.claude/settings.json" 20`;
+  const result = spawnSync('bash', ['-c', cmd], { encoding: 'utf8' });
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout.trim(), '...de/settings.json');
+});
+
+test('tui_setup_dialogrc configures scrollbars and visit_items for touch/mouse navigation', () => {
+  const cmd = `source <(grep -v "^main " "${scriptPath}"); DIALOG_CMD=dialog; tui_setup_dialogrc; cat "$DIALOGRC"; rm -f "$DIALOGRC"`;
+  const result = spawnSync('bash', ['-c', cmd], { encoding: 'utf8' });
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /use_scrollbar = ON/);
+  assert.match(result.stdout, /visit_items = ON/);
+  assert.match(result.stdout, /tab_len = 2/);
+});
+
+test('tui_enable_mouse and tui_disable_mouse emit DEC 1000 and SGR 1006 tracking escape sequences in TTY', () => {
+  // Use Python pty to allocate a real pseudo-terminal
+  const pyCode = `
+import pty, os
+master, slave = pty.openpty()
+pid = os.fork()
+if pid == 0:
+    os.close(master)
+    os.setsid()
+    os.dup2(slave, 0); os.dup2(slave, 1); os.dup2(slave, 2)
+    os.execlp("bash", "bash", "-c", "source <(grep -v \\"^main \\" \\"${scriptPath}\\"); DIALOG_CMD=dialog; tui_enable_mouse; tui_disable_mouse")
+else:
+    os.close(slave)
+    chunks = []
+    while True:
+        try:
+            data = os.read(master, 1024)
+            if not data:
+                break
+            chunks.append(data)
+        except OSError:
+            break
+    os.close(master)
+    os.waitpid(pid, 0)
+    print(b"".join(chunks).decode("latin1", errors="replace"))
+`;
+  const result = spawnSync('python3', ['-c', pyCode], { encoding: 'utf8' });
+  assert.equal(result.status, 0);
+  assert.ok(result.stdout.includes('\x1b[?1000h'), 'Must emit DECSET 1000');
+  assert.ok(result.stdout.includes('\x1b[?1006h'), 'Must emit SGR mouse tracking 1006h');
+  assert.ok(result.stdout.includes('\x1b[?1006l'), 'Must emit SGR mouse tracking disable 1006l');
+  assert.ok(result.stdout.includes('\x1b[?1000l'), 'Must emit DECRST 1000l');
+});
+
