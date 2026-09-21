@@ -142,7 +142,7 @@ test('tui_setup_dialogrc configures scrollbars and visit_items for touch/mouse n
   assert.match(result.stdout, /tab_len = 2/);
 });
 
-test('tui_enable_mouse and tui_disable_mouse emit DEC 1000 and SGR 1006 tracking escape sequences in TTY', () => {
+test('tui_enable_mouse does not pollute stdin with raw escape sequences, and tui_disable_mouse cleanly resets tracking', () => {
   // Use Python pty to allocate a real pseudo-terminal
   const pyCode = `
 import pty, os
@@ -170,9 +170,31 @@ else:
 `;
   const result = spawnSync('python3', ['-c', pyCode], { encoding: 'utf8' });
   assert.equal(result.status, 0);
-  assert.ok(result.stdout.includes('\x1b[?1000h'), 'Must emit DECSET 1000');
-  assert.ok(result.stdout.includes('\x1b[?1006h'), 'Must emit SGR mouse tracking 1006h');
-  assert.ok(result.stdout.includes('\x1b[?1006l'), 'Must emit SGR mouse tracking disable 1006l');
-  assert.ok(result.stdout.includes('\x1b[?1000l'), 'Must emit DECRST 1000l');
+  assert.ok(!result.stdout.includes('\x1b[?1000h'), 'tui_enable_mouse must NOT emit DECSET 1000h raw escape');
+  assert.ok(!result.stdout.includes('\x1b[?1006h'), 'tui_enable_mouse must NOT emit SGR 1006h raw escape');
+  assert.ok(result.stdout.includes('\x1b[?1006l'), 'tui_disable_mouse must emit SGR mouse tracking disable 1006l');
+  assert.ok(result.stdout.includes('\x1b[?1000l'), 'tui_disable_mouse must emit DECRST 1000l');
+});
+
+test('tui_enable_mouse does not cause instant exit when clicking on dialog', () => {
+  // Test that simulated mouse click escape sequence is not triggered or dialog remains running
+  const pyCode = `
+import pty, os, time
+master, slave = pty.openpty()
+pid = os.fork()
+if pid == 0:
+    os.close(master)
+    os.setsid()
+    os.dup2(slave, 0); os.dup2(slave, 1); os.dup2(slave, 2)
+    os.execlp("bash", "bash", "-c", "source <(grep -v \\"^main \\" \\"${scriptPath}\\"); DIALOG_CMD=dialog; tui_enable_mouse; echo ready; sleep 0.5")
+else:
+    os.close(slave)
+    time.sleep(0.1)
+    os.write(master, b"test-input\\n")
+    _, status = os.waitpid(pid, 0)
+    assert os.waitstatus_to_exitcode(status) == 0
+`;
+  const result = spawnSync('python3', ['-c', pyCode], { encoding: 'utf8' });
+  assert.equal(result.status, 0);
 });
 
