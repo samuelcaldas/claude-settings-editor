@@ -118,26 +118,26 @@ test('hasApiUrlAndKey helper validates presence of both endpoint URL and credent
     'URL without key or token must return false'
   );
 
-  // Invalid: Key only (missing URL)
+  // Valid: Key only (URL defaults to https://api.anthropic.com)
   assert.equal(
     model.hasApiUrlAndKey({
       env: {
         ANTHROPIC_API_KEY: 'sk-ant-test-key-12345'
       }
     }),
-    false,
-    'Key without URL must return false'
+    true,
+    'API key present in user settings without explicit URL must return true'
   );
 
-  // Invalid: Token only (missing URL)
+  // Valid: Token only (URL defaults to https://api.anthropic.com)
   assert.equal(
     model.hasApiUrlAndKey({
       env: {
         ANTHROPIC_AUTH_TOKEN: 'bearer-token-xyz'
       }
     }),
-    false,
-    'Token without URL must return false'
+    true,
+    'Auth token present in user settings without explicit URL must return true'
   );
 
   // Invalid: Empty / whitespace-only strings
@@ -240,21 +240,30 @@ test('localization parity for automated model discovery status and badge keys', 
   assert.equal(i18n.DICTIONARIES.en['models.discovery.badge.empty'], '0 models');
   assert.equal(
     i18n.DICTIONARIES.en['models.discovery.status.empty'],
-    'No API URL and key configured. Models list is empty.'
+    'No API key configured. Models list is empty.'
   );
   assert.equal(
     i18n.DICTIONARIES.en['models.discovery.status.noCreds'],
-    'API URL and Key required for model discovery.'
+    'API key required for model discovery.'
   );
 
   // Verify Portuguese text accuracy
   assert.equal(i18n.DICTIONARIES['pt-BR']['models.discovery.badge.empty'], '0 modelos');
   assert.equal(
     i18n.DICTIONARIES['pt-BR']['models.discovery.status.empty'],
-    'Nenhuma URL e chave de API configuradas. A lista de modelos está vazia.'
+    'Nenhuma chave de API configurada. A lista de modelos está vazia.'
   );
   assert.equal(
     i18n.DICTIONARIES['pt-BR']['models.discovery.status.noCreds'],
-    'URL e Chave de API necessárias para descoberta de modelos.'
+    'Chave de API necessária para descoberta de modelos.'
   );
+});
+
+test('buildAnthropicMessagesUrl resolves official Anthropic Messages endpoint', () => {
+  assert.equal(typeof model.buildAnthropicMessagesUrl, 'function');
+  assert.equal(model.buildAnthropicMessagesUrl(''), 'https://api.anthropic.com/v1/messages');
+  assert.equal(model.buildAnthropicMessagesUrl('https://api.anthropic.com'), 'https://api.anthropic.com/v1/messages');
+  assert.equal(model.buildAnthropicMessagesUrl('https://api.anthropic.com/v1'), 'https://api.anthropic.com/v1/messages');
+  assert.equal(model.buildAnthropicMessagesUrl('https://api.anthropic.com/v1/messages'), 'https://api.anthropic.com/v1/messages');
+  assert.equal(model.buildAnthropicMessagesUrl('https://custom-proxy.internal'), 'https://custom-proxy.internal/v1/messages');
 });

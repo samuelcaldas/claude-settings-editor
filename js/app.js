@@ -1902,10 +1902,12 @@
     const trimmedApiKey = typeof apiKey === 'string' ? apiKey.trim() : '';
     const trimmedAuthToken = typeof authToken === 'string' ? authToken.trim() : '';
 
-    const hasUrl = trimmedUrl.length > 0 && (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://'));
-    const hasKey = trimmedApiKey.length > 0 || trimmedAuthToken.length > 0;
+    if (trimmedUrl.length > 0 && !trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
+      return false;
+    }
 
-    return Boolean(hasUrl && hasKey);
+    const hasKey = trimmedApiKey.length > 0 || trimmedAuthToken.length > 0;
+    return hasKey;
   }
 
   function checkAndTriggerModelDiscovery(doc) {
@@ -1958,7 +1960,7 @@
       } else if (state.modelsSource === 'error') {
         textEl.textContent = i18n ? i18n.t('models.discovery.status.error', { error: state.modelsFetchError }) : `Failed: ${state.modelsFetchError}`;
       } else {
-        textEl.textContent = i18n ? i18n.t('models.discovery.status.empty') : 'No API URL and key configured. Models list is empty.';
+        textEl.textContent = i18n ? i18n.t('models.discovery.status.empty') : 'No API key configured. Models list is empty.';
       }
     });
   }
@@ -1968,7 +1970,8 @@
     const apiKey = model.getAtPath(state.document, 'env.ANTHROPIC_API_KEY') || '';
     const authToken = model.getAtPath(state.document, 'env.ANTHROPIC_AUTH_TOKEN') || '';
 
-    const modelsUrl = model.buildOpenAiModelsUrl ? model.buildOpenAiModelsUrl(rawBaseUrl) : '';
+    const effectiveBaseUrl = (typeof rawBaseUrl === 'string' && rawBaseUrl.trim()) ? rawBaseUrl.trim() : 'https://api.anthropic.com';
+    const modelsUrl = model.buildOpenAiModelsUrl ? model.buildOpenAiModelsUrl(effectiveBaseUrl) : '';
     if (!modelsUrl) {
       state.availableModels = [];
       state.modelsSource = 'none';
@@ -1984,9 +1987,16 @@
       const headers = { 'Accept': 'application/json' };
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
-      } else if (apiKey) {
-        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+      if (apiKey) {
+        if (!authToken) {
+          headers['Authorization'] = `Bearer ${apiKey}`;
+        }
         headers['x-api-key'] = apiKey;
+      }
+      if (modelsUrl.includes('anthropic.com')) {
+        headers['anthropic-version'] = '2023-06-01';
+        headers['anthropic-dangerous-direct-browser-access'] = 'true';
       }
 
       const res = await fetch(modelsUrl, { method: 'GET', headers });
@@ -2056,7 +2066,12 @@
     const apiKey = model.getAtPath(state.document, 'env.ANTHROPIC_API_KEY') || '';
     const authToken = model.getAtPath(state.document, 'env.ANTHROPIC_AUTH_TOKEN') || '';
 
-    const chatUrl = model.buildOpenAiChatCompletionsUrl ? model.buildOpenAiChatCompletionsUrl(rawBaseUrl) : '';
+    const effectiveBaseUrl = (typeof rawBaseUrl === 'string' && rawBaseUrl.trim()) ? rawBaseUrl.trim() : 'https://api.anthropic.com';
+    const isAnthropic = effectiveBaseUrl.includes('anthropic.com');
+
+    const chatUrl = isAnthropic
+      ? (model.buildAnthropicMessagesUrl ? model.buildAnthropicMessagesUrl(effectiveBaseUrl) : `${effectiveBaseUrl.replace(/\/+$/, '')}/v1/messages`)
+      : (model.buildOpenAiChatCompletionsUrl ? model.buildOpenAiChatCompletionsUrl(effectiveBaseUrl) : '');
     if (!chatUrl) {
       notify('models.ai.noApi', 'error');
       return;
@@ -2076,21 +2091,38 @@
       };
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
-      } else if (apiKey) {
-        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+      if (apiKey) {
+        if (!authToken) {
+          headers['Authorization'] = `Bearer ${apiKey}`;
+        }
         headers['x-api-key'] = apiKey;
+      }
+      if (isAnthropic) {
+        headers['anthropic-version'] = '2023-06-01';
+        headers['anthropic-dangerous-direct-browser-access'] = 'true';
       }
 
       const targetModelId = currentModelId || currentName || tierKey;
       const targetDisplayName = currentName || targetModelId;
       const promptPayload = model.createDescriptionPrompt(tierKey, targetModelId, targetDisplayName);
 
-      const requestBody = {
-        model: generatorModel,
-        messages: promptPayload.messages,
-        max_tokens: promptPayload.max_tokens || 60,
-        temperature: promptPayload.temperature !== undefined ? promptPayload.temperature : 0.3
-      };
+      let requestBody;
+      if (isAnthropic) {
+        const userPrompt = promptPayload.messages.map(m => m.content).join('\n\n');
+        requestBody = {
+          model: generatorModel.startsWith('claude') ? generatorModel : 'claude-3-5-haiku-20241022',
+          max_tokens: promptPayload.max_tokens || 60,
+          messages: [{ role: 'user', content: userPrompt }]
+        };
+      } else {
+        requestBody = {
+          model: generatorModel,
+          messages: promptPayload.messages,
+          max_tokens: promptPayload.max_tokens || 60,
+          temperature: promptPayload.temperature !== undefined ? promptPayload.temperature : 0.3
+        };
+      }
 
       let res = await fetch(chatUrl, {
         method: 'POST',
